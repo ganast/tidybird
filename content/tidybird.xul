@@ -20,12 +20,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
 
-<?xml-stylesheet href="chrome://tidybird/skin/overlay.css" type="text/css" ?>  
-<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css ?>
+<?xml-stylesheet href="chrome://tidybird/skin/tidybird.css" type="text/css" ?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css" ?>
 
 <overlay id="messengerWindow" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 
-  <script type="application/x-javascript" src="overlay.js" />
+  <script type="application/x-javascript" src="tidybird.js" />
 
   <toolbarpalette id="MailToolbarPalette">
     <toolbarbutton id="tidybirdButton"

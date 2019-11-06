@@ -186,6 +186,7 @@ var Tidybird = {
 
 		var hbox = document.createElementNS(XUL_NS, "hbox");
 		hbox.setAttribute("flex", "1");
+		hbox.className = "button-box";
 		button.appendChild(hbox);
 
 		// button.textContent = folder.name + " (in " + root.name + ")";
