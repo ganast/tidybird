@@ -21,7 +21,6 @@
 -->
 
 <?xml-stylesheet href="chrome://tidybird/skin/tidybird.css" type="text/css" ?>
-<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css" ?>
 
 <overlay id="messengerWindow" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 
