@@ -1,0 +1,16 @@
+{
+  "manifest_version": 2
+  ,"applications": {
+    "gecko": {
+      "id": "tidybird@ganast.com"
+      ,"strict_min_version": "68.0"
+    }
+  }
+  ,"name": "Tidybird"
+  ,"description": "Organize email into folders quickly and easily."
+  ,"author": "George Anastassakis"
+  ,"version": "1.3"
+  ,"legacy": {
+      "type": "xul"
+  }
+}
