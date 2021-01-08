@@ -78,6 +78,14 @@ var TidybirdFolderListener = {
     OnItemEvent: function(folder, event) {
       //console.debug('OnItemEvent: event=' + event);
 
+      if (event == "FolderLoaded") {
+        console.log("a folder loaded");
+        if(Tidybird.foldersNotYetLoaded != false) {
+          console.log("first folder loaded: updating button list");
+          Tidybird.updateButtonList(); // on startup, we wait for a folder to be loaded before adding the folder list
+          Tidybird.foldersNotYetLoaded = false;
+        }
+      }
 		// check if a folder has been renamed...
 		if (event == "RenameCompleted") {
       // can't find a way to check if the folder was in the list (there is no information in event)
@@ -101,6 +109,7 @@ var TidybirdFolderListener = {
 // container var for all Tidybird-related stuff...
 var Tidybird = {
 
+  foldersNotYetLoaded: true,
   _folders: [],
 
 	// initialization...
@@ -115,7 +124,7 @@ var Tidybird = {
     MailServices.mailSession.AddFolderListener(TidybirdFolderListener, notifyFlags);
 
 		// update button list...
-		Tidybird.updateButtonList();
+		//Tidybird.updateButtonList(); // wait for a folder to be loaded, otherwise there are no folders to get mrmtime from, probably the servers should be initialized first (but I did not find a way to observ this event)
 		
 		// Log('[Tidybird] Tidybird.init - end');
 	},
