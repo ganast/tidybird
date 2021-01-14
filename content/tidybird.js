@@ -19,12 +19,9 @@
 */
 
 /*
-function Log(message) {
-	var Application =
-		Components.classes["@mozilla.org/steel/application;1"]
-		.getService(Components.interfaces.steelIApplication);
-	Application.console.log(message);
-}
+var EXPORTED_SYMBOLS = [ "Tidybird" ];
+
+var { MailServices } = ChromeUtils.import("resource:///modules/MailServices.jsm");
 */
 
 // folder listener to update button list...
@@ -32,9 +29,9 @@ var TidybirdFolderListener = {
 
 	// OnItemAdded, irrelevant in all cases...
     OnItemAdded: function(parentItem, item, view) {
-		// Log('OnItemAdded: parentItem=' + parentItem + ', item=' + item + ', view=' + view);
-		// alert('Email moved to folder ' + parentItem.name + ' (' + parentItem.URI + ')');
-	},
+      // TODO -very later- to include Trash & Archive I guess we can use this and generate an MRMTime ourselves, but we should listen to a matching removed(?)
+      // console.debug('OnItemAdded: parentItem=' + parentItem.name + ', item=' + item + ', view=' + view);
+    },
 
 	// OnItemRemoved, relevant if item removed is a folder...
     OnItemRemoved: function(parentItem, item, view) {
@@ -43,9 +40,11 @@ var TidybirdFolderListener = {
 
 		// check if item removed is a folder...
 		if (item instanceof Components.interfaces.nsIMsgFolder) {
-			
-			// update button list...
-			Tidybird.updateButtonList();
+      // check if we have this folder in the list
+      if ( Tidybird.findFolder(item) != -1 ) {
+        // update button list...
+        Tidybird.updateButtonList();
+      }
 		}
 	},
 
@@ -77,85 +76,82 @@ var TidybirdFolderListener = {
 	// OnItemEvent, relevant if event signifies that a folder's name or most-
 	// recently modified time property has changed...
     OnItemEvent: function(folder, event) {
-		// Log('OnItemEvent: event=' + event);
+      //console.debug('OnItemEvent: event=' + event);
 
+      if (event == "FolderLoaded") {
+        console.log("a folder loaded");
+        if(Tidybird.foldersNotYetLoaded != false) {
+          console.log("first folder loaded: updating button list");
+          Tidybird.updateButtonList(); // on startup, we wait for a folder to be loaded before adding the folder list
+          Tidybird.foldersNotYetLoaded = false;
+        }
+      }
 		// check if a folder has been renamed...
 		if (event == "RenameCompleted") {
-			
-			// update button list...
+      // can't find a way to check if the folder was in the list (there is no information in event)
+      // if we want to include new folders in the list, then we should also listen to this event
 			Tidybird.updateButtonList();
 		}
 
 		// else, check if there has been a change in a folder's MRMTime
 		// property...
 		else if (event == "MRMTimeChanged") {
-
-			// update button list...
-			Tidybird.updateButtonList();
+      // Generating the list can take a long time and blocks the interface...
+      // , so we check if we already have the folder
+      if ( Tidybird.findFolder(folder) == -1 ) {
+        // update button list...
+        Tidybird.updateButtonList();
+      }
 		}
 	}
-}
+};
 
 // container var for all Tidybird-related stuff...
 var Tidybird = {
+
+  foldersNotYetLoaded: true,
+  _folders: [],
 
 	// initialization...
 	init: function() {
 		// Log('[Tidybird] Tidybird.init - begin');
 
-		// access mail session component...
-		var mailSession = Components.classes[
-			"@mozilla.org/messenger/services/session;1"
-		].getService(
-			Components.interfaces.nsIMsgMailSession
-		);
-
-		// add a Tidybird folder listener to the mail session component...
-		mailSession.AddFolderListener(
-			TidybirdFolderListener, Components.interfaces.nsIFolderListener.all
-		);
+    // add a Tidybird folder listener to the mail session component...
+    // all = 0xFFFFFFFF
+    // removed = 0x2
+    // event = 0x80
+    let notifyFlags = Components.interfaces.nsIFolderListener.removed|Components.interfaces.nsIFolderListener.event;
+    MailServices.mailSession.AddFolderListener(TidybirdFolderListener, notifyFlags);
 
 		// update button list...
-		Tidybird.updateButtonList();
+		//Tidybird.updateButtonList(); // wait for a folder to be loaded, otherwise there are no folders to get mrmtime from, probably the servers should be initialized first (but I did not find a way to observ this event)
 		
 		// Log('[Tidybird] Tidybird.init - end');
 	},
 
-	// toggle the Tidybird panel...
-	do: function() {
+  deinit: function() {
+    MailServices.mailSession.RemoveFolderListener(TidybirdFolderListener);
+  },
 
-		// access the button pane...
-		var tidybirdPane = top.document.getElementById("tidybirdPane");
+  findFolder: function(folder) {
+    return Tidybird._folders.indexOf(folder);
+  },
 
-		// access the splitter...
-		var tidybirdSplitter = top.document.getElementById("tidybirdSplitter");
-
-		// check if button pane is hidden or visible...
-		if (tidybirdPane.hidden) {
-
-			// unhide the button pane and splitter...
-			tidybirdPane.hidden = false;
-			tidybirdSplitter.hidden = false;
-		}
-		else {
-
-			// hide the button pane and splitter...
-			tidybirdPane.hidden = true;
-			tidybirdSplitter.hidden = true;
-		}
-
-		// update button list...
-		// TODO: Is this really necessary? Probably not.
-		Tidybird.updateButtonList();
-	},
-
-	updateButtonList: function() {
+  updateButtonList: async function() {
+    console.debug("updating button list");
 		var buttonList = top.document.getElementById("tidybirdButtonList");
+    if(buttonList == null)
+    {
+      console.warn("No tidybird buttonlist found, while it should have been created.");
+      return
+    }
 		while (buttonList.hasChildNodes()){
+      Tidybird._folders.pop();
 			buttonList.removeChild(buttonList.firstChild);
 		}
 		var mostRecentlyModifiedFolders = Tidybird.getMostRecentlyModifiedFolders();
 		for (var i = 0; i != mostRecentlyModifiedFolders.length; i++) {
+      Tidybird._folders.push(mostRecentlyModifiedFolders[i]);
 			var button = Tidybird.createFolderMoveButton(
 				mostRecentlyModifiedFolders[i]
 			);
@@ -164,8 +160,6 @@ var Tidybird = {
 	},
 
 	createFolderMoveButton: function(folder) {
-		
-		const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 		
 		var ancestors = Tidybird.getFolderAncestors(folder);
 
@@ -180,24 +174,23 @@ var Tidybird = {
 				ancestors.length > 1 ? ancestors[1] : ancestors[0]
 			);
 		
-		var button = document.createElementNS(XUL_NS, "button");
-		
+    let button = document.createXULElement("button");
 		button.className = "tidybird-folder-move-button";
 
-		var hbox = document.createElementNS(XUL_NS, "hbox");
+    let hbox = document.createXULElement("hbox");
 		hbox.setAttribute("flex", "1");
 		hbox.className = "button-box";
 		button.appendChild(hbox);
 
 		// button.textContent = folder.name + " (in " + root.name + ")";
 
-		var label1 = document.createElementNS(XUL_NS, "label");
+    let label1 = document.createXULElement("label");
 		label1.setAttribute("flex", "1");
 		label1.className = "tidybird-folder-move-button-label-1";
 		label1.textContent = folder.name;
 		hbox.appendChild(label1);
 		
-		var label2 = document.createElementNS(XUL_NS, "label");
+    let label2 = document.createXULElement("label");
 		label2.setAttribute("flex", "1");
 		label2.className = "tidybird-folder-move-button-label-2";
 		label2.textContent = /*"in " + */root.name;
@@ -233,11 +226,17 @@ var Tidybird = {
 	},
 	
 	getMostRecentlyModifiedFolders: function() {
-		let mostRecentlyModifiedFolders = getMostRecentFolders(
-			gFolderTreeView._enumerateFolders,
+    /*
+     * Trash (del) & Archives (a) don't get a MRMTime
+     * Drafts & Sent do
+     * TODO -very later- let user choose to show them in list (per account)
+     * TODO -later- while we are at it: let user choose the number of folders to display
+     */
+    let allFolders = MailServices.accounts.allFolders.filter( folder => folder.canFileMessages);
+    let mostRecentlyModifiedFolders = getMostRecentFolders(
+      allFolders,
 			30,
 			"MRMTime",
-			null
 		);
 		mostRecentlyModifiedFolders.sort(function(a, b) {
 			return a.name.localeCompare(b.name);
@@ -246,4 +245,3 @@ var Tidybird = {
 	}
 }
 
-window.addEventListener("load", Tidybird.init, false);

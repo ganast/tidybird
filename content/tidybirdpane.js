@@ -1,6 +1,4 @@
-<?xml version="1.0"?>
-
-<!--
+/*
 	Tidyird extension for Mozilla Thunderbird - Organize email into folders
 	quickly and easily.
 	
@@ -18,43 +16,26 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
--->
+*/
 
-<?xml-stylesheet href="chrome://tidybird/skin/tidybird.css" type="text/css" ?>
-
-<overlay id="messengerWindow" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
-
-  <script type="application/x-javascript" src="tidybird.js" />
-
-  <toolbarpalette id="MailToolbarPalette">
-    <toolbarbutton id="tidybirdButton"
-      class="tidybird-button toolbarbutton-1"
-      label="Tidybird"
-      type="button"
-      tooltiptext="Toggle the Tidybird panel"
-      oncommand="Tidybird.do()"
-    />
-  </toolbarpalette>
-
-  <!--vbox id="folderPaneBox" persist="collapsed width height"-->
-  <vbox id="messengerBox" persist="collapsed width height">
+var tidybirdPane = `
     <splitter
 	  id="tidybirdSplitter"
 	  collapse="after"
 	  orient="horizontal"
 	  persist="state hidden"
+    x-tidybird="added"
 	/>
     <vbox
 	  id="tidybirdPane"
 	  height="300"
 	  width="200"
 	  persist="width height hidden"
+    x-tidybird="added"
 	>
 	  <!--label>Move selected message(s) to:</label-->
-	  <vbox id="tidybirdButtonList">
+	  <vbox id="tidybirdButtonList" x-tidybird="added">
 		<!-- folder move buttons will be dynamically added here -->
 	  </vbox>
     </vbox> 
-  </vbox>
-
-</overlay>
+`
