@@ -97,10 +97,19 @@ folders, etc.
 
 When this is not enough, a tooltip with the full folder path will do the trick.
 
+Contributors
+============
+
+George Anastassakis / ganast (ganast@ganast.com)
+Original release (v1.1, v1.2)
+
+Tim Ooms / tatankat
+Support for Thunderbird 68 onwards (v1.3, v1.4)
+
 License
 =======
 
-Copyright (C) 2018 George Anastassakis (ganast@ganast.com)
+Copyright (C) 2021 George Anastassakis (ganast@ganast.com)
 
 Tidybird is free software: you can redistribute it and/or modify it under the
 terms of the GNU General Public License as published by the Free Software
