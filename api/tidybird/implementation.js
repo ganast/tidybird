@@ -86,8 +86,10 @@ var tidybird_api = class extends ExtensionCommon.ExtensionAPI {
                 // only visible when messengerBox is visible
                 thisWindow.document.getElementById("messengerBox").appendChild(htmlPane)
 
-                // add the css
-                let cssLink = thisWindow.document.createElement("link");
+                // add the css: based on WindowListener: https://github.com/thundernest/addon-developer-support
+                let ns = thisWindow.document.documentElement.lookupNamespaceURI("html");
+                let cssLink = thisWindow.document.createElementNS(ns, "link");
+                //let cssLink = thisWindow.document.createElement("link"); // for tb 78, this is enough, but it does not hurt looking up and using the correct namespace
                 cssLink.setAttribute("rel", "stylesheet");
                 cssLink.setAttribute("x-tidybird", "added");
                 cssLink.setAttribute("href", extension.rootURI.resolve("skin/tidybird.css"));

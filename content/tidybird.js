@@ -59,8 +59,8 @@ var TidybirdFolderListener = {
       //console.debug('OnItemEvent: event=' + event);
 
       if (event == "FolderLoaded") {
-        console.log("a folder loaded");
-        if(Tidybird.foldersNotYetLoaded != false) {
+        //console.log("a folder loaded");
+        if(Tidybird.foldersNotYetLoaded != false) { //TODO: check if _full_ list is already loaded, not if a folder is loaded (when adding addon while running, update is run twice)
           console.log("first folder loaded: updating button list");
           Tidybird.updateButtonList(); // on startup, we wait for a folder to be loaded before adding the folder list
           Tidybird.foldersNotYetLoaded = false;
@@ -103,9 +103,11 @@ var Tidybird = {
     let notifyFlags = Components.interfaces.nsIFolderListener.removed|Components.interfaces.nsIFolderListener.event;
     MailServices.mailSession.AddFolderListener(TidybirdFolderListener, notifyFlags);
 
-		// update button list...
-		//Tidybird.updateButtonList(); // wait for a folder to be loaded, otherwise there are no folders to get mrmtime from, probably the servers should be initialized first (but I did not find a way to observ this event)
-		
+    // update button list...
+    // on startup, we have to wait for a folder to be loaded (on tb 78), otherwise there are no folders to get mrmtime from, probably the servers should be initialized first (but I did not find a way to observe this event)
+    // when no folders are loaded yet, this call does not cost anything, so we do it as the list should be updated also when loading a plugin and when clicking on the tidybird button
+    Tidybird.updateButtonList();
+
 		// Log('[Tidybird] Tidybird.init - end');
 	},
 
@@ -212,9 +214,25 @@ var Tidybird = {
      * TODO -very later- let user choose to show them in list (per account)
      * TODO -later- while we are at it: let user choose the number of folders to display
      */
-    let allFolders = MailServices.accounts.allFolders.filter( folder => folder.canFileMessages);
+    let allFolders = MailServices.accounts.allFolders;
+    let filteredFolders;
+    if (Array.isArray(allFolders) ) {
+      // TB >=78
+      filteredFolders = allFolders.filter( folder => folder.canFileMessages);
+    } else {
+      // TB 68
+      filteredFolders = Array();
+      let enumerator = allFolders.enumerate();
+      let folder;
+      while(enumerator.hasMoreElements()) {
+        folder = enumerator.getNext(Ci.nsIMsgFolder);
+        if (folder.canFileMessages) {
+          filteredFolders.push(folder);
+        }
+      }
+    }
     let mostRecentlyModifiedFolders = getMostRecentFolders(
-      allFolders,
+      filteredFolders,
 			30,
 			"MRMTime",
 		);
