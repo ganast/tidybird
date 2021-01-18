@@ -1,0 +1,73 @@
+name: "web-ext"
+on:
+  push:
+  pull_request:
+
+  workflow_dispatch:
+
+jobs:
+  web-ext:
+    name: "web-ext"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v1
+
+      - name: "web-ext lint"
+        uses: kewisch/action-web-ext@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          cmd: lint
+          channel: listed
+          verbose: true
+
+      - name: "web-ext build"
+        id: web-ext-build
+        uses: kewisch/action-web-ext@v1
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          cmd: build
+          channel: listed
+          verbose: true
+
+      - name: "Get xpi filename"
+        id: get_xpi_filename
+        if: ${{ steps.web-ext-build.outputs.target }}
+        uses: frabert/replace-string-action@v1.2
+        with:
+          pattern: '.zip'
+          string: ${{ steps.web-ext-build.outputs.target }}
+          replace-with: '.xpi'
+
+      - name: "Rename zip to xpi"
+        if: ${{ steps.web-ext-build.outputs.target }}
+        run: |
+          cp ${{ steps.web-ext-build.outputs.target }} ${{ steps.get_xpi_filename.outputs.replaced }}
+        shell: bash
+
+      - name: "Get version"
+        id: get_version
+        if: ${{ steps.web-ext-build.outputs.target }}
+        run: |
+          echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\/v/}
+        shell: bash
+
+      - name: "Create release"
+        if: ${{ steps.web-ext-build.outputs.target }}
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          name: Tidybird ${{ steps.get_version.outputs.VERSION }}
+          body: |
+            Automatic release for created tag
+          draft: true
+          prerelease: true
+          files: |
+            ${{ steps.get_xpi_filename.outputs.replaced }}
+            ${{ steps.web-ext-build.outputs.target }}
+
