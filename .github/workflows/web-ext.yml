@@ -55,6 +55,14 @@ jobs:
           echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\/v/}
         shell: bash
 
+      - name: "Get tag annotation"
+        id: get_tag
+        if: ${{ steps.web-ext-build.outputs.target }}
+        run: |
+          git fetch --tags --force
+          echo ::set-output name=subject::$(git for-each-ref $GITHUB_REF --format='%(contents:subject)')
+        shell: bash
+
       - name: "Create release"
         if: ${{ steps.web-ext-build.outputs.target }}
         uses: softprops/action-gh-release@v1
@@ -64,7 +72,7 @@ jobs:
           tag_name: ${{ github.ref }}
           name: Tidybird ${{ steps.get_version.outputs.VERSION }}
           body: |
-            Automatic release for created tag
+            ${{ steps.get_tag.outputs.subject }}
           draft: true
           prerelease: true
           files: |
