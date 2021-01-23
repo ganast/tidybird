@@ -1,0 +1,37 @@
+{
+  "name": "tidybird",
+  "version": "2.0.0",
+  "description": "Thunderbird add-on to organize email into folders quickly and easily",
+  "main": "background.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tatankat/tidybird.git"
+  },
+  "keywords": [
+    "thunderbird",
+    "add-on",
+    "folder",
+    "move",
+    "recent",
+    "sidepanel",
+    "button"
+  ],
+  "author": "ganast@ganast.com",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/tatankat/tidybird/issues"
+  },
+  "homepage": "https://github.com/tatankat/tidybird#readme",
+  "devDependencies": {
+    "eslint": "^7.18.0",
+    "eslint-config-prettier": "^7.2.0",
+    "eslint-config-standard": "^16.0.2",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "prettier": "2.2.1"
+  }
+}

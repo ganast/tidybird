@@ -18,4 +18,4 @@ var tidybirdPane = `
 		<!-- folder move buttons will be dynamically added here -->
 	  </vbox>
     </vbox> 
-`
+`;
