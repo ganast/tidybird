@@ -1,24 +1,27 @@
 /*
 var EXPORTED_SYMBOLS = [ "Tidybird" ];
-
-var { MailServices } = ChromeUtils.import("resource:///modules/MailServices.jsm");
 */
+
+// folderlistener
+var { MailServices } = ChromeUtils.import(
+  "resource:///modules/MailServices.jsm"
+);
 
 // folder listener to update button list...
 var TidybirdFolderListener = {
   // OnItemAdded, irrelevant in all cases...
-  OnItemAdded: function (parentItem, item, view) {
+  OnItemAdded(parentItem, item, view) {
     // TODO -very later- to include Trash & Archive I guess we can use this and generate an MRMTime ourselves, but we should listen to a matching removed(?)
     // console.debug('OnItemAdded: parentItem=' + parentItem.name + ', item=' + item + ', view=' + view);
   },
 
   // OnItemRemoved, relevant if item removed is a folder...
-  OnItemRemoved: function (parentItem, item, view) {
+  OnItemRemoved(parentItem, item, view) {
     // Log('OnItemRemoved: parentItem=' + parentItem + ', item=' + item + ', view=' + view);
     // alert('OnItemRemoved: parentItem=' + parentItem + ', item=' + item + ', view=' + view);
 
     // check if item removed is a folder...
-    if (item instanceof Components.interfaces.nsIMsgFolder) {
+    if (item instanceof Ci.nsIMsgFolder) {
       // check if we have this folder in the list
       if (Tidybird.findFolder(item) != -1) {
         // update button list...
@@ -28,38 +31,38 @@ var TidybirdFolderListener = {
   },
 
   // OnItemPropertyChanged, irrelevant in all cases...
-  OnItemPropertyChanged: function (item, property, oldValue, newValue) {
+  OnItemPropertyChanged(item, property, oldValue, newValue) {
     // Log('OnItemPropertyChanged: item=' + item + ', property=' + property + ', oldValue=' + oldValue + ', newValue=' + newValue);
   },
 
   // OnItemIntPropertyChanged, irrelevant in all cases...
-  OnItemIntPropertyChanged: function (item, property, oldValue, newValue) {
+  OnItemIntPropertyChanged(item, property, oldValue, newValue) {
     // Log('OnItemIntPropertyChanged: item=' + item + ', property=' + property + ', oldValue=' + oldValue + ', newValue=' + newValue);
   },
 
   // OnItemBoolPropertyChanged, irrelevant in all cases...
-  OnItemBoolPropertyChanged: function (item, property, oldValue, newValue) {
+  OnItemBoolPropertyChanged(item, property, oldValue, newValue) {
     // Log('OnItemBoolPropertyChanged: item=' + item + ', property=' + property + ', oldValue=' + oldValue + ', newValue=' + newValue);
   },
 
   // OnItemUnicharPropertyChanged, irrelevant in all cases...
-  OnItemUnicharPropertyChanged: function (item, property, oldValue, newValue) {
+  OnItemUnicharPropertyChanged(item, property, oldValue, newValue) {
     // Log('OnItemUnicharPropertyChanged: item=' + item + ', property=' + property + ', oldValue=' + oldValue + ', newValue=' + newValue);
   },
 
   // OnItemPropertyFlagChanged, irrelevant in all cases...
-  OnItemPropertyFlagChanged: function (item, property, oldFlag, newFlag) {
+  OnItemPropertyFlagChanged(item, property, oldFlag, newFlag) {
     // Log('OnItemPropertyFlagChanged: item=' + item + ', property=' + property + ', oldFlag=' + oldFlag + ', newFlag=' + newFlag);
   },
 
   // OnItemEvent, relevant if event signifies that a folder's name or most-
   // recently modified time property has changed...
-  OnItemEvent: function (folder, event) {
+  OnItemEvent(folder, event) {
     //console.debug('OnItemEvent: event=' + event);
 
     if (event == "FolderLoaded") {
       //console.log("a folder loaded");
-      if (Tidybird.foldersNotYetLoaded != false) {
+      if (Tidybird.foldersNotYetLoaded !== false) {
         //TODO: check if _full_ list is already loaded, not if a folder is loaded (when adding addon while running, update is run twice)
         console.log("first folder loaded: updating button list");
         Tidybird.updateButtonList(); // on startup, we wait for a folder to be loaded before adding the folder list
@@ -92,16 +95,14 @@ var Tidybird = {
   _folders: [],
 
   // initialization...
-  init: function () {
+  init() {
     // Log('[Tidybird] Tidybird.init - begin');
 
     // add a Tidybird folder listener to the mail session component...
     // all = 0xFFFFFFFF
     // removed = 0x2
     // event = 0x80
-    let notifyFlags =
-      Components.interfaces.nsIFolderListener.removed |
-      Components.interfaces.nsIFolderListener.event;
+    let notifyFlags = Ci.nsIFolderListener.removed | Ci.nsIFolderListener.event;
     MailServices.mailSession.AddFolderListener(
       TidybirdFolderListener,
       notifyFlags
@@ -115,15 +116,15 @@ var Tidybird = {
     // Log('[Tidybird] Tidybird.init - end');
   },
 
-  deinit: function () {
+  deinit() {
     MailServices.mailSession.RemoveFolderListener(TidybirdFolderListener);
   },
 
-  findFolder: function (folder) {
+  findFolder(folder) {
     return Tidybird._folders.indexOf(folder);
   },
 
-  updateButtonList: async function () {
+  async updateButtonList() {
     console.debug("updating button list");
     var buttonList = top.document.getElementById("tidybirdButtonList");
     if (buttonList == null) {
@@ -134,7 +135,7 @@ var Tidybird = {
     }
     while (buttonList.hasChildNodes()) {
       Tidybird._folders.pop();
-      buttonList.removeChild(buttonList.firstChild);
+      buttonList.firstChild.remove();
     }
     var mostRecentlyModifiedFolders = Tidybird.getMostRecentlyModifiedFolders();
     for (var i = 0; i != mostRecentlyModifiedFolders.length; i++) {
@@ -146,7 +147,7 @@ var Tidybird = {
     }
   },
 
-  createFolderMoveButton: function (folder) {
+  createFolderMoveButton(folder) {
     var ancestors = Tidybird.getFolderAncestors(folder);
 
     var path = "";
@@ -154,12 +155,8 @@ var Tidybird = {
       path += ancestors[i].name + "/";
     }
 
-    var root =
-      ancestors.length > 2
-        ? ancestors[2]
-        : ancestors.length > 1
-        ? ancestors[1]
-        : ancestors[0];
+    const root =
+      ancestors.length > 2 ? ancestors[2] : ancestors[ancestors.length - 1];
 
     let button = document.createXULElement("button");
     button.className = "tidybird-folder-move-button";
@@ -185,33 +182,27 @@ var Tidybird = {
 
     button.setAttribute("tooltiptext", path + folder.name);
 
-    button.addEventListener(
-      "click",
-      function () {
-        Tidybird.moveSelectedMessageToFolder(folder);
-      },
-      false
-    );
+    button.addEventListener("click", function () {
+      Tidybird.moveSelectedMessageToFolder(folder);
+    });
 
     return button;
   },
 
-  moveSelectedMessageToFolder: function (folder) {
+  moveSelectedMessageToFolder(folder) {
     MsgMoveMessage(folder);
   },
 
-  getFolderAncestors: function (folder) {
+  getFolderAncestors(folder) {
     if (folder.parent != undefined) {
-      var parent = folder.parent;
       var ancestors = Tidybird.getFolderAncestors(folder.parent);
       ancestors.push(folder.parent);
       return ancestors;
-    } else {
-      return [];
     }
+    return [];
   },
 
-  getMostRecentlyModifiedFolders: function () {
+  getMostRecentlyModifiedFolders() {
     /*
      * Trash (del) & Archives (a) don't get a MRMTime
      * Drafts & Sent do
@@ -225,7 +216,7 @@ var Tidybird = {
       filteredFolders = allFolders.filter((folder) => folder.canFileMessages);
     } else {
       // TB 68
-      filteredFolders = Array();
+      filteredFolders = [];
       let enumerator = allFolders.enumerate();
       let folder;
       while (enumerator.hasMoreElements()) {

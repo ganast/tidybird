@@ -25,10 +25,6 @@ var { Services } = ChromeUtils.import("resource://gre/modules/Services.jsm");
 var { ExtensionSupport } = ChromeUtils.import(
   "resource:///modules/ExtensionSupport.jsm"
 );
-// folderlistener
-var { MailServices } = ChromeUtils.import(
-  "resource:///modules/MailServices.jsm"
-);
 
 var { ExtensionParent } = ChromeUtils.import(
   "resource://gre/modules/ExtensionParent.jsm"
@@ -58,15 +54,15 @@ var tidybird_api = class extends ExtensionCommon.ExtensionAPI {
 
     // Unload JSMs of this add-on
     const rootURI = this.extension.rootURI.spec;
-    for (let module of Components.utils.loadedModules) {
+    for (let module of Cu.loadedModules) {
       if (module.startsWith(rootURI)) {
-        Components.utils.unload(module);
+        Cu.unload(module);
       }
     }
 
     // Clear caches that could prevent upgrades from working properly
     // https://developer.thunderbird.net/add-ons/mailextensions/experiments
-    Services.obs.notifyObservers(null, "startupcache-invalidate", null);
+    Services.obs.notifyObservers(null, "startupcache-invalidate");
   }
 
   getAPI(context) {
@@ -98,7 +94,7 @@ var tidybird_api = class extends ExtensionCommon.ExtensionAPI {
                 );
                 //TODO -later- load here using pure javascript
                 let htmlPane = thisWindow.MozXULElement.parseXULToFragment(
-                  context["tidybirdPane"]
+                  context.tidybirdPane
                 );
                 // only visible when messengerBox is visible
                 thisWindow.document
@@ -163,7 +159,7 @@ var tidybird_api = class extends ExtensionCommon.ExtensionAPI {
             let tidybirdElements = thisWindow.document.querySelectorAll(
               '[x-tidybird="added"]'
             );
-            if (tidybirdElements.length > 0) {
+            if (tidybirdElements.length) {
               // found a tidybird element, so we should clean up and exit
               this.stopWindowListener();
               return;
