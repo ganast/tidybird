@@ -34,6 +34,8 @@ var extension = ExtensionParent.GlobalManager.getExtension(
 );
 //var { Tidybird } = ChromeUtils.import(extension.rootURI.resolve("modules/tidybird.jsm"));
 
+// var tidybird_api is used by TB: defined in manifest.json
+// eslint-disable-next-line no-unused-vars
 var tidybird_api = class extends ExtensionCommon.ExtensionAPI {
   onStartup() {
     console.debug("Tidybird startup");

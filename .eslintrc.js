@@ -6,9 +6,8 @@ module.exports = {
     node: true, // eslint runs in node: set "module" global for eslint config
   },
   extends: [
-    "plugin:mozilla/recommended", //TODO standard can be removed from deps
-    // disabled as normally, mozilla should handle them
-    //'prettier' // deactives rules that conflict with prettier
+    "plugin:mozilla/recommended", // requires also: eslint-plugin-html, eslint-plugin-fetch-options
+    //'prettier' // deactives rules that conflict with prettier, deactivated as mozilla includes this
   ],
   plugins: ["mozilla"],
   parserOptions: {
@@ -16,5 +15,10 @@ module.exports = {
   },
   rules: {
     "spaced-comment": "off",
+  },
+  globals: {
+    // add thunderbird SDK functions
+    getMostRecentFolders: "readonly",
+    MsgMoveMessage: "readonly",
   },
 };
