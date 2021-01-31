@@ -38,9 +38,9 @@ jobs:
         if: ${{ steps.web-ext-build.outputs.target }}
         uses: frabert/replace-string-action@v1.2
         with:
-          pattern: '.zip'
+          pattern: ".zip"
           string: ${{ steps.web-ext-build.outputs.target }}
-          replace-with: '.xpi'
+          replace-with: ".xpi"
 
       - name: "Rename zip to xpi"
         if: ${{ steps.web-ext-build.outputs.target }}
@@ -78,4 +78,3 @@ jobs:
           files: |
             ${{ steps.get_xpi_filename.outputs.replaced }}
             ${{ steps.web-ext-build.outputs.target }}
-

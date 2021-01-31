@@ -1,5 +1,6 @@
-#tidybirdButton, [place="palette"] > #tidybirdButton {
-  list-style-image: url("chrome://tidybird/skin/icon.png")
+#tidybirdButton,
+[place="palette"] > #tidybirdButton {
+  list-style-image: url("chrome://tidybird/skin/icon.png");
 }
 
 #tidybirdSplitter {
@@ -37,4 +38,4 @@
   text-align: right;
   font-size: 0.8em;
   line-height: 1.6em;
- }
+}

@@ -1,8 +1,7 @@
 Tidybird extension for Mozilla Thunderbird - Organize email into folders quickly
 and easily.
 
-Introduction
-============
+# Introduction
 
 Welcome to Tidybird, an extension for Mozilla Thunderbird that helps you
 maintain a tidy mailbox. You need Tidybird if you:
@@ -20,26 +19,25 @@ the built-in recent folders list which you can use via menus to move email to
 folders. However, there are some important differences:
 
 - Tidybird is easily accessible as a side panel which you can show and hide as
-needed. It does not require navigation through menus.
+  needed. It does not require navigation through menus.
 
 - Tidybird allows you to move email by clicking on buttons instead of selecting
-menu items. Tidybird's buttons are larger, better separated and easier to
-target.
+  menu items. Tidybird's buttons are larger, better separated and easier to
+  target.
 
 - Tidybird provides buttons for 30 recently-used folders. The built-in recent
-folders list only lists 15 folders.
+  folders list only lists 15 folders.
 
 - Tidybird helps you identify the right button for a folder, which is especially
-useful if you have many folders with the same name. In particular, Tidybird
-buttons also display parent folders three levels down from the top as well as
-the full path to folders as tooltips.
+  useful if you have many folders with the same name. In particular, Tidybird
+  buttons also display parent folders three levels down from the top as well as
+  the full path to folders as tooltips.
 
 The rationale behind the last point is that a folder is, in most cases, easier
 to identify if it can be visually associated with a parent folder that is
 uniquely identifiable itself.
 
-Usage
-=====
+# Usage
 
 First, add the Tidybird icon to the mail toolbar (right-click on the toolbar,
 select "Customize" and drag the Tidybird icon to the desired location on the
@@ -75,17 +73,17 @@ hierarchy:
 Given the above hierarchy, Tidybird will display folders and parent folders as
 follows (parent folders in parentheses):
 
- 1) Inbox    (tidybird@example.com)
- 2) Personal (Inbox)
- 3) Movies   (Personal)
- 4) Music    (Personal)
- 5) News     (Personal)
- 6) Work     (Inbox)
- 7) Meetings (Work)
- 8) News     (Work)
- 9) Movies   (Local Folders)
-10) Music    (Local Folders)
-11) News     (Local Folders)
+1.  Inbox (tidybird@example.com)
+2.  Personal (Inbox)
+3.  Movies (Personal)
+4.  Music (Personal)
+5.  News (Personal)
+6.  Work (Inbox)
+7.  Meetings (Work)
+8.  News (Work)
+9.  Movies (Local Folders)
+10. Music (Local Folders)
+11. News (Local Folders)
 
 As you can see, in the above example it is quite straightforward to distinguish,
 for instance, Movies under tidybird@example.com/Inbox/Personal (3) from Movies
@@ -97,8 +95,7 @@ folders, etc.
 
 When this is not enough, a tooltip with the full folder path will do the trick.
 
-License
-=======
+# License
 
 Copyright (C) 2021 George Anastassakis (ganast@ganast.com)
 
@@ -114,8 +111,7 @@ PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 
-Contact
-=======
+# Contact
 
 Please send comments, suggestions, feature requests, bug reports, etc., to the
 author at ganast@ganast.com.
