@@ -13,19 +13,26 @@ jobs:
       - name: "Checkout"
         uses: actions/checkout@v1
 
-      - name: "web-ext lint"
-        uses: kewisch/action-web-ext@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Install node"
+        uses: actions/setup-node@v2
         with:
-          cmd: lint
-          channel: listed
+          node-version: "14"
+
+      - name: "Install requirements"
+        run: npm ci
+
+      - name: "Run eslint"
+        run: ./node_modules/.bin/eslint .
+
+      - name: "web-ext lint"
+        uses: freaktechnik/web-ext-lint@v1
+        with:
           verbose: true
 
       - name: "web-ext build"
         id: web-ext-build
-        uses: kewisch/action-web-ext@v1
         if: startsWith(github.ref, 'refs/tags/v')
+        uses: kewisch/action-web-ext@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -42,7 +49,7 @@ jobs:
           string: ${{ steps.web-ext-build.outputs.target }}
           replace-with: ".xpi"
 
-      - name: "Rename zip to xpi"
+      - name: "Copy zip to xpi"
         if: ${{ steps.web-ext-build.outputs.target }}
         run: |
           cp ${{ steps.web-ext-build.outputs.target }} ${{ steps.get_xpi_filename.outputs.replaced }}
@@ -64,17 +71,45 @@ jobs:
         shell: bash
 
       - name: "Create release"
+        id: create_release
         if: ${{ steps.web-ext-build.outputs.target }}
-        uses: softprops/action-gh-release@v1
+        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
-          name: Tidybird ${{ steps.get_version.outputs.VERSION }}
+          release_name: Tidybird ${{ steps.get_version.outputs.VERSION }}
           body: |
             ${{ steps.get_tag.outputs.subject }}
           draft: true
           prerelease: true
-          files: |
-            ${{ steps.get_xpi_filename.outputs.replaced }}
-            ${{ steps.web-ext-build.outputs.target }}
+
+      - name: "Get release asset basenames"
+        id: get_basename
+        if: ${{ steps.create_release.outputs.upload_url }}
+        run: |
+          echo ::set-output name=xpi::$(basename ${{ steps.get_xpi_filename.outputs.replaced }})
+          echo ::set-output name=zip::$(basename ${{ steps.web-ext-build.outputs.target }})
+        shell: bash
+
+      - name: "Upload release assets .xpi"
+        if: ${{ steps.create_release.outputs.upload_url }}
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.get_xpi_filename.outputs.replaced }}
+          asset_name: ${{ steps.get_basename.outputs.xpi }}
+          asset_content_type: "application/zip"
+
+      - name: "Upload release assets .zip"
+        if: ${{ steps.create_release.outputs.upload_url }}
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.web-ext-build.outputs.target }}
+          asset_name: ${{ steps.get_basename.outputs.zip }}
+          asset_content_type: "application/zip"
