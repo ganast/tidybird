@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <meta charset="utf-8"/>
+    </head>
+    <body>
+        <form>
+            <div class="browser-style">
+                Tidybird status on startup:
+                <input id="startup_shown" name="startup" type="radio" value="shown"/>
+                <label for="startup_shown">Shown</label>
+                <input id="startup_hidden" name="startup" type="radio" value="hidden"/>
+                <label for="startup_hidden">Hidden</label>
+                <input id="startup_latest" name="startup" type="radio" value="latest"/>
+                <label for="startup_latest">Status before close</label>
+            </div>
+
+            <div class="browser-style">
+                <input id="sortorder" name="sortorder" type="checkbox"/>
+                <label for="sortorder">Sort first by account</label>
+            </div>
+
+            <div class="browser-style">
+                <input id="buttonheight" name="buttonheight" type="number" size="3" min="0"/>
+                <label for="buttonheight">Button height</label>
+                <button class="browser-style">Reset default</button>
+            </div>
+
+            <div class="browser-style">
+                <input id="nbfolders" name="nbfolders" type="number" size=3 min="-1"/>
+                <label for="nbfolders">Number of auto-selected folders to show (-1: all)</label>
+                <button class="browser-style">Reset default</button>
+            </div>
+
+            <div class="browser-style">
+                <input id="mixfixed" name="mixfixed" type="checkbox"/>
+                <label for="mixfixed">Mix fixed folder with auto-selected folders</label>
+            </div>
+
+            <div class="browser-style">
+                <input id="fixedfolders" name="fixedfolders" type="checkbox"/>
+                <label for="fixedfolders">Fixed folders to show</label>
+                <button class="browser-style">Select none</button>
+                <button class="browser-style">Select all</button>
+            </div>
+        </form>
+        <script src="options.js"></script>
+    </body>
+</html>
