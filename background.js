@@ -1,15 +1,46 @@
-// based on https://github.com/thundernest/addon-developer-support/wiki/WindowListener-API:-Getting-Started
-
 // messenger is not yet known in TB 68
+let messenger = browser;
+
 (async () => {
-  function showTidybird() {
-    // runs in extensions private context => no access to the window
-    browser.tidybird_api.toggleWindowListener();
+  // the first parameter of this function gets tab information when using the button
+  function toggleTidybirdBySettings(startupEvent = false) {
+    let htmlPage = "content/tidybirdpane.html";
+    let isShowingSetting = "isShowing";
+
+    function toggleTidybird(isShowing = false) {
+      //TODO: latest status
+      if (startupEvent === true || !isShowing) {
+        messenger.ex_customui.add(
+          messenger.ex_customui.LOCATION_SIDEBAR,
+          htmlPage
+        );
+        messenger.storage.local.set({ [isShowingSetting]: true });
+      } else {
+        messenger.ex_customui.remove(
+          messenger.ex_customui.LOCATION_SIDEBAR,
+          htmlPage
+        );
+        messenger.storage.local.set({ [isShowingSetting]: false });
+      }
+    }
+
+    function onGet(settings) {
+      toggleTidybird(settings[isShowingSetting]); // if not set => undefined => default parameter value
+    }
+
+    function onError(error) {
+      console.log(
+        `Error in tidybird getting setting ${isShowingSetting}: ${error}`
+      );
+    }
+
+    let gettingSetting = messenger.storage.local.get(isShowingSetting);
+    gettingSetting.then(onGet, onError);
   }
-  browser.browserAction.onClicked.addListener(showTidybird);
 
-  // initialize the window listener
-  browser.tidybird_api.startWindowListener();
+  // initial startup (or not)
+  toggleTidybirdBySettings(true);
 
-  //TODO -later- separate the windowListener & folderListener API and join them in a separate layer (here,content,...)
+  // add listener to our button
+  messenger.browserAction.onClicked.addListener(toggleTidybirdBySettings);
 })();
