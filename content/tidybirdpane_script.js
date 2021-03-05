@@ -22,10 +22,15 @@ const moveSelectedMessageToFolder = async function (folder) {
   const messages = await browser.messageDisplay.getDisplayedMessages(
     theCurrentTab.id
   );
+  /*
   for (let message of messages) {
     console.log(`Moving message ${message.subject} to ${folder.name}`);
-    browser.messages.move([message.id], folder);
   }
+  */
+  browser.messages.move(
+    messages.map((message) => message.id),
+    folder
+  );
 };
 
 /**
