@@ -235,20 +235,82 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
       return result;
     };
 
+    // Enables dynamic width and fixed heigth for a WebExtension frame
+    const setWebextFrameSizesForSidebar = function(frame, options) {
+      setWebextFrameSizesForBox(frame, options, true, "244px", false, "100%")
+    }
+
     // Enables dynamic height and fixed 100% width for a WebExtension frame
     const setWebextFrameSizesForVerticalBox = function(frame, options) {
-      frame.width = "100%";
-      frame.height = (options.height || 100) + "px";
-      frame.style.display = options.hidden ? "none" : "block";
+      setWebextFrameSizesForBox(frame, options, false, "100%", true, "100px");
+    }
+
+    const setWebextFrameDynamicDimension = function(frame, options, dimensionName, defaultValue) {
+      frame[dimensionName] = options[dimensionName] || defaultValue;
       frame.addCustomUILocalOptionsListener(lOptions => {
-        if (typeof lOptions.height === "number") {
-          frame.height = lOptions.height + "px";
-          frame.style.height = frame.height;
+        if (typeof lOptions[dimensionName] === "string") {
+          frame[dimensionName] = lOptions[dimensionName];
+          frame.style[dimensionName] = frame[dimensionName];
         }
         if (typeof lOptions.hidden === "boolean") {
           frame.style.display = lOptions.hidden ? "none" : "block";
         }
       });
+    }
+
+    const setWebextFrameFixedDimension = function(frame, dimensionName, value) {
+      frame[dimensionName] = value;
+    }
+
+    const setWebextFrameDimension = function(frame, options, dimensionName, isDynamic, value) {
+      if(isDynamic) {
+        setWebextFrameDynamicDimension(frame, options, dimensionName, value);
+      } else {
+        setWebextFrameFixedDimension(frame, dimensionName, value);
+      }
+    }
+
+    const setWebextFrameSizesForBox = function(frame, options, isDynamicWidth, width, isDynamicHeight, height) {
+      setWebextFrameDimension(frame, options, "width", isDynamicWidth, width);
+      setWebextFrameDimension(frame, options, "height", isDynamicHeight, height);
+      frame.style.display = options.hidden ? "none" : "block";
+    }
+    
+    const injectSidebarIntoWindow = function(window, url, options, containerId, location) {
+        const sidebarBoxName = "customUI-sidebar-box";
+        let sidebar = window.document.getElementById(sidebarBoxName);
+        if (!sidebar) {
+          const container = window.document.getElementById(containerId);
+          
+          let splitter = window.document.createXULElement("splitter");
+          splitter.id = "customUI-sidebar-box-splitter";
+          splitter.style["border-inline-end-width"] = "0";
+          splitter.style["border-inline-start"] = "1px solid var(--splitter-color)";
+          splitter.style["min-width"] = "0";
+          splitter.style["width"] = "5px";
+          splitter.style["background-color"] = "transparent";
+          splitter.style["margin-inline-end"] = "-5px";
+          splitter.style["position"] = "relative";
+          container.appendChild(splitter);           
+          
+          sidebar = window.document.createXULElement("vbox");
+          sidebar.setAttribute("persist", "width");
+          sidebar.id = sidebarBoxName;
+          container.appendChild(sidebar);
+        }
+        const frame = insertWebextFrame(location, url, sidebar);
+        setWebextFrameSizesForSidebar(frame, options);
+        frame.flex = "1";
+    }
+
+    const uninjectSidebarFromWindow = function(window, url, location) {
+        removeWebextFrame(location, url, window.document);
+        const sidebarBoxName = "customUI-sidebar-box";
+        const sidebar = window.document.getElementById(sidebarBoxName);
+        if (sidebar && sidebar.childElementCount == 0) {
+          sidebar.remove();
+          window.document.getElementById(`${sidebarBoxName}-splitter`).remove();
+        }
     }
 
     // Location-specific handlers =============================================
@@ -489,40 +551,10 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
               + "messengercompose/messengercompose.xhtml") {
             return; // incompatible window
           }
-          const sidebarBoxName = "customUI-sidebar-box";
-          let sidebar = window.document.getElementById(sidebarBoxName);
-          if (!sidebar) {
-            const container = window.document.getElementById("composeContentBox");
-
-            let splitter = window.document.createXULElement("splitter");
-            splitter.id = "customUI-sidebar-box-splitter";
-            splitter.style["border-inline-end-width"] = "0";
-            splitter.style["border-inline-start"] = "1px solid var(--splitter-color)";
-            splitter.style["min-width"] = "0";
-            splitter.style["width"] = "5px";
-            splitter.style["background-color"] = "transparent";
-            splitter.style["margin-inline-end"] = "-5px";
-            splitter.style["position"] = "relative";
-            container.appendChild(splitter);           
-            
-            sidebar = window.document.createXULElement("vbox");
-            sidebar.setAttribute("persist", "width");
-            sidebar.setAttribute("width", "244");
-            sidebar.id = sidebarBoxName;
-            container.appendChild(sidebar);
-          }
-          const frame = insertWebextFrame("compose_sidebar", url,
-              sidebar);
-          frame.flex = "1";
+          injectSidebarIntoWindow(window, url, options, "composeContentBox", "compose_sidebar");
         },
         uninjectFromWindow(window, url) {
-          removeWebextFrame("compose_sidebar", url, window.document);
-          const sidebarBoxName = "customUI-sidebar-box";
-          const sidebar = window.document.getElementById(sidebarBoxName);
-          if (sidebar && sidebar.childElementCount == 0) {
-            sidebar.remove();
-            window.document.getElementById(`${sidebarBoxName}-splitter`).remove();
-          }
+          uninjectSidebarFromWindow(window, url, "compose_sidebar");
         }
       });
       
@@ -533,41 +565,10 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
               + "messenger.xhtml") {
             return; // incompatible window
           }
-          const sidebarBoxName = "customUI-sidebar-box";
-          let sidebar = window.document.getElementById(sidebarBoxName);
-          if (!sidebar) {
-            const container = window.document.getElementById("messengerBox");
-            console.log(container);
-            
-            let splitter = window.document.createXULElement("splitter");
-            splitter.id = "customUI-sidebar-box-splitter";
-            splitter.style["border-inline-end-width"] = "0";
-            splitter.style["border-inline-start"] = "1px solid var(--splitter-color)";
-            splitter.style["min-width"] = "0";
-            splitter.style["width"] = "5px";
-            splitter.style["background-color"] = "transparent";
-            splitter.style["margin-inline-end"] = "-5px";
-            splitter.style["position"] = "relative";
-            container.appendChild(splitter);           
-            
-            sidebar = window.document.createXULElement("vbox");
-            sidebar.setAttribute("persist", "width");
-            sidebar.setAttribute("width", "244");
-            sidebar.id = sidebarBoxName;
-            container.appendChild(sidebar);
-          }
-          const frame = insertWebextFrame("mail3pane_sidebar", url,
-              sidebar);
-          frame.flex = "1";
+          injectSidebarIntoWindow(window, url, options, "messengerBox", "mail3pane_sidebar");
         },
         uninjectFromWindow(window, url) {
-          removeWebextFrame("mail3pane_sidebar", url, window.document);
-          const sidebarBoxName = "customUI-sidebar-box";
-          const sidebar = window.document.getElementById(sidebarBoxName);
-          if (sidebar && sidebar.childElementCount == 0) {
-            sidebar.remove();
-            window.document.getElementById(`${sidebarBoxName}-splitter`).remove();
-          }
+          uninjectSidebarFromWindow(window, url, "mail3pane_sidebar");
         }
       });
 

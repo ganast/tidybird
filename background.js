@@ -1,5 +1,4 @@
-// messenger is not yet known in TB 68
-let messenger = browser;
+let messenger = browser; // to prevent errors in linting...
 
 (async () => {
   // the first parameter of this function gets tab information when using the button
@@ -13,6 +12,7 @@ let messenger = browser;
         messenger.ex_customui.add(
           messenger.ex_customui.LOCATION_SIDEBAR,
           htmlPage
+          //{ width: "200%" } // TODO: take width from last time (setting has no use, maybe: relative/absolute)
         );
         messenger.storage.local.set({ [isShowingSetting]: true });
       } else {

@@ -9,14 +9,14 @@
         "description": "Additional options how the UI shall be loaded in a given location. Which properties are supported may vary depending on the location the UI is registered for.",
         "properties": {
           "height": {
-            "type": "integer",
+            "type": "string",
             "optional": "true",
-            "description": "Desired total height of the custom UI component, in pixels. The actual available height may differ (and change dynamically)."
+            "description": "Desired total height of the custom UI component. The actual available height may differ (and change dynamically)."
           },
           "width": {
-            "type": "integer",
+            "type": "string",
             "optional": "true",
-            "description": "Desired total width of the custom UI component, in pixels. The actual available height may differ (and change dynamically)."
+            "description": "Desired total width of the custom UI component. The actual available height may differ (and change dynamically)."
           },
           "hidden": {
             "type": "boolean",
