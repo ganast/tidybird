@@ -1,3 +1,10 @@
+function moveMessages(messageArray, folder) {
+  browser.messages.move(
+    messageArray.map((message) => message.id),
+    folder
+  );
+}
+
 const moveSelectedMessageToFolder = async function (folder) {
   /*
   A message can be displayed in either a 3-pane tab, a tab of its own, or in a window of its own. All
@@ -19,18 +26,29 @@ const moveSelectedMessageToFolder = async function (folder) {
     }
   }
 
-  const messages = await browser.messageDisplay.getDisplayedMessages(
-    theCurrentTab.id
-  );
-  /*
-  for (let message of messages) {
-    console.log(`Moving message ${message.subject} to ${folder.name}`);
+  let messages = [];
+  if (theCurrentTab.mailTab) {
+    /*
+     * this defaults to the current tab, but throws an error if the current tab is not a mailTab
+     *  so we first detect the type
+     */
+    let page = await browser.mailTabs.getSelectedMessages();
+    moveMessages(page.messages, folder);
+    while (page.id) {
+      page = await browser.messages.continueList(page.id);
+      moveMessages(page.messages, folder);
+    }
+  } else {
+    /*
+     * we don't use getDisplayedMessages as I don't know a way to display multiple images in a tab
+     *  without having them selected in the same tab
+     * this method is preferred as getDisplayedMessages is only supported from 78.4.0
+     */
+    messages = [
+      await browser.messageDisplay.getDisplayedMessage(theCurrentTab.id),
+    ];
+    moveMessages(messages, folder);
   }
-  */
-  browser.messages.move(
-    messages.map((message) => message.id),
-    folder
-  );
 };
 
 /**
