@@ -106,6 +106,8 @@ Once the necessary API methods are implemented in Thunderbird, Tidybird will nee
 - messagesRead (messageManager):
     - Experimental API - convert item from event to MailExtensions message header
     - messageDisplay API - get the currently displayed message
+    - getSelectedMessages - get the currenlty selected messages
+    - continueList - continue the list of messages to the next page
 - accountsFolders: accounts API - get name and full path to a folder
 - messagesMove: move messages to a folder
 

@@ -1,3 +1,10 @@
+function moveMessages(messageArray, folder) {
+  browser.messages.move(
+    messageArray.map((message) => message.id),
+    folder
+  );
+}
+
 const moveSelectedMessageToFolder = async function (folder) {
   /*
   A message can be displayed in either a 3-pane tab, a tab of its own, or in a window of its own. All
@@ -5,32 +12,45 @@ const moveSelectedMessageToFolder = async function (folder) {
   which has limited functionality compared to tabs from the main window.
   */
   // hopefully getCurrent always returns the window where we clicked
-  const currentWindow = await browser.windows.getCurrent({
-    populate: true,
-    windowTypes: ["messageDisplay"],
-  });
+  // tabs.getCurrent does return undefined
+  const currentWindow = await browser.windows.getCurrent();
+  //windowTypes: ["messageDisplay"], // windowtypes is ignored in getCurrent
 
   /* find the current tab, there should only be 1, I guess */
-  let theCurrentTab = null;
-  for (let tab of currentWindow.tabs) {
-    if (tab.highlighted) {
-      theCurrentTab = tab;
-      break;
-    }
-  }
+  let [theCurrentTab] = await browser.tabs.query({
+    active: true,
+    windowId: currentWindow.id
+  });
+  if (!theCurrentTab)
+    return;
 
-  const messages = await browser.messageDisplay.getDisplayedMessages(
-    theCurrentTab.id
-  );
-  /*
-  for (let message of messages) {
-    console.log(`Moving message ${message.subject} to ${folder.name}`);
+  let messages = [];
+  if (theCurrentTab.mailTab) {
+    /*
+     * this defaults to the current tab, but throws an error if the current tab is not a mailTab
+     *  so we first detect the type
+     */
+    let page = await browser.mailTabs.getSelectedMessages();
+    moveMessages(page.messages, folder);
+    while (page.id) {
+      page = await browser.messages.continueList(page.id);
+      moveMessages(page.messages, folder);
+    }
+  } else {
+    /*
+     * we don't use getDisplayedMessages as I don't know a way to display multiple images in a tab
+     *  without having them selected in the same tab
+     * this method is preferred as getDisplayedMessages is only supported from 78.4.0
+     */
+    messages = [
+      await browser.messageDisplay.getDisplayedMessage(theCurrentTab.id),
+    ];
+    if(messages[0] === null) {
+      // in that tab, there are no at this very moment(!) displayed messages found
+      return;
+    }
+    moveMessages(messages, folder);
   }
-  */
-  browser.messages.move(
-    messages.map((message) => message.id),
-    folder
-  );
 };
 
 /**
