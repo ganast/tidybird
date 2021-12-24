@@ -12,19 +12,17 @@ const moveSelectedMessageToFolder = async function (folder) {
   which has limited functionality compared to tabs from the main window.
   */
   // hopefully getCurrent always returns the window where we clicked
-  const currentWindow = await browser.windows.getCurrent({
-    populate: true,
-    windowTypes: ["messageDisplay"],
-  });
+  // tabs.getCurrent does return undefined
+  const currentWindow = await browser.windows.getCurrent();
+  //windowTypes: ["messageDisplay"], // windowtypes is ignored in getCurrent
 
   /* find the current tab, there should only be 1, I guess */
-  let theCurrentTab = null;
-  for (let tab of currentWindow.tabs) {
-    if (tab.highlighted) {
-      theCurrentTab = tab;
-      break;
-    }
-  }
+  let [theCurrentTab] = await browser.tabs.query({
+    active: true,
+    windowId: currentWindow.id
+  });
+  if (!theCurrentTab)
+    return;
 
   let messages = [];
   if (theCurrentTab.mailTab) {
@@ -47,6 +45,10 @@ const moveSelectedMessageToFolder = async function (folder) {
     messages = [
       await browser.messageDisplay.getDisplayedMessage(theCurrentTab.id),
     ];
+    if(messages[0] === null) {
+      // in that tab, there are no at this very moment(!) displayed messages found
+      return;
+    }
     moveMessages(messages, folder);
   }
 };
