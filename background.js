@@ -11,13 +11,14 @@ let messenger = browser;
       //TODO: latest status
       if (startupEvent === true || !isShowing) {
         messenger.ex_customui.add(
-          messenger.ex_customui.LOCATION_SIDEBAR,
-          htmlPage
+          messenger.ex_customui.LOCATION_MESSAGING,
+          htmlPage,
+          {}
         );
         messenger.storage.local.set({ [isShowingSetting]: true });
       } else {
         messenger.ex_customui.remove(
-          messenger.ex_customui.LOCATION_SIDEBAR,
+          messenger.ex_customui.LOCATION_MESSAGING,
           htmlPage
         );
         messenger.storage.local.set({ [isShowingSetting]: false });
