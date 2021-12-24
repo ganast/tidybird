@@ -19,10 +19,11 @@ const moveSelectedMessageToFolder = async function (folder) {
   /* find the current tab, there should only be 1, I guess */
   let [theCurrentTab] = await browser.tabs.query({
     active: true,
-    windowId: currentWindow.id
+    windowId: currentWindow.id,
   });
-  if (!theCurrentTab)
+  if (!theCurrentTab) {
     return;
+  }
 
   let messages = [];
   if (theCurrentTab.mailTab) {
@@ -45,7 +46,7 @@ const moveSelectedMessageToFolder = async function (folder) {
     messages = [
       await browser.messageDisplay.getDisplayedMessage(theCurrentTab.id),
     ];
-    if(messages[0] === null) {
+    if (messages[0] === null) {
       // in that tab, there are no at this very moment(!) displayed messages found
       return;
     }
