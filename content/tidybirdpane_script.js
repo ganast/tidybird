@@ -1,3 +1,61 @@
+// messenger is not yet known in TB 68 and make (firefox) linter happy
+let messenger = browser;
+
+async function applyThemeColors(theme) {
+  let body = document.querySelector("body");
+  if (theme === undefined) {
+    theme = await messenger.theme.getCurrent();
+  }
+
+  // this is null when using the "system" theme
+  if (theme.colors !== null) {
+    body.classList.add("themed");
+
+    //body.style.backgroundColor = theme.colors.toolbar;
+    body.style.setProperty("--toolbar-bgcolor", theme.colors.toolbar);
+    body.style.setProperty("--lwt-text-color", theme.colors.toolbar_field_text);
+
+    if (theme.colors.input_border !== undefined) {
+      body.style.setProperty(
+        "--toolbarbutton-header-bordercolor",
+        theme.colors.input_border
+      );
+    } else {
+      // 78.14.0 light & dark
+      body.style.setProperty(
+        "--toolbarbutton-header-bordercolor",
+        theme.colors.toolbar_field_border
+      );
+    }
+    // missing or bad in doc: https://webextension-api.thunderbird.net/en/latest/theme.html#themetype
+    body.style.setProperty("--button-bgcolor", theme.colors.button);
+    if (theme.colors.input_border !== undefined) {
+      body.style.setProperty(
+        "--button-hover-bgcolor",
+        theme.colors.button_hover
+      );
+    } else {
+      // 78.14.0 light & dark
+      body.style.setProperty(
+        "--button-hover-bgcolor",
+        theme.colors.toolbar_field_border
+      );
+    }
+    body.style.setProperty(
+      "--button-active-bgcolor",
+      theme.colors.button_active
+    );
+  } else {
+    body.classList.remove("themed");
+  }
+  body.style.setProperty("--toolbarbutton-border-radius", "3px");
+}
+async function themeChangedListener(themeUpdateInfo) {
+  applyThemeColors(themeUpdateInfo.theme);
+}
+messenger.theme.onUpdated.addListener(themeChangedListener);
+applyThemeColors();
+
 function moveMessages(messageArray, folder) {
   browser.messages.move(
     messageArray.map((message) => message.id),

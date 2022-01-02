@@ -24,7 +24,12 @@
   padding: 6px;
   margin: 0;
   overflow: auto;
-  background-color: var(--toolbar-bgcolor);
+}
+
+#tidybirdPane.themed {
+  /* messageHeader.css | messenger.css - for button color */
+  background-color: var(--toolbar-bgcolor) !important;
+  /* background-image: none !important */
   color: var(--lwt-text-color);
 }
 
@@ -33,6 +38,41 @@
   width: 100%;
   display: flex;
   flex-wrap: wrap;
+}
+
+/*
+ * since changing the background-color of a button seems to reset all css properties
+ *  and we have to change the background-color when a dark theme is used (as it is left default and may render the text unreadable
+ * we try to re-set all necessary properties when a theme is used
+ */
+.themed .tidybird-folder-move-button {
+  /* toolbarbutton.css */
+  text-shadow: inherit;
+  /* messenger.css */
+  color: inherit !important;
+  border: 1px solid transparent;
+  border-radius: var(--toolbarbutton-border-radius);
+  transition: background-color .15s, border-color .15s;
+}
+
+.themed .tidybird-folder-move-button {
+  /*
+   * from thunderbird css
+   */
+  /* messageHeader.css */
+  border-color: var(--toolbarbutton-header-bordercolor);
+	/*
+	* inline css (theme, settings, ... ? )
+	*/
+  background-color: var(--button-bgcolor);
+}
+
+.themed .tidybird-folder-move-button:hover {
+  background-color: var(--button-hover-bgcolor);
+}
+
+.themed .tidybird-folder-move-button:active {
+  background-color: var(--button-active-bgcolor);
 }
 
 .tidybird-folder-move-button-label-1 {
