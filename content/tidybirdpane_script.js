@@ -203,3 +203,5 @@ async function gotMRMFolders(mostRecentlyModifiedFolders) {
 // do with events, as direct return raises an exception
 browser.tidybird_api.getMRMFolders.addListener(gotMRMFolders, 30);
 //TODO: idea: keep our own list of MRM folders, so we can include or exclude any folder. Before of subfolders of removed/renamed folders (with MRM they are no longer in the list)
+
+/* vi: set tabstop=2 shiftwidth=2 softtabstop=2 expandtab: */

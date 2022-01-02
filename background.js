@@ -45,3 +45,5 @@ let messenger = browser;
   // add listener to our button
   messenger.browserAction.onClicked.addListener(toggleTidybirdBySettings);
 })();
+
+/* vi: set tabstop=2 shiftwidth=2 softtabstop=2 expandtab: */
