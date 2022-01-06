@@ -38,6 +38,7 @@
   width: 100%;
   display: flex;
   flex-wrap: wrap;
+  word-break: break-word; /* at least for tooltips! TODO should this be a toggle setting for the button text? */
 }
 
 /*
@@ -88,6 +89,41 @@
   font-size: 0.8em;
   flex: auto;
   align-self: center;
+}
+
+/* working tooltips thanks to https://stackoverflow.com/a/25813336 */
+[tooltiptext]:after {
+  /* needed */
+  position: absolute;
+  opacity: 0;
+  pointer-events: none; /* otherwise, we have funky effects on overlapping tooltips and hoovers */
+  /* needed with customized value */
+  content: attr(tooltiptext);
+
+  /* customizable */
+  transition: all 0.15s ease;
+  padding: .5em;
+  border-radius: 10px;
+  box-shadow: -2px -2px 1px silver;
+  word-wrap: break-word; /* does not change anything, probably because the size is not fixed */
+}
+
+.themed [tooltiptext]:after {
+  color: var(--lwt-text-color);
+}
+
+[tooltiptext]:hover:after {
+  /* needed: 0 << opacity <= 1  */
+  opacity: .95;
+
+  /* customizable */
+  margin-top: 1.5em;
+  background-color: inherit; /* otherwise: transparent */
+  transition-delay: 1s;
+}
+
+.themed [tooltiptext]:hover:after {
+  background: var(--tooltip-bgcolor);
 }
 
 /* vi: set tabstop=2 shiftwidth=2 softtabstop=2 expandtab: */
