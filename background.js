@@ -12,7 +12,7 @@ let messenger = browser; // to prevent errors in linting...
         messenger.ex_customui.add(
           messenger.ex_customui.LOCATION_MESSAGING,
           htmlPage,
-          { width: "200%" } // TODO: take width from last time (setting has no use, maybe: relative/absolute)
+          { width: "200" } // TODO: take width from last time (setting has no use)
         );
         messenger.storage.local.set({ [isShowingSetting]: true });
       } else {
