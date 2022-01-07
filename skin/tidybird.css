@@ -6,6 +6,18 @@
 #tidybirdSplitter {
   min-height: 2px;
   min-width: 2px;
+  border-inline-start: 1px solid var(--splitter-color);
+  margin-inline-end: -4px;
+  -moz-appearance: none;
+  width: 5px;
+  margin-top: 0;
+  position: relative;
+  z-index: 10;
+  transition: border-width .3s ease-in;
+}
+
+:root[lwt-tree-brighttext] #tidybirdPane {
+  scrollbar-color: rgba(249,249,250,.4) rgba(20,20,25,.3);
 }
 
 #tidybirdPane {
@@ -14,11 +26,54 @@
   overflow: auto;
 }
 
+#tidybirdPane.themed {
+  /* messageHeader.css | messenger.css - for button color */
+  background-color: var(--toolbar-bgcolor) !important;
+  /* background-image: none !important */
+  color: var(--lwt-text-color);
+}
+
 .tidybird-folder-move-button {
   margin: 3px 0;
   width: 100%;
   display: flex;
   flex-wrap: wrap;
+  word-break: break-word; /* at least for tooltips! TODO should this be a toggle setting for the button text? */
+}
+
+/*
+ * since changing the background-color of a button seems to reset all css properties
+ *  and we have to change the background-color when a dark theme is used (as it is left default and may render the text unreadable
+ * we try to re-set all necessary properties when a theme is used
+ */
+.themed .tidybird-folder-move-button {
+  /* toolbarbutton.css */
+  text-shadow: inherit;
+  /* messenger.css */
+  color: inherit !important;
+  border: 1px solid transparent;
+  border-radius: var(--toolbarbutton-border-radius);
+  transition: background-color .15s, border-color .15s;
+}
+
+.themed .tidybird-folder-move-button {
+  /*
+   * from thunderbird css
+   */
+  /* messageHeader.css */
+  border-color: var(--toolbarbutton-header-bordercolor);
+	/*
+	* inline css (theme, settings, ... ? )
+	*/
+  background-color: var(--button-bgcolor);
+}
+
+.themed .tidybird-folder-move-button:hover {
+  background-color: var(--button-hover-bgcolor);
+}
+
+.themed .tidybird-folder-move-button:active {
+  background-color: var(--button-active-bgcolor);
 }
 
 .tidybird-folder-move-button-label-1 {
@@ -35,3 +90,36 @@
   flex: auto;
   align-self: center;
 }
+
+/* working tooltips thanks to https://stackoverflow.com/a/25813336 */
+[tooltiptext]:after {
+  /* needed */
+  position: absolute;
+  opacity: 0;
+  pointer-events: none; /* otherwise, we have funky effects on overlapping tooltips and hoovers */
+  /* needed with customized value */
+  content: attr(tooltiptext);
+
+  /* customizable */
+  transition: all 0.15s ease;
+  padding: .5em;
+  border-radius: 10px;
+  box-shadow: -2px -2px 1px silver;
+  word-wrap: break-word; /* does not change anything, probably because the size is not fixed */
+}
+
+.themed [tooltiptext]:after {
+  color: var(--lwt-text-color);
+}
+
+[tooltiptext]:hover:after {
+  /* needed: 0 << opacity <= 1  */
+  opacity: .95;
+
+  /* customizable */
+  margin-top: 1.5em;
+  transition-delay: 1s;
+  background-color: var(--tooltip-bgcolor);
+}
+
+/* vi: set tabstop=2 shiftwidth=2 softtabstop=2 expandtab: */

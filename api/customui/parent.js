@@ -183,6 +183,8 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
       result.setAttribute("type", "content");
       result.setAttribute("transparent", "true");
       result.setAttribute("disablehistory", "true");
+      result.setAttribute("messagemanagergroup", "webext-browsers");
+      result.setAttribute("webextension-view-type", "customui");
       result.setAttribute("id", "customui-" + location + "-"
           + context.contextId + "-" + url);
       result.setAttribute("initialBrowsingContextGroupId",
@@ -192,9 +194,22 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
         result.setAttribute("remoteType", E10SUtils.getRemoteTypeForURI(url,
             true, false, E10SUtils.EXTENSION_REMOTE_TYPE, null,
             E10SUtils.predictOriginAttributes({ result })));
+        result.setAttribute("maychangeremoteness", "true");
       }
       parentNode.insertBefore(result, referenceNode || null);
-      ExtensionParent.apiManager.emit("extension-browser-inserted", result);
+      const initBrowser = () => {
+        ExtensionParent.apiManager.emit("extension-browser-inserted", result);
+        result.messageManager.loadFrameScript(
+            "chrome://extensions/content/ext-browser-content.js", false, true);
+        result.messageManager.sendAsyncMessage("Extension:InitBrowser",
+            { stylesheets: ExtensionParent.extensionStylesheets });
+      }
+      if (context.extension.remote) {
+        result.addEventListener("DidChangeBrowserRemoteness", initBrowser);
+        result.addEventListener("XULFrameLoaderCreated", initBrowser);
+      } else {
+        initBrowser();
+      }
       const uiContext = {location};
       result.messageManager.addMessageListener("ex:customui:getContext",
           {receiveMessage(message) { return uiContext; }});
@@ -256,7 +271,7 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
           frame.style.display = lOptions.hidden ? "none" : "block";
         }
       });
-    }
+    };
 
     const setWebextFrameFixedDimension = function(frame, dimensionName, value) {
       frame[dimensionName] = value;
@@ -276,42 +291,51 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
       frame.style.display = options.hidden ? "none" : "block";
     }
     
-    const injectSidebarIntoWindow = function(window, url, options, containerId, location) {
-        const sidebarBoxName = "customUI-sidebar-box";
-        let sidebar = window.document.getElementById(sidebarBoxName);
-        if (!sidebar) {
-          const container = window.document.getElementById(containerId);
-          
-          let splitter = window.document.createXULElement("splitter");
-          splitter.id = "customUI-sidebar-box-splitter";
-          splitter.style["border-inline-end-width"] = "0";
-          splitter.style["border-inline-start"] = "1px solid var(--splitter-color)";
-          splitter.style["min-width"] = "0";
-          splitter.style["width"] = "5px";
-          splitter.style["background-color"] = "transparent";
-          splitter.style["margin-inline-end"] = "-5px";
-          splitter.style["position"] = "relative";
-          container.appendChild(splitter);           
-          
-          sidebar = window.document.createXULElement("vbox");
-          sidebar.setAttribute("persist", "width");
-          sidebar.id = sidebarBoxName;
-          container.appendChild(sidebar);
-        }
-        const frame = insertWebextFrame(location, url, sidebar);
-        setWebextFrameSizesForSidebar(frame, options);
-        frame.flex = "1";
-    }
+    // Creates and inserts the WebExtension frame for the given URL and location
+    // id as element of a customUI-specific sidebar within the container given
+    // by a document and the container's id. Returns an element containing the
+    // new frame and supporting all functions documented for
+    // insertWebextFrame(). To remove frames created by this method, use
+    // removeSidebarWebextFrame().
+    const insertSidebarWebextFrame = function(location, url, document,
+        containerId, options) {
+      const sidebarBoxId = "customui-sidebar-box-" + containerId;
+      let sidebar = document.getElementById(sidebarBoxId);
+      if (!sidebar) {
+        const container = document.getElementById(containerId);
 
-    const uninjectSidebarFromWindow = function(window, url, location) {
-        removeWebextFrame(location, url, window.document);
-        const sidebarBoxName = "customUI-sidebar-box";
-        const sidebar = window.document.getElementById(sidebarBoxName);
-        if (sidebar && sidebar.childElementCount == 0) {
-          sidebar.remove();
-          window.document.getElementById(`${sidebarBoxName}-splitter`).remove();
-        }
-    }
+        const splitter = document.createXULElement("splitter");
+        splitter.style["border-inline-end-width"] = "0";
+        splitter.style["border-inline-start"] =
+            "1px solid var(--splitter-color)";
+        splitter.style["min-width"] = "0";
+        splitter.style["width"] = "5px";
+        splitter.style["background-color"] = "transparent";
+        splitter.style["margin-inline-end"] = "-5px";
+        splitter.style["position"] = "relative";
+        container.appendChild(splitter);           
+        
+        sidebar = document.createXULElement("vbox");
+        sidebar.setAttribute("persist", "width");
+        sidebar.id = sidebarBoxId;
+        container.appendChild(sidebar);
+      }
+      const result = insertWebextFrame(location, url, sidebar);
+      setWebextFrameSizesForSidebar(result, options);
+      result.flex = "1";
+      return result;
+    };
+
+    // Removes the WebExtension frame with the given tag and URL from the given
+    // document, and returns its parent node (or null if there is no such
+    // frame.
+    const removeSidebarWebextFrame = function(tag, url, document) {
+      const sidebar = removeWebextFrame(tag, url, document);
+      if (sidebar && sidebar.childElementCount == 0) {
+        sidebar.previousSibling.remove(); // splitter
+        sidebar.remove();
+      }
+    };
 
     // Location-specific handlers =============================================
     const locationHandlers = {};
@@ -509,7 +533,8 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
               !== "chrome://messenger/content/messenger.xhtml") {
             return; // incompatible window
           }
-          const sidebar = window.document.getElementById("ltnSidebar");
+          const sidebar = window.document.getElementById("calSidebar") // TB 91+
+              || window.document.getElementById("ltnSidebar"); // earlier
           const frame = insertWebextFrame("calendar", url, sidebar);
           setWebextFrameSizesForVerticalBox(frame, options);
         },
@@ -519,15 +544,19 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
       });
 
       // Calendar editing -----------------------------------------------------
-      const itemIframeURL =
-          "chrome://lightning/content/lightning-item-iframe.xhtml";
+      const itemIframeURLs = [
+        "chrome://calendar/content/calendar-item-iframe.xhtml", // TB 91+
+        "chrome://lightning/content/lightning-item-iframe.xhtml" // earlier
+      ];
       locationHandlers.calendar_event_edit = makeLocationHandler({
         injectIntoWindow(window, url, options) {
-          if (window.location.toString() !== itemIframeURL) {
+          if (itemIframeURLs.indexOf(window.location.toString()) < 0) {
             return; // incompatible window
           }
           const calendarItem = window.arguments[0].calendarEvent;
-          if (!window.cal.item.isEvent(calendarItem)) {
+          if (!((calendarItem.isEvent && calendarItem.isEvent()) // TB 87+
+                || window.cal.item.isEvent(calendarItem) // earlier
+              )) {
             return; // item iframe for a non-event item, also incompatible
           }
           const tabBox = window.document.getElementById("event-grid-tab-vbox");
@@ -544,31 +573,33 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
         }
       });
 
-      // Sidebar in the message composer
-      locationHandlers.compose_sidebar = makeLocationHandler({
+      // Message composition --------------------------------------------------
+      locationHandlers.compose = makeLocationHandler({
         injectIntoWindow(window, url, options) {
           if (window.location.toString() !== "chrome://messenger/content/"
               + "messengercompose/messengercompose.xhtml") {
             return; // incompatible window
           }
-          injectSidebarIntoWindow(window, url, options, "composeContentBox", "compose_sidebar");
+          insertSidebarWebextFrame("compose", url, window.document,
+              "composeContentBox", options);
         },
         uninjectFromWindow(window, url) {
-          uninjectSidebarFromWindow(window, url, "compose_sidebar");
+          removeSidebarWebextFrame("compose", url, window.document);
         }
       });
       
-      // Sidebar in the main Thunderbird window
-      locationHandlers.mail3pane_sidebar = makeLocationHandler({
+      // Messaging ------------------------------------------------------------
+      locationHandlers.messaging = makeLocationHandler({
         injectIntoWindow(window, url, options) {
           if (window.location.toString() !== "chrome://messenger/content/"
               + "messenger.xhtml") {
             return; // incompatible window
           }
-          injectSidebarIntoWindow(window, url, options, "messengerBox", "mail3pane_sidebar");
+          insertSidebarWebextFrame("messaging", url, window.document,
+              "messengerBox",options);
         },
         uninjectFromWindow(window, url) {
-          uninjectSidebarFromWindow(window, url, "mail3pane_sidebar");
+          removeSidebarWebextFrame("messaging", url, window.document);
         }
       });
 

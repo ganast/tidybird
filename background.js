@@ -10,14 +10,14 @@ let messenger = browser; // to prevent errors in linting...
       //TODO: latest status
       if (startupEvent === true || !isShowing) {
         messenger.ex_customui.add(
-          messenger.ex_customui.LOCATION_SIDEBAR,
-          htmlPage
-          //{ width: "200%" } // TODO: take width from last time (setting has no use, maybe: relative/absolute)
+          messenger.ex_customui.LOCATION_MESSAGING,
+          htmlPage,
+          { width: "200%" } // TODO: take width from last time (setting has no use, maybe: relative/absolute)
         );
         messenger.storage.local.set({ [isShowingSetting]: true });
       } else {
         messenger.ex_customui.remove(
-          messenger.ex_customui.LOCATION_SIDEBAR,
+          messenger.ex_customui.LOCATION_MESSAGING,
           htmlPage
         );
         messenger.storage.local.set({ [isShowingSetting]: false });
@@ -44,3 +44,5 @@ let messenger = browser; // to prevent errors in linting...
   // add listener to our button
   messenger.browserAction.onClicked.addListener(toggleTidybirdBySettings);
 })();
+
+/* vi: set tabstop=2 shiftwidth=2 softtabstop=2 expandtab: */

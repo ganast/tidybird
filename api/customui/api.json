@@ -134,13 +134,13 @@
         "value": "calendar_event_edit",
         "description": "String identifying an area associated with the process of creating or modifying an event (currently directly in the event editing window / tab). The location is intended to eventually match the address book edit locations – once there is a calendar API in Thunderbird – but until then the context for this location contains a member 'id' with the native id of the event to edit or null for new contacts and a member 'parentid' with the native id of the calendar the dialog is operating in. It is expected that this will change in the future."
       },
-      "LOCATION_COMPOSE_SIDEBAR": {
-        "value": "compose_sidebar",
-        "description": "String identifying an area permanently visible to the right side of the message compose window."
+      "LOCATION_COMPOSE": {
+        "value": "compose",
+        "description": "String identifying an area associated with the process of composing a message (currently a sidebar in the message compose window)"
       },
-      "LOCATION_SIDEBAR": {
-        "value": "mail3pane_sidebar",
-        "description": "String identifying a sidebar in the main Thunderbird window."
+      "LOCATION_MESSAGING": {
+        "value": "messaging",
+        "description": "String identifying an area permanently visible alongside messaging features of Thunderbird (currently a sidebar in the messaging tab)"
       },
       "LOCATION_UNKNOWN_FILE_ACTION": {
         "value": "unknown_file_action",

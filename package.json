@@ -1,6 +1,6 @@
 {
   "name": "tidybird",
-  "version": "2.0.0",
+  "version": "2.1",
   "description": "Thunderbird add-on to organize email into folders quickly and easily",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -30,8 +30,14 @@
     "eslint-plugin-fetch-options": "0.0.5",
     "eslint-plugin-html": "^6.1.1",
     "eslint-plugin-mozilla": "^2.9.2",
-    "eslint-plugin-prettier": "^3.3.1",
+    "eslint-plugin-prettier": "^4.0.0",
     "prettier": "2.2.1",
     "web-ext": "^5.5.0"
+  },
+  "webExt": {
+    "ignoreFiles": [
+      "package-lock.json",
+      "package.json"
+    ]
   }
 }

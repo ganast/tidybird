@@ -110,6 +110,7 @@ Once the necessary API methods are implemented in Thunderbird, Tidybird will nee
     - continueList - continue the list of messages to the next page
 - accountsFolders: accounts API - get name and full path to a folder
 - messagesMove: move messages to a folder
+- theme: read theme colors to apply to buttons
 
 # License
 

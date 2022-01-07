@@ -1,3 +1,122 @@
+/*
+ * messenger is not yet known in TB 68 and make (firefox) linter happy
+ */
+let messenger = browser;
+
+/*
+ * Themed TB support: apply theme colors
+ */
+async function applyThemeColors(theme) {
+  let body = document.querySelector("body");
+  if (theme === undefined) {
+    theme = await messenger.theme.getCurrent();
+  }
+
+  // this is null when using the "system" theme
+  if (theme.colors !== null) {
+    body.classList.add("themed");
+
+    body.style.setProperty("--toolbar-bgcolor", theme.colors.toolbar);
+    body.style.setProperty("--lwt-text-color", theme.colors.toolbar_field_text);
+
+    let bordercolor = theme.colors.input_border;
+    if (bordercolor === undefined) {
+      // 78.14.0 light & dark
+      bordercolor = theme.colors.toolbar_field_border;
+    }
+    body.style.setProperty("--toolbarbutton-header-bordercolor", bordercolor);
+
+    // missing or bad in doc: https://webextension-api.thunderbird.net/en/latest/theme.html#themetype
+    body.style.setProperty("--button-bgcolor", theme.colors.button);
+
+    let hovercolor = theme.colors.button_hover;
+    if (hovercolor === undefined) {
+      // 78.14.0 light & dark
+      hovercolor = theme.colors.toolbar_field_border;
+    }
+    body.style.setProperty("--button-hover-bgcolor", hovercolor);
+
+    body.style.setProperty(
+      "--button-active-bgcolor",
+      theme.colors.button_active
+    );
+  } else {
+    body.classList.remove("themed");
+  }
+  body.style.setProperty("--toolbarbutton-border-radius", "3px");
+  tooltipColorUpdated = false;
+}
+
+let tooltipColorUpdated = false;
+/**
+ * calculate new colorcomponent using premultiplied alpha colorcomponents
+ **/
+function calculate_colorcomponent(color_upper, color_under, alpha_upper) {
+  return color_upper + color_under * (1 - alpha_upper);
+}
+
+/**
+ * Update the tooltip color, if not yet done, because it may be transparent (from the theme) otherwise
+ *  this fires when the mouse hover over the button
+ *  because this way, we are sure a button exists to take the _computed_ color from
+ **/
+async function update_tooltipcolor(theEvent) {
+  if (tooltipColorUpdated) {
+    // do not update if already done once after loading or theme change
+    return;
+  }
+  let body = document.querySelector("body");
+  let target = theEvent.target;
+  // calculate the color of the button: https://en.wikipedia.org/wiki/Alpha_compositing
+  let color = [0, 0, 0, 0];
+  do {
+    // theEvent.target or document.querySelector("[tooltiptext]")
+    let target_color = window
+      .getComputedStyle(target)
+      .getPropertyValue("background-color");
+    console.log(`${theEvent.target.style.backgroundColor} - ${target_color}`);
+    let color_under = [0, 0, 0, 0];
+    if (target_color != "") {
+      color_under = target_color
+        .replace(/.*\((.*)\)/, "$1")
+        .split(", ")
+        .map((x) => parseFloat(x));
+    }
+    if (color_under.length == 3) {
+      color_under.push(1); // rgb color without alpha layer
+    }
+    let alpha = calculate_colorcomponent(color[3], color_under[3], color[3]);
+    // if alpha == 0; then the color is fully transparent and the values make no difference
+    if (alpha != 0) {
+      for (let i = 0; i < color.length - 1; i++) {
+        color[i] =
+          calculate_colorcomponent(
+            color[i] * color[3],
+            color_under[i] * color_under[3],
+            color[3]
+          ) / alpha;
+      }
+    }
+    color[3] = alpha;
+    console.log(`color: ${color}`);
+    target = target.parentElement;
+  } while (target !== null && color[3] < 1);
+  let tooltip_bgcolor = "rgba(" + color.join(", ") + ")";
+  console.log(`result: ${tooltip_bgcolor}`);
+  body.style.setProperty("--tooltip-bgcolor", tooltip_bgcolor);
+  tooltipColorUpdated = true;
+}
+
+async function themeChangedListener(themeUpdateInfo) {
+  applyThemeColors(themeUpdateInfo.theme);
+}
+messenger.theme.onUpdated.addListener(themeChangedListener);
+applyThemeColors();
+
+/*
+ * The move functionality
+ */
+
 function moveMessages(messageArray, folder) {
   browser.messages.move(
     messageArray.map((message) => message.id),
@@ -19,10 +138,11 @@ const moveSelectedMessageToFolder = async function (folder) {
   /* find the current tab, there should only be 1, I guess */
   let [theCurrentTab] = await browser.tabs.query({
     active: true,
-    windowId: currentWindow.id
+    windowId: currentWindow.id,
   });
-  if (!theCurrentTab)
+  if (!theCurrentTab) {
     return;
+  }
 
   let messages = [];
   if (theCurrentTab.mailTab) {
@@ -45,7 +165,7 @@ const moveSelectedMessageToFolder = async function (folder) {
     messages = [
       await browser.messageDisplay.getDisplayedMessage(theCurrentTab.id),
     ];
-    if(messages[0] === null) {
+    if (messages[0] === null) {
       // in that tab, there are no at this very moment(!) displayed messages found
       return;
     }
@@ -106,7 +226,6 @@ const addButton = async function (folder) {
 
     const button = document.createElement("button");
     button.className = "tidybird-folder-move-button";
-    button.title = expandedFolder.fullPath; //FIXME tooltiptext
 
     let label1 = document.createElement("div");
     label1.className = "tidybird-folder-move-button-label-1";
@@ -122,6 +241,9 @@ const addButton = async function (folder) {
 
     button.addEventListener("click", function () {
       moveSelectedMessageToFolder(folder);
+    });
+    button.addEventListener("mouseenter", function (theEvent) {
+      update_tooltipcolor(theEvent);
     });
 
     document.querySelector("#tidybirdButtonList").appendChild(button);
@@ -204,3 +326,4 @@ browser.tidybird_api.getMRMFolders.addListener(gotMRMFolders, 30);
 //TODO: idea: keep our own list of MRM folders, so we can include or exclude any folder. Before of subfolders of removed/renamed folders (with MRM they are no longer in the list)
 
 //browser.ex_customui.setLocalOptions({ width: "1000px" });
+/* vi: set tabstop=2 shiftwidth=2 softtabstop=2 expandtab: */
