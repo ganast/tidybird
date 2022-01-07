@@ -118,12 +118,8 @@
 
   /* customizable */
   margin-top: 1.5em;
-  background-color: inherit; /* otherwise: transparent */
   transition-delay: 1s;
-}
-
-.themed [tooltiptext]:hover:after {
-  background: var(--tooltip-bgcolor);
+  background-color: var(--tooltip-bgcolor);
 }
 
 /* vi: set tabstop=2 shiftwidth=2 softtabstop=2 expandtab: */

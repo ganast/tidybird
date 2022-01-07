@@ -49,6 +49,13 @@ async function applyThemeColors(theme) {
 
 let tooltipColorUpdated = false;
 /**
+ * calculate new colorcomponent using premultiplied alpha colorcomponents
+ **/
+function calculate_colorcomponent(color_upper, color_under, alpha_upper) {
+  return color_upper + color_under * (1 - alpha_upper);
+}
+
+/**
  * Update the tooltip color, if not yet done, because it may be transparent (from the theme) otherwise
  *  this fires when the mouse hover over the button
  *  because this way, we are sure a button exists to take the _computed_ color from
@@ -59,13 +66,43 @@ async function update_tooltipcolor(theEvent) {
     return;
   }
   let body = document.querySelector("body");
-  // theEvent.target or document.querySelector("[tooltiptext]")
-  let tooltip_bgcolor = window
-    .getComputedStyle(theEvent.target)
-    .getPropertyValue("background-color");
-  if (tooltip_bgcolor.startsWith("rgba")) {
-    tooltip_bgcolor = tooltip_bgcolor.replace(/,[^,]+\)$/, ", 1)");
-  }
+  let target = theEvent.target;
+  // calculate the color of the button: https://en.wikipedia.org/wiki/Alpha_compositing
+  let color = [0, 0, 0, 0];
+  do {
+    // theEvent.target or document.querySelector("[tooltiptext]")
+    let target_color = window
+      .getComputedStyle(target)
+      .getPropertyValue("background-color");
+    console.log(`${theEvent.target.style.backgroundColor} - ${target_color}`);
+    let color_under = [0, 0, 0, 0];
+    if (target_color != "") {
+      color_under = target_color
+        .replace(/.*\((.*)\)/, "$1")
+        .split(", ")
+        .map((x) => parseFloat(x));
+    }
+    if (color_under.length == 3) {
+      color_under.push(1); // rgb color without alpha layer
+    }
+    let alpha = calculate_colorcomponent(color[3], color_under[3], color[3]);
+    // if alpha == 0; then the color is fully transparent and the values make no difference
+    if (alpha != 0) {
+      for (let i = 0; i < color.length - 1; i++) {
+        color[i] =
+          calculate_colorcomponent(
+            color[i] * color[3],
+            color_under[i] * color_under[3],
+            color[3]
+          ) / alpha;
+      }
+    }
+    color[3] = alpha;
+    console.log(`color: ${color}`);
+    target = target.parentElement;
+  } while (target !== null && color[3] < 1);
+  let tooltip_bgcolor = "rgba(" + color.join(", ") + ")";
+  console.log(`result: ${tooltip_bgcolor}`);
   body.style.setProperty("--tooltip-bgcolor", tooltip_bgcolor);
   tooltipColorUpdated = true;
 }
