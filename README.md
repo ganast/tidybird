@@ -57,18 +57,18 @@ This can be better illustrated with an example. Consider the following folder
 hierarchy:
 
 - tidybird@example.com
-  - Inbox
-    - Personal
-      - Movies
-      - Music
-      - News
-    - Work
-      - Meetings
-      - News
+    - Inbox
+      - Personal
+        - Movies
+        - Music
+        - News
+      - Work
+        - Meetings
+        - News
 - Local Folders
-  - Movies
-  - Music
-  - News
+    - Movies
+    - Music
+    - News
 
 Given the above hierarchy, Tidybird will display folders and parent folders as
 follows (parent folders in parentheses):
@@ -94,6 +94,23 @@ between folders with the same name under different accounts, different top level
 folders, etc.
 
 When this is not enough, a tooltip with the full folder path will do the trick.
+
+# Necessary permissions
+
+As Tidybird uses some Experimental API calls, it still needs full access permissions.
+Once the necessary API methods are implemented in Thunderbird, Tidybird will need these permissions (also added are some permissions needed as implemented now):
+- storage: storage API - read and save Tidybird settings
+- accountsRead (folderManager):
+    - Experimental API - convert folder from event to MailExtensions folder
+    - messages API - get the folder of a message
+- messagesRead (messageManager):
+    - Experimental API - convert item from event to MailExtensions message header
+    - messageDisplay API - get the currently displayed message
+    - getSelectedMessages - get the currenlty selected messages
+    - continueList - continue the list of messages to the next page
+- accountsFolders: accounts API - get name and full path to a folder
+- messagesMove: move messages to a folder
+- theme: read theme colors to apply to buttons
 
 # License
 

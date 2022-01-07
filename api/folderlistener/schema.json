@@ -1,0 +1,72 @@
+[
+  {
+    "namespace": "folderListener",
+    "functions": [
+      {
+        "name": "startFolderListener",
+        "type": "function",
+        "async": true,
+        "parameters": []
+      },
+      {
+        "name": "stopFolderListener",
+        "type": "function",
+        "async": true,
+        "parameters": []
+      }
+    ],
+    "events": [
+      {
+        "name": "onTreeEvent",
+        "type": "function",
+        "description": "Fired when the folderListener got a tree event",
+        "parameters": [
+          {
+            "name": "parentItem",
+            "$ref": "folders.MailFolder"
+          },
+          {
+            "name": "item",
+            "$ref": "messages.MessageHeader|folders.MailFolder"
+          },
+          {
+            "name": "eventName",
+            "type": "string"
+          }
+        ],
+        "extraParameters": [
+          {
+            "name": "eventName",
+            "description": "only execute callback on this event",
+            "type": "string",
+            "optional": true
+          }
+        ]
+
+      },
+      {
+        "name": "onItemEvent",
+        "type": "function",
+        "description": "Fired when the folderListener got an item event",
+        "parameters": [
+          {
+            "name": "folder",
+            "$ref": "folders.MailFolder"
+          },
+          {
+            "name": "eventName",
+            "type": "string"
+          }
+        ],
+        "extraParameters": [
+          {
+            "name": "eventName",
+            "description": "only execute callback on this event",
+            "type": "string",
+            "optional": true
+          }
+        ]
+      }
+    ]
+  }
+]
