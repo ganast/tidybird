@@ -7,8 +7,13 @@ let messenger = browser;
     let htmlPage = "content/tidybirdpane.html";
     let isShowingSetting = "isShowing";
 
-    function toggleTidybird(isShowing = true) { // default parameter only used at first startup
-      if ( ( startupEvent === true && isShowing ) || (startupEvent !== true && !isShowing) ) { // startupEvent can also be an event
+    // default parameter only used at first startup
+    function toggleTidybird(isShowing = true) {
+      if (
+        // startupEvent can also be an event
+        (startupEvent === true && isShowing) ||
+        (startupEvent !== true && !isShowing)
+      ) {
         messenger.ex_customui.add(
           messenger.ex_customui.LOCATION_MESSAGING,
           htmlPage,
