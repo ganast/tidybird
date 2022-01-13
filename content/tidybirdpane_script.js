@@ -146,6 +146,7 @@ const moveSelectedMessageToFolder = async function (folder) {
 
   let messages = [];
   if (theCurrentTab.mailTab) {
+    // Use selected messages if this tab is a mailTab (tab with a list of messages)
     /*
      * this defaults to the current tab, but throws an error if the current tab is not a mailTab
      *  so we first detect the type
@@ -157,6 +158,7 @@ const moveSelectedMessageToFolder = async function (folder) {
       moveMessages(page.messages, folder);
     }
   } else {
+    // Use displayed messages if this tab is not a mailTab (we get a result if the tab is showing a message)
     /*
      * we don't use getDisplayedMessages as I don't know a way to display multiple images in a tab
      *  without having them selected in the same tab
