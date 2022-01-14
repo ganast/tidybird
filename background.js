@@ -4,10 +4,11 @@ let messenger = browser; // to prevent errors in linting...
   // the first parameter of this function gets tab information when using the button
   function toggleTidybirdBySettings(startupEvent = false) {
     let htmlPage = "content/tidybirdpane.html";
-    let isShowingSetting = "isShowing";
 
     // default parameter only used at first startup
-    function toggleTidybird(isShowing = true) {
+    function toggleTidybird(settings) {
+      let isShowing = settings.isShowing ?? true;
+      let width = settings.width ?? 244;
       if (
         // startupEvent can also be an event
         (startupEvent === true && isShowing) ||
@@ -16,29 +17,27 @@ let messenger = browser; // to prevent errors in linting...
         messenger.ex_customui.add(
           messenger.ex_customui.LOCATION_MESSAGING,
           htmlPage,
-          { width: 200 } // TODO: take width from last time (setting has no use)
+          { width } // this is an "object shorthand" = { "width": width }
         );
-        messenger.storage.local.set({ [isShowingSetting]: true });
+        messenger.storage.local.set({ ["isShowing"]: true });
       } else {
+        messenger.storage.local.set({ ["isShowing"]: false });
         messenger.ex_customui.remove(
           messenger.ex_customui.LOCATION_MESSAGING,
           htmlPage
         );
-        messenger.storage.local.set({ [isShowingSetting]: false });
       }
     }
 
     function onGet(settings) {
-      toggleTidybird(settings[isShowingSetting]); // if not set => undefined => default parameter value
+      toggleTidybird(settings); // if not set => undefined => default parameter value
     }
 
     function onError(error) {
-      console.log(
-        `Error in tidybird getting setting ${isShowingSetting}: ${error}`
-      );
+      console.log(`Error in tidybird getting settings: ${error}`);
     }
 
-    let gettingSetting = messenger.storage.local.get(isShowingSetting);
+    let gettingSetting = messenger.storage.local.get(["isShowing", "width"]);
     gettingSetting.then(onGet, onError);
   }
 

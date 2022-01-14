@@ -113,6 +113,22 @@ async function themeChangedListener(themeUpdateInfo) {
 messenger.theme.onUpdated.addListener(themeChangedListener);
 applyThemeColors();
 
+/**
+ * Keep track of the width
+ *  must be run in this context: access to window
+ **/
+async function windowRemovedListener(anEvent) {
+  let innerWidth = window.innerWidth;
+  if (innerWidth != 0) {
+    // as the context is removed in TB78, the width is 0
+    //  we don't save this so we don't reset the saved with (from shutdown) when button is clicked
+    browser.storage.local.set({ width: innerWidth });
+  }
+}
+// onbeforeunload does not work (at least not in TB78)
+// onunload is executed after the context is remove in TB78 when button is clicked
+window.addEventListener("unload", windowRemovedListener);
+
 /*
  * The move functionality
  */
@@ -325,5 +341,4 @@ async function gotMRMFolders(mostRecentlyModifiedFolders) {
 browser.tidybird_api.getMRMFolders.addListener(gotMRMFolders, 30);
 //TODO: idea: keep our own list of MRM folders, so we can include or exclude any folder. Before of subfolders of removed/renamed folders (with MRM they are no longer in the list)
 
-//browser.ex_customui.setLocalOptions({ width: "1000px" });
 /* vi: set tabstop=2 shiftwidth=2 softtabstop=2 expandtab: */
