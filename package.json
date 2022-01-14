@@ -25,7 +25,6 @@
   },
   "homepage": "https://github.com/tatankat/tidybird#readme",
   "devDependencies": {
-    "eslint": "^8.6.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-fetch-options": "0.0.5",
     "eslint-plugin-html": "^6.2.0",
