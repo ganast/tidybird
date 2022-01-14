@@ -100,12 +100,8 @@ When this is not enough, a tooltip with the full folder path will do the trick.
 As Tidybird uses some Experimental API calls, it still needs full access permissions.
 Once the necessary API methods are implemented in Thunderbird, Tidybird will need these permissions (also added are some permissions needed as implemented now):
 - storage: storage API - read and save Tidybird state and settings
-- accountsRead (folderManager):
-    - Experimental API - convert folder from event to MailExtensions folder
-    - messages API - get the folder of a message, react on moved message
-- messagesRead (messageManager):
-    - Experimental API - convert item from event to MailExtensions message header
-    - messages API - get current message(s) and react on moved message
+- accountsRead (folderManager): messages API - get the folder of a message, react on moved message
+- messagesRead (messageManager): messages API - get current message(s), react on moved message
 - accountsFolders: accounts API - get name and full path to a folder
 - messagesMove: move messages to a folder
 - theme: read theme colors to apply to buttons

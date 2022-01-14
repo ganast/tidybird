@@ -3,7 +3,7 @@
   "applications": {
     "gecko": {
       "id": "tidybird@ganast.com",
-      "strict_min_version": "91.*"
+      "strict_min_version": "91.0.1"
     }
   },
   "name": "Tidybird",
@@ -32,14 +32,6 @@
         "scopes": ["addon_parent"],
         "paths": [["tidybird_api"]],
         "script": "api/tidybird/parent.js"
-      }
-    },
-    "folderListener": {
-      "schema": "api/folderlistener/schema.json",
-      "parent": {
-        "scopes": ["addon_parent"],
-        "paths": [["folderListener"]],
-        "script": "api/folderlistener/implementation.js"
       }
     },
     "ex_customui": {

@@ -287,36 +287,46 @@ const updateButtonListIfNeeded = async function (folder, neededIfNotPresent) {
   }
 };
 
-console.log("Adding api folder listener");
-// add folder listener
-browser.folderListener.startFolderListener();
-
-browser.folderListener.onItemEvent.addListener(async (folder, eventName) => {
-  console.log(`tidybird: item event: ${eventName} on ${folder.name}`);
-  updateButtonListIfNeeded(folder, true);
-}, "MRMTimeChanged");
-/*
- * RenameCompleted is called with original name and new name, also ItemRemoved and ItemAdded TreeEvents are fired
- *  maybe we can combine the 4 events to reconstruct what happened
- */
-
-browser.folderListener.onTreeEvent.addListener(async (parentItem, item) => {
-  if (item.hasOwnProperty("path")) {
-    // probably a folder
-    console.log(
-      `tidybird: item removed from tree event: folder "[${item.path}] ${item.name} (${item.accountId}})" in ${parentItem.name}`
-    );
-    updateButtonListIfNeeded(item, false);
-  } else {
-    // probably a message
-    const dateString = item.date.toLocaleDateString();
-    const timeString = item.date.toLocaleTimeString();
-    console.log(
-      `tidybird: item removed from tree event: message "[${item.id}] ${item.subject} (${dateString} ${timeString})" in ${parentItem.name}`
-    );
+/**
+ * React on events on messages and folders
+ **/
+async function onMessageEvent(originalMessages, newMessages, eventName) {
+  let firstMessage = newMessages.messages[0];
+  console.log(`tidybird: message ${eventName} event to ${firstMessage.folder}`);
+  // Event (copying/moving) is always done from 1 folder to 1 other folder, so it's enough to read the folder of the first message in the list
+  updateButtonListIfNeeded(firstMessage.folder, true);
+}
+messenger.messages.onMoved.addListener(
+  async (originalMessages, movedMessages) => {
+    onMessageEvent(originalMessages, movedMessages, "onMoved");
   }
-}, "ItemRemoved");
+);
+messenger.messages.onCopied.addListener(
+  async (originalMessages, copiedMessages) => {
+    onMessageEvent(originalMessages, copiedMessages, "onCopied");
+  }
+);
 
+async function onFolderEvent(originalFolder, newFolder, eventName) {
+  console.log(
+    `tidybird: folder ${eventName} event: on "[${originalFolder.path}] ${originalFolder.name} (${originalFolder.accountId}})"`
+  );
+  updateButtonListIfNeeded(originalFolder, false);
+}
+// Rename also fires delete. For now we don't use the event information, so we can just act on delete
+//messenger.folders.onRenamed.addListener(async (originalFolder, renamedFolder) => {
+//  onFolderEvent(originalFolder, renamedFolder, "onRenamed");
+//});
+messenger.folders.onMoved.addListener(async (originalFolder, movedFolder) => {
+  onFolderEvent(originalFolder, movedFolder, "onMoved");
+});
+messenger.folders.onDeleted.addListener(async (deletedFolder) => {
+  onFolderEvent(deletedFolder, null, "onDeleted");
+});
+
+/**
+ * Get the most recently changed folders
+ **/
 async function gotMRMFolders(mostRecentlyModifiedFolders) {
   for (let folder of mostRecentlyModifiedFolders) {
     addButton(folder);
