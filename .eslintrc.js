@@ -16,9 +16,4 @@ module.exports = {
   rules: {
     "spaced-comment": "off",
   },
-  globals: {
-    // add thunderbird SDK functions
-    getMostRecentFolders: "readonly",
-    MsgMoveMessage: "readonly",
-  },
 };
