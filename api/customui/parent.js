@@ -250,18 +250,15 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
       return result;
     };
 
-    // Enables dynamic width and fixed heigth for a WebExtension frame
-    const setWebextFrameSizesForSidebar = function(frame, options) {
-      setWebextFrameSizesForBox(frame, options, true, "244px", false, "100%")
-    }
-
-    // Enables dynamic height and fixed 100% width for a WebExtension frame
-    const setWebextFrameSizesForVerticalBox = function(frame, options) {
-      setWebextFrameSizesForBox(frame, options, false, "100%", true, "100px");
-    }
-
+    // Set a dimension of the frame given in options
+    //  and enable changing by CustomUILocalOptionsListener
+    // If dimension it is not provided in options (a number from API call, in pixels),
+    //  set default value: defaultValue (must include the unit)
+    // dimensionName: "width" or "height"
+    // Only to be called by setWebextFrameDimension
     const setWebextFrameDynamicDimension = function(frame, options, dimensionName, defaultValue) {
-      frame[dimensionName] = (options[dimensionName] || defaultValue) + "px";
+      frame[dimensionName] = options[dimensionName]
+          ? options[dimensionName] + "px" : defaultValue;
       frame.addCustomUILocalOptionsListener(lOptions => {
         if (typeof lOptions[dimensionName] === "number") {
           frame[dimensionName] = lOptions[dimensionName] + "px";
@@ -273,10 +270,17 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
       });
     };
 
+    // Set a fixed dimension of the frame
+    //  but don't enable changing by CustomUILocalOptionsListener
+    // The value is set in the code and must include the unit
+    // Only to be called by setWebextFrameDimension
     const setWebextFrameFixedDimension = function(frame, dimensionName, value) {
       frame[dimensionName] = value;
     }
 
+    // Set a dimension of the frame
+    // isDynamic "dynamic or fixed" and other arguments see descriptions on corresponding functions
+    // Probably only to be called by setWebextFrameSizesForBox
     const setWebextFrameDimension = function(frame, options, dimensionName, isDynamic, value) {
       if(isDynamic) {
         setWebextFrameDynamicDimension(frame, options, dimensionName, value);
@@ -285,18 +289,37 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
       }
     }
 
+    // Set all dimensions (width, height and display) of a generic rectangular WebExtension frame
     const setWebextFrameSizesForBox = function(frame, options, isDynamicWidth, width, isDynamicHeight, height) {
       setWebextFrameDimension(frame, options, "width", isDynamicWidth, width);
       setWebextFrameDimension(frame, options, "height", isDynamicHeight, height);
       frame.style.display = options.hidden ? "none" : "block";
     }
+
+    // Enables dynamic width and fixed heigth for a WebExtension frame
+    const setWebextFrameSizesForSidebar = function(frame, options) {
+      //TODO: set maximum width in mailTab to:
+      // width of messengerBox - min-width of folderPaneBox
+      //  - minimal width of messagesBox, coded to 199px (?)
+      //  - width of splitters
+      //  - some small reserve
+      // Probably by adding it as a parameter and add 2 checks in setWebextFrameDynamicDimension
+      //  the function used by CustomUILocalOptionsListener should be the same as setWebextFrameDynamicDimension
+      //  so there is only need for 1 check and 1 place where the dimension is set
+      setWebextFrameSizesForBox(frame, options, true, "244px", false, "100%")
+    }
+
+    // Enables dynamic height and fixed 100% width for a WebExtension frame
+    const setWebextFrameSizesForVerticalBox = function(frame, options) {
+      setWebextFrameSizesForBox(frame, options, false, "100%", true, "100px");
+    }
     
-    // Creates and inserts the WebExtension frame for the given URL and location
-    // id as element of a customUI-specific sidebar within the container given
-    // by a document and the container's id. Returns an element containing the
-    // new frame and supporting all functions documented for
-    // insertWebextFrame(). To remove frames created by this method, use
-    // removeSidebarWebextFrame().
+    // Creates and inserts the WebExtension frame with additional user provided options
+    // for the given URL and location id as element of a customUI-specific sidebar
+    // within the container given by a document and the container's id.
+    // Returns an element containing the new frame and supporting
+    // all functions documented for insertWebextFrame().
+    // To remove frames created by this method, use removeSidebarWebextFrame().
     const insertSidebarWebextFrame = function(location, url, document,
         containerId, options) {
       const sidebarBoxId = "customui-sidebar-box-" + containerId;
@@ -596,7 +619,7 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
             return; // incompatible window
           }
           insertSidebarWebextFrame("messaging", url, window.document,
-              "messengerBox",options);
+              "messengerBox", options);
         },
         uninjectFromWindow(window, url) {
           removeSidebarWebextFrame("messaging", url, window.document);
