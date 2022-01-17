@@ -117,6 +117,12 @@ applyThemeColors();
  * Keep track of the width
  *  must be run in this context: access to window
  **/
+async function isClosing(changes, area) {
+  if (!(area == "local" && changes.isShowing)) {
+    return;
+  }
+  windowRemovedListener(undefined);
+}
 async function windowRemovedListener(anEvent) {
   let innerWidth = window.innerWidth;
   if (innerWidth != 0) {
@@ -126,8 +132,11 @@ async function windowRemovedListener(anEvent) {
   }
 }
 // onbeforeunload does not work (at least not in TB78)
-// onunload is executed after the context is remove in TB78 when button is clicked
+// onunload is executed after the context is removed in TB78 when button is clicked
+// it still works when the window is closed
 window.addEventListener("unload", windowRemovedListener);
+// listen to a change in state instead of a window close
+messenger.storage.onChanged.addListener(isClosing);
 
 /*
  * The move functionality
