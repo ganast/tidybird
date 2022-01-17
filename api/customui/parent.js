@@ -250,68 +250,37 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
       return result;
     };
 
-    // Set a dimension of the frame given in options
-    //  and enable changing by CustomUILocalOptionsListener
-    // If dimension it is not provided in options (a number from API call, in pixels),
-    //  set default value: defaultValue (must include the unit)
-    // dimensionName: "width" or "height"
-    // Only to be called by setWebextFrameDimension
-    const setWebextFrameDynamicDimension = function(frame, options, dimensionName, defaultValue) {
-      frame[dimensionName] = options[dimensionName]
-          ? options[dimensionName] + "px" : defaultValue;
+    // Sets the visibility of a WebExtension frame according to given options
+    // and enables changing it dynamically through local options.
+    const setWebextFrameDynamicVisibility = function(frame,  options) {
+      frame.style.display = options.hidden ? "none" : "block";
       frame.addCustomUILocalOptionsListener(lOptions => {
-        if (typeof lOptions[dimensionName] === "number") {
-          frame[dimensionName] = lOptions[dimensionName] + "px";
-          frame.style[dimensionName] = frame[dimensionName];
-        }
         if (typeof lOptions.hidden === "boolean") {
           frame.style.display = lOptions.hidden ? "none" : "block";
         }
       });
     };
 
-    // Set a fixed dimension of the frame
-    //  but don't enable changing by CustomUILocalOptionsListener
-    // The value is set in the code and must include the unit
-    // Only to be called by setWebextFrameDimension
-    const setWebextFrameFixedDimension = function(frame, dimensionName, value) {
-      frame[dimensionName] = value;
-    }
+    // Sets a dimension ("width" or "height") of a WebExtension frame according
+    // to given options / default pixel value and enables changing it
+    // dynamically through local options.
+    const setWebextFrameDynamicDimension = function(frame, options,
+        dimensionName, defaultValue) {
+      frame[dimensionName] = (options[dimensionName] || defaultValue) + "px";
+      frame.addCustomUILocalOptionsListener(lOptions => {
+        if (typeof lOptions[dimensionName] === "number") {
+          frame[dimensionName] = lOptions[dimensionName] + "px";
+          frame.style[dimensionName] = frame[dimensionName];
+        }
+      });
+    };
 
-    // Set a dimension of the frame
-    // isDynamic "dynamic or fixed" and other arguments see descriptions on corresponding functions
-    // Probably only to be called by setWebextFrameSizesForBox
-    const setWebextFrameDimension = function(frame, options, dimensionName, isDynamic, value) {
-      if(isDynamic) {
-        setWebextFrameDynamicDimension(frame, options, dimensionName, value);
-      } else {
-        setWebextFrameFixedDimension(frame, dimensionName, value);
-      }
-    }
-
-    // Set all dimensions (width, height and display) of a generic rectangular WebExtension frame
-    const setWebextFrameSizesForBox = function(frame, options, isDynamicWidth, width, isDynamicHeight, height) {
-      setWebextFrameDimension(frame, options, "width", isDynamicWidth, width);
-      setWebextFrameDimension(frame, options, "height", isDynamicHeight, height);
-      frame.style.display = options.hidden ? "none" : "block";
-    }
-
-    // Enables dynamic width and fixed heigth for a WebExtension frame
-    const setWebextFrameSizesForSidebar = function(frame, options) {
-      //TODO: set maximum width in mailTab to:
-      // width of messengerBox - min-width of folderPaneBox
-      //  - minimal width of messagesBox, coded to 199px (?)
-      //  - width of splitters
-      //  - some small reserve
-      // Probably by adding it as a parameter and add 2 checks in setWebextFrameDynamicDimension
-      //  the function used by CustomUILocalOptionsListener should be the same as setWebextFrameDynamicDimension
-      //  so there is only need for 1 check and 1 place where the dimension is set
-      setWebextFrameSizesForBox(frame, options, true, "244px", false, "100%")
-    }
-
-    // Enables dynamic height and fixed 100% width for a WebExtension frame
+    // Enables dynamic height & visibility with fixed 100% width for a
+    // WebExtension frame registered with given options
     const setWebextFrameSizesForVerticalBox = function(frame, options) {
-      setWebextFrameSizesForBox(frame, options, false, "100%", true, "100px");
+      frame.width = "100%";
+      setWebextFrameDynamicVisibility(frame, options);
+      setWebextFrameDynamicDimension(frame, options, "height", 100);
     }
     
     // Creates and inserts the WebExtension frame with additional user provided options
@@ -344,7 +313,12 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
         container.appendChild(sidebar);
       }
       const result = insertWebextFrame(location, url, sidebar);
-      setWebextFrameSizesForSidebar(result, options);
+      // Permit dynamic sizing and visibility. This does permit the sidebar to
+      // be visible but empty (if all frames are hidden) or unreasonably large
+      // (if the largest requested width is too large); an implementation for
+      // Core inclusion might want to address these issues.
+      setWebextFrameDynamicVisibility(result, options);
+      setWebextFrameDynamicDimension(result, options, "width", 244);
       result.flex = "1";
       return result;
     };
