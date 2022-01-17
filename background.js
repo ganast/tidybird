@@ -1,14 +1,15 @@
-// messenger is not yet known in TB 68
-let messenger = browser;
+let messenger = browser; // to prevent errors in linting...
 
 (async () => {
   // the first parameter of this function gets tab information when using the button
   function toggleTidybirdBySettings(startupEvent = false) {
     let htmlPage = "content/tidybirdpane.html";
-    let isShowingSetting = "isShowing";
 
     // default parameter only used at first startup
-    function toggleTidybird(isShowing = true) {
+    function toggleTidybird(settings) {
+      // if a setting is not set, it will be 'undefined'
+      let isShowing = settings.isShowing ?? true;
+      let width = settings.width;
       if (
         // startupEvent can also be an event
         (startupEvent === true && isShowing) ||
@@ -17,30 +18,24 @@ let messenger = browser;
         messenger.ex_customui.add(
           messenger.ex_customui.LOCATION_MESSAGING,
           htmlPage,
-          {}
+          { width } // this is an "object shorthand" = { "width": width }
         );
-        messenger.storage.local.set({ [isShowingSetting]: true });
+        messenger.storage.local.set({ ["isShowing"]: true });
       } else {
+        messenger.storage.local.set({ ["isShowing"]: false });
         messenger.ex_customui.remove(
           messenger.ex_customui.LOCATION_MESSAGING,
           htmlPage
         );
-        messenger.storage.local.set({ [isShowingSetting]: false });
       }
     }
 
-    function onGet(settings) {
-      toggleTidybird(settings[isShowingSetting]); // if not set => undefined => default parameter value
-    }
-
     function onError(error) {
-      console.log(
-        `Error in tidybird getting setting ${isShowingSetting}: ${error}`
-      );
+      console.error(`Error in tidybird getting settings: ${error}`);
     }
 
-    let gettingSetting = messenger.storage.local.get(isShowingSetting);
-    gettingSetting.then(onGet, onError);
+    let gettingSetting = messenger.storage.local.get(["isShowing", "width"]);
+    gettingSetting.then(toggleTidybird, onError);
   }
 
   // initial startup (or not)
