@@ -250,30 +250,47 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
       return result;
     };
 
-    // Enables dynamic height and fixed 100% width for a WebExtension frame
-    const setWebextFrameSizesForVerticalBox = function(frame, options) {
-      frame.width = "100%";
-      frame.height = (options.height || 100) + "px";
+    // Sets the visibility of a WebExtension frame according to given options
+    // and enables changing it dynamically through local options.
+    const setWebextFrameDynamicVisibility = function(frame,  options) {
       frame.style.display = options.hidden ? "none" : "block";
       frame.addCustomUILocalOptionsListener(lOptions => {
-        if (typeof lOptions.height === "number") {
-          frame.height = lOptions.height + "px";
-          frame.style.height = frame.height;
-        }
         if (typeof lOptions.hidden === "boolean") {
           frame.style.display = lOptions.hidden ? "none" : "block";
         }
       });
     };
+
+    // Sets a dimension ("width" or "height") of a WebExtension frame according
+    // to given options / default pixel value and enables changing it
+    // dynamically through local options.
+    const setWebextFrameDynamicDimension = function(frame, options,
+        dimensionName, defaultValue) {
+      frame[dimensionName] = (options[dimensionName] || defaultValue) + "px";
+      frame.addCustomUILocalOptionsListener(lOptions => {
+        if (typeof lOptions[dimensionName] === "number") {
+          frame[dimensionName] = lOptions[dimensionName] + "px";
+          frame.style[dimensionName] = frame[dimensionName];
+        }
+      });
+    };
+
+    // Enables dynamic height & visibility with fixed 100% width for a
+    // WebExtension frame registered with given options
+    const setWebextFrameSizesForVerticalBox = function(frame, options) {
+      frame.width = "100%";
+      setWebextFrameDynamicVisibility(frame, options);
+      setWebextFrameDynamicDimension(frame, options, "height", 100);
+    }
     
-    // Creates and inserts the WebExtension frame for the given URL and location
-    // id as element of a customUI-specific sidebar within the container given
-    // by a document and the container's id. Returns an element containing the
-    // new frame and supporting all functions documented for
-    // insertWebextFrame(). To remove frames created by this method, use
-    // removeSidebarWebextFrame().
+    // Creates and inserts the WebExtension frame with additional user provided options
+    // for the given URL and location id as element of a customUI-specific sidebar
+    // within the container given by a document and the container's id.
+    // Returns an element containing the new frame and supporting
+    // all functions documented for insertWebextFrame().
+    // To remove frames created by this method, use removeSidebarWebextFrame().
     const insertSidebarWebextFrame = function(location, url, document,
-        containerId) {
+        containerId, options) {
       const sidebarBoxId = "customui-sidebar-box-" + containerId;
       let sidebar = document.getElementById(sidebarBoxId);
       if (!sidebar) {
@@ -292,11 +309,16 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
         
         sidebar = document.createXULElement("vbox");
         sidebar.setAttribute("persist", "width");
-        sidebar.setAttribute("width", "244");
         sidebar.id = sidebarBoxId;
         container.appendChild(sidebar);
       }
       const result = insertWebextFrame(location, url, sidebar);
+      // Permit dynamic sizing and visibility. This does permit the sidebar to
+      // be visible but empty (if all frames are hidden) or unreasonably large
+      // (if the largest requested width is too large); an implementation for
+      // Core inclusion might want to address these issues.
+      setWebextFrameDynamicVisibility(result, options);
+      setWebextFrameDynamicDimension(result, options, "width", 244);
       result.flex = "1";
       return result;
     };
@@ -556,7 +578,7 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
             return; // incompatible window
           }
           insertSidebarWebextFrame("compose", url, window.document,
-              "composeContentBox");
+              "composeContentBox", options);
         },
         uninjectFromWindow(window, url) {
           removeSidebarWebextFrame("compose", url, window.document);
@@ -571,7 +593,7 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
             return; // incompatible window
           }
           insertSidebarWebextFrame("messaging", url, window.document,
-              "messengerBox");
+              "messengerBox", options);
         },
         uninjectFromWindow(window, url) {
           removeSidebarWebextFrame("messaging", url, window.document);
