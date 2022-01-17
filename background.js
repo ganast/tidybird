@@ -8,7 +8,7 @@ let messenger = browser; // to prevent errors in linting...
     // default parameter only used at first startup
     function toggleTidybird(settings) {
       let isShowing = settings.isShowing ?? true;
-      let width = settings.width ?? 244;
+      let width = settings.width;
       if (
         // startupEvent can also be an event
         (startupEvent === true && isShowing) ||
