@@ -7,6 +7,7 @@ let messenger = browser; // to prevent errors in linting...
 
     // default parameter only used at first startup
     function toggleTidybird(settings) {
+      // if a setting is not set, it will be 'undefined'
       let isShowing = settings.isShowing ?? true;
       let width = settings.width;
       if (
@@ -29,16 +30,12 @@ let messenger = browser; // to prevent errors in linting...
       }
     }
 
-    function onGet(settings) {
-      toggleTidybird(settings); // if not set => undefined => default parameter value
-    }
-
     function onError(error) {
-      console.log(`Error in tidybird getting settings: ${error}`);
+      console.error(`Error in tidybird getting settings: ${error}`);
     }
 
     let gettingSetting = messenger.storage.local.get(["isShowing", "width"]);
-    gettingSetting.then(onGet, onError);
+    gettingSetting.then(toggleTidybird, onError);
   }
 
   // initial startup (or not)
