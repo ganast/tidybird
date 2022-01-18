@@ -110,12 +110,12 @@ Once the necessary API methods are implemented in Thunderbird, Tidybird will nee
 
 This table shows the latest version of Tidybird you can run (and where you can find it) for each Thunderbird version.
 | Thunderbird minimum working | Thunderbird maximum supported | Thunderbird maximum working | Tidybird | branch |
-| ------------ | ---------------- | -------------- | -------- | ------ |
-| 31.*         | 52.*             | 60.*           | 1.(1\|2) | master (up to commit 2437fb74b8165e74d4f1faa8db10437b01051edc) |
-| 60.*         | 60.*             | 68.*           | 1.3.X    | tb68   |
-| 68.*         | 78.7.0           | 91.*           | 2.X      | master (up to commit 666e33072d6c02902cf0c533aab052ac29f33773) |
-| 78.7.1       | 78.(>7).*        | 91.*           | 3.X      | tb78   |
-| 91.*         | tested on 96.0b3 |                | 4.X      | master |
+| ------------ | ---------------- | ---------------- | -------- | ------ |
+| 31.*         | 52.*             | 60.*             | 1.(1\|2) | master (up to commit 2437fb74b8165e74d4f1faa8db10437b01051edc) |
+| 60.*         | 60.*             | 68.*             | 1.3.X    | tb68   |
+| 68.*         | 78.7.0           | 91.*             | 2.X      | master (up to commit 666e33072d6c02902cf0c533aab052ac29f33773) |
+| 78.7.1       | 78.(>7).*        | 91.*             | 3.X      | tb78   |
+| 91.*         | tested on 96.0b3 | broken on 97.0b1 | 4.X      | master |
 * maximum supported: bugfixes for up to this version of thunderbird should be done on the corresponding tidybird version
 * maximum working: the corresponding tidybird version has working basic functionality up to this version of thunderbird
 
