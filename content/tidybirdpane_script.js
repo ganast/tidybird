@@ -293,10 +293,17 @@ const updateButtonList = async function () {
 };
 
 const updateButtonListIfNeeded = async function (folder, neededIfNotPresent) {
+  if (folder.type == "archives") {
+    // As there is already an "Archive"-button
+    // and this folder is set as the Archive-folder
+    // we don't add it in our list.
+    // (MRMTime does not change using the Archive button)
+    return;
+  }
   const expandedFolder = await getExpandedFolder(folder);
   const folderIsInList = isFolderInList(expandedFolder);
   if (
-    (neededIfNotPresent && !folderIsInList) || // folder shoulde be added
+    (neededIfNotPresent && !folderIsInList) || // folder should be added
     (!neededIfNotPresent && folderIsInList) // folder should be removed
   ) {
     updateButtonList();
@@ -308,7 +315,9 @@ const updateButtonListIfNeeded = async function (folder, neededIfNotPresent) {
  **/
 async function onMessageEvent(originalMessages, newMessages, eventName) {
   let firstMessage = newMessages.messages[0];
-  console.log(`tidybird: message ${eventName} event to ${firstMessage.folder}`);
+  console.log(
+    `tidybird: message ${eventName} event to ${firstMessage.folder.name}`
+  );
   // Event (copying/moving) is always done from 1 folder to 1 other folder, so it's enough to read the folder of the first message in the list
   updateButtonListIfNeeded(firstMessage.folder, true);
 }
