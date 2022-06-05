@@ -126,7 +126,7 @@ async function windowRemovedListener(anEvent) {
   }
 }
 // onbeforeunload does not work (at least not in TB78)
-// onunload is executed after the context is remove in TB78 when button is clicked
+// onunload is executed after the context is removed in TB78 when button is clicked
 window.addEventListener("unload", windowRemovedListener);
 
 /*
