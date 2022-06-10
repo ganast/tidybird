@@ -57,7 +57,7 @@ function calculate_colorcomponent(color_upper, color_under, alpha_upper) {
 
 /**
  * Update the tooltip color, if not yet done, because it may be transparent (from the theme) otherwise
- *  this fires when the mouse hover over the button
+ *  this fires when the mouse hovers over the button
  *  because this way, we are sure a button exists to take the _computed_ color from
  **/
 async function update_tooltipcolor(theEvent) {

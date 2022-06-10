@@ -10,15 +10,15 @@ var { MailServices } = ChromeUtils.import(
   "resource:///modules/MailServices.jsm"
 );
 
-var {
-  // eslint-disable-next-line no-unused-vars
-  getFolderProperties,
-  // eslint-disable-next-line no-unused-vars
-  allAccountsSorted,
-  getMostRecentFolders,
-  // eslint-disable-next-line no-unused-vars
-  folderNameCompare,
-} = ChromeUtils.import("resource:///modules/folderUtils.jsm");
+var FolderUtils;
+try {
+  FolderUtils = ChromeUtils.import(
+    "resource:///modules/FolderUtils.jsm"
+  ).FolderUtils;
+} catch (e) {
+  // TB <= 96
+  FolderUtils = ChromeUtils.import("resource:///modules/folderUtils.jsm");
+}
 
 // var tidybird_api is used by TB: defined in manifest.json
 // eslint-disable-next-line no-unused-vars
@@ -72,7 +72,7 @@ var tidybird_api = class extends ExtensionCommon.ExtensionAPI {
           }
         }
       }
-      let mostRecentlyModifiedFolders = getMostRecentFolders(
+      let mostRecentlyModifiedFolders = FolderUtils.getMostRecentFolders(
         filteredFolders,
         nbFolders,
         "MRMTime"
