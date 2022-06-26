@@ -3,7 +3,8 @@
   "applications": {
     "gecko": {
       "id": "tidybird@ganast.com",
-      "strict_min_version": "91.0a1"
+      "strict_min_version": "91.0a1",
+      "strict_max_version": "102.*"
     }
   },
   "name": "Tidybird",
