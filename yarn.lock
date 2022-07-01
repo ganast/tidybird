@@ -1133,10 +1133,10 @@ eslint-plugin-html@^6.2.0:
   dependencies:
     htmlparser2 "^7.1.2"
 
-eslint-plugin-mozilla@^2.12.3:
-  version "2.12.3"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-mozilla/-/eslint-plugin-mozilla-2.12.3.tgz#41f68486541d474c7b27466bc3312aecc736871f"
-  integrity sha512-iM8CncpFFVThzBMQBWB2evOLPpjD0DyVSGJKM14RXwzsZssMX1U5QAn7GUnd9sn5LVYYqeljo51DvnHIfmwyEA==
+eslint-plugin-mozilla@^2.12.4:
+  version "2.12.4"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-mozilla/-/eslint-plugin-mozilla-2.12.4.tgz#e87a31e982c971c0d5fdca7842b4384e38fe6b2f"
+  integrity sha512-TkyNsvpkX02r+y6IAbgyL2kKeHagW/sVVAjw76F751LBWkKU+IqiZ95gxFEwiw5Rk5iIdmyJJ2jGajrO9TGm9Q==
   dependencies:
     "@babel/core" "^7.17.9"
     "@babel/eslint-parser" "^7.17.0"
