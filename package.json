@@ -30,7 +30,7 @@
     "eslint-plugin-html": "^6.2.0",
     "eslint-plugin-mozilla": "^2.12.3",
     "eslint-plugin-prettier": "^4.0.0",
-    "prettier": "^2.7.1",
+    "prettier": "^2.8.2",
     "web-ext": "^7.1.0"
   },
   "webExt": {
