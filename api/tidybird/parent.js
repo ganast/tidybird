@@ -3,22 +3,14 @@ var { ExtensionCommon } = ChromeUtils.import(
   "resource://gre/modules/ExtensionCommon.jsm"
 );
 
-var { Services } = ChromeUtils.import("resource://gre/modules/Services.jsm");
-
 // get MRMFolders
 var { MailServices } = ChromeUtils.import(
   "resource:///modules/MailServices.jsm"
 );
 
-var FolderUtils;
-try {
-  FolderUtils = ChromeUtils.import(
-    "resource:///modules/FolderUtils.jsm"
-  ).FolderUtils;
-} catch (e) {
-  // TB <= 96
-  FolderUtils = ChromeUtils.import("resource:///modules/folderUtils.jsm");
-}
+var { FolderUtils } = ChromeUtils.import(
+  "resource:///modules/FolderUtils.jsm"
+);
 
 // var tidybird_api is used by TB: defined in manifest.json
 // eslint-disable-next-line no-unused-vars
@@ -56,22 +48,7 @@ var tidybird_api = class extends ExtensionCommon.ExtensionAPI {
        * TODO -later- while we are at it: let user choose the number of folders to display
        */
       let allFolders = MailServices.accounts.allFolders;
-      let filteredFolders;
-      if (Array.isArray(allFolders)) {
-        // TB >=78
-        filteredFolders = allFolders.filter((folder) => folder.canFileMessages);
-      } else {
-        // TB 68
-        filteredFolders = [];
-        let enumerator = allFolders.enumerate();
-        let folder;
-        while (enumerator.hasMoreElements()) {
-          folder = enumerator.getNext(Ci.nsIMsgFolder);
-          if (folder.canFileMessages) {
-            filteredFolders.push(folder);
-          }
-        }
-      }
+      let filteredFolders = allFolders.filter((folder) => folder.canFileMessages);
       let mostRecentlyModifiedFolders = FolderUtils.getMostRecentFolders(
         filteredFolders,
         nbFolders,
@@ -85,7 +62,7 @@ var tidybird_api = class extends ExtensionCommon.ExtensionAPI {
         folderArray.push(context.extension.folderManager.convert(folder));
       }
       //return folderArray;
-      callback(folderArray); //immediatly call callback
+      callback(folderArray); //immediately call callback
     };
 
     this.removeCallback = function (callback, listenerEvent, ...args) {
