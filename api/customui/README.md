@@ -2,12 +2,13 @@
 
 This WebExtension Experiment is a proof-of-concept framework for pure
 WebExtension user interfaces integrated into Thunderbird's existing
-features.
+features. Originally written for earlier versions of Thunderbird, it only
+receives minimal upkeep. More complete APIs for custom user interfaces are
+planned to eventually land directly in Thunderbird.
 
-It currently features everything necessary for custom user interfaces
-regarding contacts in the address book, as well as rudimentary support
-for calendar (as there is no calendar access for WebExtensions yet, you
-will need an additional experiment to do useful things with that).
+**Most address book locations do no longer work in Thunderbird 102, as the new
+address book is placed under restrictions that cannot be altered by an
+experiment. Review api.json for details.**
 
 
 ## Overview
@@ -109,6 +110,6 @@ messenger.ex_customui.onEvent.addListener((type, details) => {
 });
 ```
 
-Read the full schema.json for details on what operations are currently
+Review the full schema in api.json for details on what operations are currently
 available.
 
