@@ -3,14 +3,14 @@ var { ExtensionCommon } = ChromeUtils.import(
   "resource://gre/modules/ExtensionCommon.jsm"
 );
 
+var { Services } = ChromeUtils.import("resource://gre/modules/Services.jsm");
+
 // get MRMFolders
 var { MailServices } = ChromeUtils.import(
   "resource:///modules/MailServices.jsm"
 );
 
-var { FolderUtils } = ChromeUtils.import(
-  "resource:///modules/FolderUtils.jsm"
-);
+var { FolderUtils } = ChromeUtils.import("resource:///modules/FolderUtils.jsm");
 
 // var tidybird_api is used by TB: defined in manifest.json
 // eslint-disable-next-line no-unused-vars
@@ -48,7 +48,9 @@ var tidybird_api = class extends ExtensionCommon.ExtensionAPI {
        * TODO -later- while we are at it: let user choose the number of folders to display
        */
       let allFolders = MailServices.accounts.allFolders;
-      let filteredFolders = allFolders.filter((folder) => folder.canFileMessages);
+      let filteredFolders = allFolders.filter(
+        (folder) => folder.canFileMessages
+      );
       let mostRecentlyModifiedFolders = FolderUtils.getMostRecentFolders(
         filteredFolders,
         nbFolders,
