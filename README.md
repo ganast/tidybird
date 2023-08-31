@@ -57,18 +57,18 @@ This can be better illustrated with an example. Consider the following folder
 hierarchy:
 
 - tidybird@example.com
-  - Inbox
-    - Personal
-      - Movies
-      - Music
-      - News
-    - Work
-      - Meetings
-      - News
+    - Inbox
+      - Personal
+        - Movies
+        - Music
+        - News
+      - Work
+        - Meetings
+        - News
 - Local Folders
-  - Movies
-  - Music
-  - News
+    - Movies
+    - Music
+    - News
 
 Given the above hierarchy, Tidybird will display folders and parent folders as
 follows (parent folders in parentheses):
@@ -95,6 +95,30 @@ folders, etc.
 
 When this is not enough, a tooltip with the full folder path will do the trick.
 
+# Necessary permissions
+
+As Tidybird uses some Experimental API calls, it still needs full access permissions.
+Once the necessary API methods are implemented in Thunderbird, Tidybird will need these permissions (also added are some permissions needed as implemented now):
+- storage: storage API - read and save Tidybird state and settings
+- accountsRead (folderManager): messages API - get the folder of a message, react on moved message
+- messagesRead (messageManager): messages API - get current message(s), react on moved message
+- accountsFolders: accounts API - get name and full path to a folder
+- messagesMove: move messages to a folder
+- theme: read theme colors to apply to buttons
+
+# Supported versions
+
+This table shows the latest version of Tidybird you can run (and where you can find it) for each Thunderbird version.
+| Thunderbird minimum working | Thunderbird maximum supported | Thunderbird maximum working | Tidybird | branch |
+| ------------ | ---------------- | ---------------- | -------- | ------ |
+| 31.*         | 52.*             | 60.*             | 1.(1\|2) | master (up to commit 2437fb74b8165e74d4f1faa8db10437b01051edc) |
+| 60.*         | 60.*             | 68.*             | 1.3.X    | tb68   |
+| 68.*         | 78.7.0           | 91.*             | 2.X      | master (up to commit 666e33072d6c02902cf0c533aab052ac29f33773) |
+| 78.7.1       | 78.(>7).*        | 91.*             | 3.X      | tb78   |
+| 91.*         | tested on 96.0b3 | broken on 97.0b1 | 4.X      | master |
+* maximum supported: bugfixes for up to this version of thunderbird should be done on the corresponding tidybird version
+* maximum working: the corresponding tidybird version has working basic functionality up to this version of thunderbird
+
 # License
 
 Copyright (C) 2021 George Anastassakis (ganast@ganast.com)
@@ -113,5 +137,4 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 
 # Contact
 
-Please send comments, suggestions, feature requests, bug reports, etc., to the
-author at ganast@ganast.com.
+Please put comments, suggestions, feature requests, bug reports, etc., on the github issue tracker at https://github.com/ganast/tidybird/issues.

@@ -1,15 +1,48 @@
-// based on https://github.com/thundernest/addon-developer-support/wiki/WindowListener-API:-Getting-Started
+let messenger = browser; // to prevent errors in linting...
 
-// messenger is not yet known in TB 68
 (async () => {
-  function showTidybird() {
-    // runs in extensions private context => no access to the window
-    browser.tidybird_api.toggleWindowListener();
+  // the first parameter of this function gets tab information when using the button
+  function toggleTidybirdBySettings(startupEvent = false) {
+    let htmlPage = "content/tidybirdpane.html";
+
+    // default parameter only used at first startup
+    function toggleTidybird(settings) {
+      // if a setting is not set, it will be 'undefined'
+      let isShowing = settings.isShowing ?? true;
+      let width = settings.width;
+      if (
+        // startupEvent can also be an event
+        (startupEvent === true && isShowing) ||
+        (startupEvent !== true && !isShowing)
+      ) {
+        messenger.ex_customui.add(
+          messenger.ex_customui.LOCATION_MESSAGING,
+          htmlPage,
+          { width } // this is an "object shorthand" = { "width": width }
+        );
+        messenger.storage.local.set({ ["isShowing"]: true });
+      } else {
+        messenger.storage.local.set({ ["isShowing"]: false });
+        messenger.ex_customui.remove(
+          messenger.ex_customui.LOCATION_MESSAGING,
+          htmlPage
+        );
+      }
+    }
+
+    function onError(error) {
+      console.error(`Error in tidybird getting settings: ${error}`);
+    }
+
+    let gettingSetting = messenger.storage.local.get(["isShowing", "width"]);
+    gettingSetting.then(toggleTidybird, onError);
   }
-  browser.browserAction.onClicked.addListener(showTidybird);
 
-  // initialize the window listener
-  browser.tidybird_api.startWindowListener();
+  // initial startup (or not)
+  toggleTidybirdBySettings(true);
 
-  //TODO -later- separate the windowListener & folderListener API and join them in a separate layer (here,content,...)
+  // add listener to our button
+  messenger.browserAction.onClicked.addListener(toggleTidybirdBySettings);
 })();
+
+/* vi: set tabstop=2 shiftwidth=2 softtabstop=2 expandtab: */

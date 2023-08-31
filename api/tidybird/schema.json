@@ -2,23 +2,35 @@
   {
     "namespace": "tidybird_api",
     "functions": [
+    ],
+    "events": [
       {
-        "name": "startWindowListener",
+        "name": "getMRMFolders",
         "type": "function",
-        "async": false,
-        "parameters": []
-      },
-      {
-        "name": "stopWindowListener",
-        "type": "function",
-        "async": false,
-        "parameters": []
-      },
-      {
-        "name": "toggleWindowListener",
-        "type": "function",
-        "async": false,
-        "parameters": []
+        "description": "ask to return the MRM folders",
+        "parameters": [
+          {
+            "name": "parentItem",
+            "$ref": "folders.MailFolder"
+          },
+          {
+            "name": "item",
+            "$ref": "messages.MessageHeader"
+          },
+          {
+            "name": "eventName",
+            "type": "string"
+          }
+        ],
+        "extraParameters": [
+          {
+            "name": "number",
+            "description": "number of MRM folders to return",
+            "type": "integer",
+            "required": true
+          }
+        ]
+
       }
     ]
   }
