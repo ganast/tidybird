@@ -6,43 +6,56 @@
     </head>
     <body>
         <form>
-            <div class="browser-style">
-                Tidybird status on startup:
-                <input id="startup_shown" name="startup" type="radio" value="shown"/>
-                <label for="startup_shown">Shown</label>
-                <input id="startup_hidden" name="startup" type="radio" value="hidden"/>
-                <label for="startup_hidden">Hidden</label>
-                <input id="startup_latest" name="startup" type="radio" value="latest"/>
-                <label for="startup_latest">Status before close</label>
+            <h2>Display</h2>
+            <div>
+                <div class="browser-style">
+                    Tidybird status on startup:
+                    <input id="startup_shown" name="startup" type="radio" value="shown"/>
+                    <label for="startup_shown">Shown</label>
+                    <input id="startup_hidden" name="startup" type="radio" value="hidden"/>
+                    <label for="startup_hidden">Hidden</label>
+                    <input id="startup_latest" name="startup" type="radio" value="latest"/>
+                    <label for="startup_latest">Restore last</label>
+                </div>
+
+                <div class="browser-style">
+                    <label for="buttonheight">Button height:</label>
+                    <input id="buttonheight" name="buttonheight" type="number" size="3" min="0"/>
+                    <button class="browser-style">Reset default</button>
+                </div>
             </div>
 
-            <div class="browser-style">
-                <input id="sortorder" name="sortorder" type="checkbox"/>
-                <label for="sortorder">Sort first by account</label>
+            <h2>Folders to show</h2>
+            <div>
+                <div class="browser-style">
+                    <label for="nbfolders">Number of folders to show (-1: all):</label>
+                    <input id="nbfolders" name="nbfolders" type="number" size=3 min="-1"/>
+                    <button class="browser-style">Reset default</button>
+                </div>
+
+                <div class="browser-style">
+                    <label for="fixedfolders">Fixed folders (folders to always show):</label>
+                    <button class="browser-style">Select none</button>
+                    <button class="browser-style">Select all</button>
+                </div>
             </div>
 
-            <div class="browser-style">
-                <input id="buttonheight" name="buttonheight" type="number" size="3" min="0"/>
-                <label for="buttonheight">Button height</label>
-                <button class="browser-style">Reset default</button>
-            </div>
+            <h2>Sorting</h2>
+            <div>
+                <div class="browser-style">
+                    <label for="sortorder">Sort first by account:</label>
+                    <input id="sortorder" name="sortorder" type="checkbox"/>
+                </div>
 
-            <div class="browser-style">
-                <input id="nbfolders" name="nbfolders" type="number" size=3 min="-1"/>
-                <label for="nbfolders">Number of auto-selected folders to show (-1: all)</label>
-                <button class="browser-style">Reset default</button>
-            </div>
-
-            <div class="browser-style">
-                <input id="mixfixed" name="mixfixed" type="checkbox"/>
-                <label for="mixfixed">Mix fixed folder with auto-selected folders</label>
-            </div>
-
-            <div class="browser-style">
-                <input id="fixedfolders" name="fixedfolders" type="checkbox"/>
-                <label for="fixedfolders">Fixed folders to show</label>
-                <button class="browser-style">Select none</button>
-                <button class="browser-style">Select all</button>
+                <div class="browser-style">
+                    Sorting of auto selected and fixed folders:
+                    <input id="mixfixed_first" name="mixfixed" type="radio" value="fixedfirst"/>
+                    <label for="mixfixed_first">Fixed folders first</label>
+                    <input id="mixfixed_mixed" name="mixfixed" type="radio" value="mixed"/>
+                    <label for="mixfixed_mixed">Mixed</label>
+                    <input id="mixfixed_last" name="mixfixed" type="radio" value="fixedlast"/>
+                    <label for="mixfixed_last">Fixed folders last</label>
+                </div>
             </div>
         </form>
         <script src="options.js"></script>

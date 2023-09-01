@@ -10,7 +10,7 @@
   "name": "Tidybird",
   "description": "Organize email into folders quickly and easily.",
   "author": "George Anastassakis",
-  "version": "4.4",
+  "version": "5.0",
   "browser_action": {
     "default_icon": "skin/icon.png",
     "default_title": "Tidybird"
@@ -19,9 +19,7 @@
     "scripts": ["background.js"]
   },
   "options_ui": {
-    "page": "options/options.html",
-    "open_in_tab": false,
-    "browser_style": true
+    "page": "options/options.html"
   },
   "permissions": [
     "storage",
