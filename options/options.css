@@ -1,0 +1,36 @@
+.handle {
+  cursor: grab;
+}
+.handle::before {
+  content: "\21c5"
+}
+
+#foldersort {
+  display: table;
+  text-align: center;
+}
+/* also for non-movable rows */
+#foldersort > * {
+  display: table-row;
+}
+#foldersort > * > * {
+  display: table-cell;
+}
+#foldersort > * >:nth-child(2) {
+  text-align: left;
+}
+#foldersort > .movable > * {
+    border-bottom-style: solid;
+    border-width: 1px;
+}
+#foldersort > .header > * {
+    border-bottom-style: double;
+    padding-left: .4em;
+    padding-right: .4em;
+}
+#foldersort > .header>:nth-child(4) {
+    border-left-style: solid;
+    border-right-style: solid;
+    border-left-width: 1px;
+    border-right-width: 1px;
+}

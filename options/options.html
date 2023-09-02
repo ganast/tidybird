@@ -2,12 +2,19 @@
 
 <html>
     <head>
+        <title>Tidybird options</title>
         <meta charset="utf-8"/>
+        <link rel="stylesheet" href="options.css">
     </head>
     <body>
         <form>
             <h2>Display</h2>
             <div>
+                <div class="browser-style">
+                    <label for="addpreferences">Show "Open preferences" button:</label>
+                    <input id="addpreferences" name="addpreferences" type="checkbox" value="mostrecent"/>
+                </div>
+
                 <div class="browser-style">
                     Tidybird status on startup:
                     <input id="startup_shown" name="startup" type="radio" value="shown"/>
@@ -19,45 +26,80 @@
                 </div>
 
                 <div class="browser-style">
-                    <label for="buttonheight">Button height:</label>
-                    <input id="buttonheight" name="buttonheight" type="number" size="3" min="0"/>
-                    <button class="browser-style">Reset default</button>
+                    <label for="buttonheight">Button height (-1: auto):</label>
+                    <input id="buttonheight" name="buttonheight" type="number" size="3" min="-1"/>px
+                </div>
+                <div class="browser-style">
+                    <label for="buttonmargin">Space between buttons:</label>
+                    <input id="buttonmargin" name="buttonmargin" type="number" size="3" min="0"/>px
                 </div>
             </div>
 
             <h2>Folders to show</h2>
             <div>
                 <div class="browser-style">
-                    <label for="nbfolders">Number of folders to show (-1: all):</label>
+                    <label for="nbfolders">Number of folders to automatically show (-1: all):</label>
                     <input id="nbfolders" name="nbfolders" type="number" size=3 min="-1"/>
-                    <button class="browser-style">Reset default</button>
                 </div>
-
                 <div class="browser-style">
-                    <label for="fixedfolders">Fixed folders (folders to always show):</label>
-                    <button class="browser-style">Select none</button>
-                    <button class="browser-style">Select all</button>
+                    <label for="maxage">Number of days since last use to auto show (-1: any):</label>
+                    <input id="maxage" name="maxage" type="number" size=3 min="-1"/>
                 </div>
+                Folder order and selection. To change order: move the entry by moving the arrows
+                <!-- table does not work with sortable -->
+                <!-- grid wants to take all the space or may not be aligned-->
+                <div id="foldersort">
+                    <div><span></span><div>Folder</div><div>Show</div><div></div><div></div></div>
+                    <div class="header"><span></span><div></div><div>Always</div><div>Auto</div><div>Never</div><div>Pinned on top</div></div>
+                    <div class="movable"><span class="handle"></span><div>1</div><div><input type="checkbox"/></div><div><input type="checkbox"/></div><div><input type="checkbox"/></div></div>
+                    <div class="movable"><span class="handle"></span><div>2jkqdfmlkjdf</div><div><input type="checkbox"/></div><div><input type="checkbox"/></div><div><input type="checkbox"/></div></div>
+                    <div class="movable"><span class="handle"></span><div>3</div><div><input type="checkbox"/></div><div><input type="checkbox"/></div><div><input type="checkbox"/></div></div>
+                </div>
+<!--
+TODO sortable "table" with:
+                                                    always show        automatically show if recently moved to          never show         pinned on top (only pinned on top can be given an order)
+account (default for new folders in account, overridden by other defaults)
+|- foldera (only if folder can also take messages)
+|-- <default for new folders>
+|-- folder1 (only messages)
+|-- folder2
+|-- <all current folders in foldera>
+|- <all current folders in account>
+|- <all current folders under account, recursively: really ALL folders>
+
+-->
             </div>
 
             <h2>Sorting</h2>
             <div>
+                Sort by:
+                <!-- TODO: by default, folders should be ordered as listed in the folder pane, not by most recent -->
+                <ol>
+                    <li>
+                        <input id="sortorder_mostrecent" name="sortorder_mostrecent" type="checkbox" value="mostrecent"/>
+                        <label for="sortorder_mostrecent">Most recently used</label>
+                    </li>
+                    <li>
+                        <input id="sortorder_name" name="sortorder_name" type="checkbox" value="name"/>
+                        <label for="sortorder_name">Name</label>
+                    </li>
+                    <li>
+                        <input id="sortorder_parentname" name="sortorder_parentname" type="checkbox" value="parentname"/>
+                        <label for="sortorder_parentname">Parent name</label>
+                    </li>
+                    <li>
+                        <input id="sortorder_accountname" name="sortorder_accountname" type="checkbox" value="accountname"/>
+                        <label for="sortorder_accountname">Account name</label>
+                    </li>
+                </ol>
+                (update order when sorted by date on move not yet implemented - TODO)
                 <div class="browser-style">
-                    <label for="sortorder">Sort first by account:</label>
-                    <input id="sortorder" name="sortorder" type="checkbox"/>
-                </div>
-
-                <div class="browser-style">
-                    Sorting of auto selected and fixed folders:
-                    <input id="mixfixed_first" name="mixfixed" type="radio" value="fixedfirst"/>
-                    <label for="mixfixed_first">Fixed folders first</label>
-                    <input id="mixfixed_mixed" name="mixfixed" type="radio" value="mixed"/>
-                    <label for="mixfixed_mixed">Mixed</label>
-                    <input id="mixfixed_last" name="mixfixed" type="radio" value="fixedlast"/>
-                    <label for="mixfixed_last">Fixed folders last</label>
+                    <label for="groupby_account">Group by account:</label>
+                    <input id="groupby_account" name="groupby_account" type="checkbox"/>
                 </div>
             </div>
+
         </form>
-        <script src="options.js"></script>
+        <script type="module" src="options.js"></script>
     </body>
 </html>

@@ -113,10 +113,46 @@ async function themeChangedListener(themeUpdateInfo) {
 messenger.theme.onUpdated.addListener(themeChangedListener);
 applyThemeColors();
 
-/**
+/*
+ * Set button size
+ */
+async function applyButtonSize(changedSizes) {
+  if (changedSizes === undefined) {
+    // default are set in css, no need to redo
+    changedSizes = await messenger.storage.sync.get([
+      "buttonheight",
+      "buttonmargin",
+    ]);
+  }
+  if (changedSizes.buttonheight === undefined && changedSizes.buttonmargin === undefined) {
+    // default settings have not changed
+    return;
+  }
+  let height = changedSizes.buttonheight;
+  let margin = changedSizes.buttonmargin;
+  let stylesheetRules = document.styleSheets[0].rules;
+  for (let rule of stylesheetRules) {
+    if (rule.selectorText == ".tidybird-folder-move-button") {
+      if (height !== undefined) {
+        if (height == -1) {
+          height = "auto";
+        } else {
+          height = `${height}px`;
+        }
+        rule.style.height = height;
+      }
+      if (margin !== undefined) {
+        rule.style.margin = `${margin}px 0`;
+      }
+    }
+  }
+}
+applyButtonSize();
+
+/*
  * Keep track of the width
  *  must be run in this context: access to window
- **/
+ */
 async function windowRemovedListener(anEvent) {
   let innerWidth = window.innerWidth;
   if (innerWidth != 0) {
@@ -130,9 +166,35 @@ async function windowRemovedListener(anEvent) {
 window.addEventListener("unload", windowRemovedListener);
 
 /*
+ * Read settings
+ */
+let defaultSettings = {
+  nbfolders: 30,
+  maxage: 31,
+  sortorder_name: true,
+  sortorder_parentname: false,
+  groupby_account: false,
+};
+let settings = await messenger.storage.sync.get(defaultSettings);
+function updateSetting(setting, value) {
+  if (value === undefined) {
+    // if no value is given, take the default value
+    value = defaultSettings[setting];
+  }
+  if (setting == "nbfolders") {
+    value = Number(value); // convert to number
+  }
+  if (setting == "maxage") {
+    value = Math.floor((Date.now() - value * 24 * 60 * 60 * 1000) / 1000); // convert to milliseconds since epoch
+  }
+  settings[setting] = value;
+}
+updateSetting("nbfolders");
+updateSetting("maxage");
+
+/*
  * The move functionality
  */
-
 function moveMessages(messageArray, folder) {
   browser.messages.move(
     messageArray.map((message) => message.id),
@@ -210,10 +272,27 @@ const getFolder = function (account, pathArray) {
 
 let foldersInList = [];
 
+const getRoot = async function(folder) {
+  let path = folder.fullPath;
+  let account = folder.account;
+
+  // ancestor example: [ "<accountname>", "INBOX", "a_folder_in_inbox" ]
+  const ancestors = path.split("/");
+  // TODO make the "2" configurable (?)
+  const rootIndex = ancestors.length > 3 ? 2 : ancestors.length - 2;
+  // set a "fake" root folder with the account name if there is no folder ancestor
+  let root = { name: ancestors[0] };
+  if (ancestors.length > 2) {
+    // The name is not always the same as the path(part)
+    root = getFolder(account, ancestors.slice(1, rootIndex + 1));
+  }
+  return root;
+}
 const getExpandedFolder = async function (folder) {
   let expandedFolder = { ...folder };
   expandedFolder.account = await browser.accounts.get(folder.accountId);
   expandedFolder.fullPath = expandedFolder.account.name + expandedFolder.path;
+  expandedFolder.root = await getRoot(expandedFolder);
   return expandedFolder;
 };
 const isFolderInList = function (expandedFolder) {
@@ -223,24 +302,16 @@ const getFolderIndexInList = function (expandedFolder) {
   return foldersInList.indexOf(expandedFolder.fullPath);
 };
 
-const addButton = async function (folder) {
-  let expandedFolder = await getExpandedFolder(folder);
+const addAccount = async function (account) {
+  const title = document.createElement("h3");
+  title.textContent = account.name;
+  document.querySelector("#tidybirdButtonList").appendChild(title);
+};
+const addButton = async function (expandedFolder) {
   let path = expandedFolder.fullPath;
-  let account = expandedFolder.account;
 
   if (!isFolderInList(expandedFolder)) {
     console.log(`adding button for folder ${expandedFolder.name}`);
-
-    // ancestor example: [ "<accountname>", "INBOX", "a_folder_in_inbox" ]
-    const ancestors = path.split("/");
-    // TODO make the "2" configurable (?)
-    const rootIndex = ancestors.length > 3 ? 2 : ancestors.length - 2;
-    // set a "fake" root folder with the account name if there is no folder ancestor
-    let root = { name: ancestors[0] };
-    if (ancestors.length > 2) {
-      // The name is not always the same as the path(part)
-      root = getFolder(account, ancestors.slice(1, rootIndex + 1));
-    }
 
     const button = document.createElement("button");
     button.className = "tidybird-folder-move-button";
@@ -252,13 +323,13 @@ const addButton = async function (folder) {
 
     let label2 = document.createElement("div");
     label2.className = "tidybird-folder-move-button-label-2";
-    label2.textContent = root.name;
+    label2.textContent = expandedFolder.root.name;
     button.appendChild(label2);
 
     button.setAttribute("tooltiptext", path);
 
     button.addEventListener("click", function () {
-      moveSelectedMessageToFolder(folder);
+      moveSelectedMessageToFolder(expandedFolder); //TODO: check if this works on expandendFoler instead of folder
     });
     button.addEventListener("mouseenter", function (theEvent) {
       update_tooltipcolor(theEvent);
@@ -289,7 +360,7 @@ const updateButtonList = async function () {
     foldersInList.pop();
     buttonList.firstChild.remove();
   }
-  browser.tidybird_api.getMRMFolders.addListener(gotMRMFolders, 30);
+  browser.tidybird_api.getMRMFolders.addListener(gotMRMFolders, settings.nbfolders, settings.maxage);
 };
 
 const updateButtonListIfNeeded = async function (folder, neededIfNotPresent) {
@@ -308,6 +379,7 @@ const updateButtonListIfNeeded = async function (folder, neededIfNotPresent) {
   ) {
     updateButtonList();
   }
+  //TODO: else if sorted by most recently used: move folder to the top
 };
 
 /**
@@ -349,17 +421,67 @@ messenger.folders.onDeleted.addListener(async (deletedFolder) => {
   onFolderEvent(deletedFolder, null, "onDeleted");
 });
 
+async function addFolderList(folderList) {
+  // TODO: sort order of multiple layers
+  if (settings.sortorder_name) {
+    // sort by name instead of moved-to-date
+    folderList.sort(function (a, b) {
+      return a.name.localeCompare(b.name);
+    });
+  }
+  if (settings.sortorder_parentname) {
+    folderList.sort(function (a, b) {
+      return a.root.name.localeCompare(b.root.name);
+    });
+  }
+  for (let folder of folderList) {
+    addButton(folder);
+  }
+}
 /**
  * Get the most recently changed folders
  **/
 async function gotMRMFolders(mostRecentlyModifiedFolders) {
-  for (let folder of mostRecentlyModifiedFolders) {
-    addButton(folder);
-  }
-  browser.tidybird_api.getMRMFolders.removeListener(gotMRMFolders, 30);
+  let folderList = mostRecentlyModifiedFolders.map((f) => getExpandedFolder(f)); // to get account names
+  Promise.all(folderList).then(async (expandedFolderList) => {
+    if ( settings.groupby_account ) { //sortOnAccount ) {
+      let accounts = await messenger.accounts.list();
+      for (let account of accounts) {
+        let perAccountFolderList = expandedFolderList.filter((folder) => (folder.account.name == account.name));
+        if (perAccountFolderList.length) {
+          addAccount(account);
+          addFolderList(perAccountFolderList);
+        }
+      }
+    } else {
+      addFolderList(expandedFolderList);
+    }
+  });
+  browser.tidybird_api.getMRMFolders.removeListener(gotMRMFolders, settings.nbfolders, settings.maxage);
 }
 // do with events, as direct return raises an exception
-browser.tidybird_api.getMRMFolders.addListener(gotMRMFolders, 30);
+browser.tidybird_api.getMRMFolders.addListener(gotMRMFolders, settings.nbfolders, settings.maxage);
 //TODO: idea: keep our own list of MRM folders, so we can include or exclude any folder. Before of subfolders of removed/renamed folders (with MRM they are no longer in the list)
+
+/*
+ * Support live changing settings
+ */
+async function settingsChangedListener(settingsUpdateInfo) {
+  let changedSettings = Object.keys(settingsUpdateInfo).reduce((attrs, key) => ({...attrs, [key]: settingsUpdateInfo[key]['newValue']}), {});
+  applyButtonSize(changedSettings);
+  // settings that need an updateButtonList
+  let settingList = [ "nbfolders", "sortorder_name", "sortorder_parentname", "maxage", "groupby_account" ];
+  let needUpdateList = false;
+  for (let setting of settingList) {
+    if (changedSettings[setting] !== undefined) {
+      needUpdateList = true;
+      updateSetting(setting, changedSettings[setting]);
+    }
+  }
+  if (needUpdateList) {
+    updateButtonList();
+  }
+}
+messenger.storage.sync.onChanged.addListener(settingsChangedListener);
 
 /* vi: set tabstop=2 shiftwidth=2 softtabstop=2 expandtab: */

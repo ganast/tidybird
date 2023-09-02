@@ -39,5 +39,8 @@
       "package.json",
       "yarn.lock"
     ]
+  },
+  "dependencies": {
+    "sortablejs": "^1.15.0"
   }
 }

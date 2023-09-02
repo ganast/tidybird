@@ -6,15 +6,24 @@ let messenger = browser; // to prevent errors in linting...
     let htmlPage = "content/tidybirdpane.html";
 
     // default parameter only used at first startup
-    function toggleTidybird(settings) {
-      // if a setting is not set, it will be 'undefined'
-      let isShowing = settings.isShowing ?? true;
+    async function toggleTidybird(settings) {
+      let isShowing = settings.isShowing;
       let width = settings.width;
-      if (
-        // startupEvent can also be an event
-        (startupEvent === true && isShowing) ||
-        (startupEvent !== true && !isShowing)
-      ) {
+
+      let showOnStartup = false;
+      if(startupEvent === true) { // startupEvent can also be an event
+        let startupSetting = await messenger.storage.sync.get({
+          startup: "latest", //TODO only 1 place to define defaults
+        });
+        if (startupSetting.startup == "shown") {
+          showOnStartup = true;
+        } else if (startupSetting.startup == "hidden") {
+          showOnStartup = false;
+        } else {
+          showOnStartup = isShowing;
+        }
+      }
+      if ( showOnStartup || (startupEvent !== true && !isShowing) ) {
         messenger.ex_customui.add(
           messenger.ex_customui.LOCATION_MESSAGING,
           htmlPage,
@@ -34,7 +43,10 @@ let messenger = browser; // to prevent errors in linting...
       console.error(`Error in tidybird getting settings: ${error}`);
     }
 
-    let gettingSetting = messenger.storage.local.get(["isShowing", "width"]);
+    let gettingSetting = messenger.storage.local.get({
+      isShowing: true,
+      width: undefined
+    });
     gettingSetting.then(toggleTidybird, onError);
   }
 

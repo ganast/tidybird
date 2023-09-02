@@ -1,7 +1,11 @@
+//import Sortable from './sortablejs'; // does not work
+import Sortable from './sortablejs/modular/sortable.core.esm.js';
+// remark: sortable needs "open_in_tab": true in the manifest for options_ui
+// TODO: find out why
+
 let messenger = browser; // to prevent errors in linting...
 
 async function save() {
-  console.log(this);
   let value;
   if (this.type == "checkbox") {
     value = this.checked;
@@ -46,14 +50,16 @@ function restoreOptions() {
   }
 
   let defaults = {
-    // TODO: use these values
     startup: "latest",
-    // TODO: check these defaults
-    sortorder: false,
-    buttonheight: 30,
+    buttonheight: -1,
+    buttonmargin: 3,
     nbfolders: 30,
-    fixedfolders: {},
-    mixfixed: "fixedfirst",
+    maxage: 31,
+    sortorder_mostrecent: true,
+    sortorder_name: true,
+    sortorder_parentname: false,
+    sortorder_accountname: false,
+    groupby_account: false,
   };
   let getting = messenger.storage.sync.get(defaults);
   getting.then(setCurrentChoice, onError);
@@ -65,3 +71,12 @@ for (const input of document.querySelectorAll("input")) {
   // input event fires also when focus does not change, but does not work for select
   input.addEventListener("input", save);
 }
+
+let sortable = Sortable.create(
+  document.getElementById('foldersort'),
+  {
+    handle: '.handle',
+    animation: 150,
+    draggable: ".movable",
+  }
+);
