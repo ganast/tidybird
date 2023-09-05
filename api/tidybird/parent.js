@@ -8,8 +8,6 @@ var { MailServices } = ChromeUtils.import(
   "resource:///modules/MailServices.jsm"
 );
 
-var { FolderUtils } = ChromeUtils.import("resource:///modules/FolderUtils.jsm");
-
 // var tidybird_api is used by TB: defined in manifest.json
 // eslint-disable-next-line no-unused-vars
 var tidybird_api = class extends ExtensionCommon.ExtensionAPI {

@@ -3,8 +3,6 @@ import Sortable from './sortablejs/modular/sortable.core.esm.js';
 // remark: sortable needs "open_in_tab": true in the manifest for options_ui
 // TODO: find out why
 
-let messenger = browser; // to prevent errors in linting...
-
 async function save() {
   let value;
   if (this.type == "checkbox") {
@@ -72,7 +70,7 @@ for (const input of document.querySelectorAll("input")) {
   input.addEventListener("input", save);
 }
 
-let sortable = Sortable.create(
+Sortable.create(
   document.getElementById('foldersort'),
   {
     handle: '.handle',

@@ -1,5 +1,3 @@
-let messenger = browser; // to prevent errors in linting...
-
 (async () => {
   // the first parameter of this function gets tab information when using the button
   function toggleTidybirdBySettings(startupEvent = false) {

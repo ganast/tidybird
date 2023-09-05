@@ -1,9 +1,4 @@
 /*
- * messenger is not yet known in TB 68 and make (firefox) linter happy
- */
-let messenger = browser;
-
-/*
  * Themed TB support: apply theme colors
  */
 async function applyThemeColors(theme) {
@@ -175,7 +170,8 @@ let defaultSettings = {
   sortorder_parentname: false,
   groupby_account: false,
 };
-let settings = await messenger.storage.sync.get(defaultSettings);
+// settings cache, kept up to date using updateSetting
+let settingsCache;
 function updateSetting(setting, value) {
   if (value === undefined) {
     // if no value is given, take the default value
@@ -187,10 +183,18 @@ function updateSetting(setting, value) {
   if (setting == "maxage") {
     value = Math.floor((Date.now() - value * 24 * 60 * 60 * 1000) / 1000); // convert to milliseconds since epoch
   }
-  settings[setting] = value;
+  settingsCache[setting] = value;
 }
-updateSetting("nbfolders");
-updateSetting("maxage");
+async function getSettings() {
+  // if cache is empty, update the cache
+  if (settingsCache === undefined) {
+    settingsCache = await messenger.storage.sync.get(defaultSettings);
+    // recalculate these settings
+    updateSetting("nbfolders");
+    updateSetting("maxage");
+  }
+  return settingsCache;
+}
 
 /*
  * The move functionality
@@ -202,7 +206,8 @@ function moveMessages(messageArray, folder) {
   );
 }
 
-const moveSelectedMessageToFolder = async function (folder) {
+const moveSelectedMessageToFolder = async function (expandedFolder) {
+  let folder = await getFolderFromExpanded(expandedFolder); //moveMessages does not work on expandedFolder
   /*
   A message can be displayed in either a 3-pane tab, a tab of its own, or in a window of its own. All
   are referenced by tabId in this API. Display windows are considered to have exactly one tab,
@@ -295,6 +300,13 @@ const getExpandedFolder = async function (folder) {
   expandedFolder.root = await getRoot(expandedFolder);
   return expandedFolder;
 };
+const getFolderFromExpanded = async function(expandedFolder) {
+  let folder = { ...expandedFolder };
+  delete folder.account;
+  delete folder.fullPath;
+  delete folder.root;
+  return folder;
+}
 const isFolderInList = function (expandedFolder) {
   return foldersInList.includes(expandedFolder.fullPath);
 };
@@ -329,7 +341,7 @@ const addButton = async function (expandedFolder) {
     button.setAttribute("tooltiptext", path);
 
     button.addEventListener("click", function () {
-      moveSelectedMessageToFolder(expandedFolder); //TODO: check if this works on expandendFoler instead of folder
+      moveSelectedMessageToFolder(expandedFolder);
     });
     button.addEventListener("mouseenter", function (theEvent) {
       update_tooltipcolor(theEvent);
@@ -360,6 +372,7 @@ const updateButtonList = async function () {
     foldersInList.pop();
     buttonList.firstChild.remove();
   }
+  let settings = await getSettings();
   browser.tidybird_api.getMRMFolders.addListener(gotMRMFolders, settings.nbfolders, settings.maxage);
 };
 
@@ -422,6 +435,7 @@ messenger.folders.onDeleted.addListener(async (deletedFolder) => {
 });
 
 async function addFolderList(folderList) {
+  let settings = await getSettings();
   // TODO: sort order of multiple layers
   if (settings.sortorder_name) {
     // sort by name instead of moved-to-date
@@ -442,6 +456,7 @@ async function addFolderList(folderList) {
  * Get the most recently changed folders
  **/
 async function gotMRMFolders(mostRecentlyModifiedFolders) {
+  let settings = await getSettings();
   let folderList = mostRecentlyModifiedFolders.map((f) => getExpandedFolder(f)); // to get account names
   Promise.all(folderList).then(async (expandedFolderList) => {
     if ( settings.groupby_account ) { //sortOnAccount ) {
@@ -460,14 +475,18 @@ async function gotMRMFolders(mostRecentlyModifiedFolders) {
   browser.tidybird_api.getMRMFolders.removeListener(gotMRMFolders, settings.nbfolders, settings.maxage);
 }
 // do with events, as direct return raises an exception
-browser.tidybird_api.getMRMFolders.addListener(gotMRMFolders, settings.nbfolders, settings.maxage);
-//TODO: idea: keep our own list of MRM folders, so we can include or exclude any folder. Before of subfolders of removed/renamed folders (with MRM they are no longer in the list)
+async function addMRMListener() {
+  let settings = await getSettings();
+  browser.tidybird_api.getMRMFolders.addListener(gotMRMFolders, settings.nbfolders, settings.maxage);
+  //TODO: idea: keep our own list of MRM folders, so we can include or exclude any folder. Before of subfolders of removed/renamed folders (with MRM they are no longer in the list)
+}
+addMRMListener();
 
 /*
  * Support live changing settings
  */
 async function settingsChangedListener(settingsUpdateInfo) {
-  let changedSettings = Object.keys(settingsUpdateInfo).reduce((attrs, key) => ({...attrs, [key]: settingsUpdateInfo[key]['newValue']}), {});
+  let changedSettings = Object.keys(settingsUpdateInfo).reduce((attrs, key) => ({...attrs, [key]: settingsUpdateInfo[key].newValue}), {});
   applyButtonSize(changedSettings);
   // settings that need an updateButtonList
   let settingList = [ "nbfolders", "sortorder_name", "sortorder_parentname", "maxage", "groupby_account" ];

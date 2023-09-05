@@ -12,8 +12,12 @@ module.exports = {
   plugins: ["mozilla"],
   parserOptions: {
     ecmaVersion: 12,
+    sourceType: "module",
   },
   rules: {
     "spaced-comment": "off",
   },
+  globals: {
+    messenger: true,
+  }
 };
