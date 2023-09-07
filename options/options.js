@@ -2,6 +2,7 @@
 import Sortable from './sortablejs/modular/sortable.core.esm.js';
 // remark: sortable needs "open_in_tab": true in the manifest for options_ui
 // TODO: find out why
+import option_defaults from './default_options.js';
 
 async function save() {
   let value;
@@ -15,52 +16,40 @@ async function save() {
   });
 }
 
-function restoreOptions() {
-
-  function setCurrentChoice(result) {
-    console.log("set:");
-    console.log(result);
-    for (let [key, value] of Object.entries(result)) {
-      console.log(`${key}: ${value}`);
-      let inputNodes = document.querySelectorAll(`[name=${key}]`);
-      // if inputNode is radio
-      if (!inputNodes.length) {
-        console.error(`Did not find an input for setting ${key}`);
-      } else if (inputNodes.length > 1) { // radio or checkbox group
-        for (let inputNode of inputNodes) {
-          if (inputNode.value == value) {
-            inputNode.checked = true;
-          }
+function setCurrentChoice(result) {
+  for (let [key, value] of Object.entries(result)) {
+    console.log(`${key}: ${value}`);
+    let inputNodes = document.querySelectorAll(`[name=${key}]`);
+    // if inputNode is radio
+    if (!inputNodes.length) {
+      console.error(`Did not find an input for setting ${key}`);
+    } else if (inputNodes.length > 1) { // radio or checkbox group
+      for (let inputNode of inputNodes) {
+        if (inputNode.value == value) {
+          inputNode.checked = true;
         }
+      }
+    } else {
+      let inputNode = inputNodes[0];
+      if (inputNode.type == "checkbox") {
+        inputNode.checked = value;
       } else {
-        let inputNode = inputNodes[0];
-        if (inputNode.type == "checkbox") {
-          inputNode.checked = value;
-        } else {
-          inputNode.value = value;
-        }
+        inputNode.value = value;
       }
     }
   }
-
-  function onError(error) {
-    console.log(`Error: ${error}`);
-  }
-
-  let defaults = {
-    startup: "latest",
-    buttonheight: -1,
-    buttonmargin: 3,
-    nbfolders: 30,
-    maxage: 31,
-    sortorder_mostrecent: true,
-    sortorder_name: true,
-    sortorder_parentname: false,
-    sortorder_accountname: false,
-    groupby_account: false,
-  };
-  let getting = messenger.storage.sync.get(defaults);
+}
+function onError(error) {
+  console.log(`Error: ${error}`);
+}
+function restoreOptions() {
+  let getting = messenger.storage.sync.get(option_defaults);
   getting.then(setCurrentChoice, onError);
+}
+
+async function settingsChangedListener(settingsUpdateInfo) {
+  let changedSettings = Object.keys(settingsUpdateInfo).reduce((attrs, key) => ({...attrs, [key]: settingsUpdateInfo[key].newValue}), {});
+  setCurrentChoice(changedSettings);
 }
 
 
@@ -78,3 +67,6 @@ Sortable.create(
     draggable: ".movable",
   }
 );
+
+// update the settings shown in this window as they may have been changed in another window
+messenger.storage.sync.onChanged.addListener(settingsChangedListener);

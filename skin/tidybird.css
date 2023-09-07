@@ -33,13 +33,19 @@
   color: var(--lwt-text-color);
 }
 
-.tidybird-folder-move-button {
-  margin: 3px 0;
+.tidybird-button {
   width: 100%;
+}
+.tidybird-folder-move-button {
+  margin-bottom: 3px;
   display: flex;
   flex-wrap: wrap;
   word-break: break-word; /* at least for tooltips! TODO should this be a toggle setting for the button text? */
   height: auto;
+}
+
+.hidden {
+  display: none;
 }
 
 /*

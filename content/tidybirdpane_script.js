@@ -1,8 +1,8 @@
 /*
  * Themed TB support: apply theme colors
  */
+let body = document.getElementById("tidybirdPane");
 async function applyThemeColors(theme) {
-  let body = document.querySelector("body");
   if (theme === undefined) {
     theme = await messenger.theme.getCurrent();
   }
@@ -39,10 +39,8 @@ async function applyThemeColors(theme) {
     body.classList.remove("themed");
   }
   body.style.setProperty("--toolbarbutton-border-radius", "3px");
-  tooltipColorUpdated = false;
 }
 
-let tooltipColorUpdated = false;
 /**
  * calculate new colorcomponent using premultiplied alpha colorcomponents
  **/
@@ -52,27 +50,39 @@ function calculate_colorcomponent(color_upper, color_under, alpha_upper) {
 
 /**
  * Update the tooltip color, if not yet done, because it may be transparent (from the theme) otherwise
- *  this fires when the mouse hovers over the button
+ *  this fires when the theme changes or when the first button is added
+ *  (before, we fired everytime a button was mouse entered)
  *  because this way, we are sure a button exists to take the _computed_ color from
  **/
-async function update_tooltipcolor(theEvent) {
+let tooltipColorUpdated = false;
+async function update_tooltipcolor(aButton) {
   if (tooltipColorUpdated) {
     // do not update if already done once after loading or theme change
     return;
   }
-  let body = document.querySelector("body");
-  let target = theEvent.target;
+
+  // no button is given, we got fired because the theme has changed, get the first button with tooltip
+  if (aButton === undefined) {
+    aButton = document.querySelector("[tooltiptext]");
+  }
+  // no button was found not given, we should retry another time
+  if (!aButton) {
+    return;
+  }
+  tooltipColorUpdated = true; // set this here, so we don't do it twice at the same time; we assume nothing will go wrong
+
   // calculate the color of the button: https://en.wikipedia.org/wiki/Alpha_compositing
   let color = [0, 0, 0, 0];
+  // this starts with the button and then runs over all its parents
+  let buttonParent = aButton;
   do {
-    // theEvent.target or document.querySelector("[tooltiptext]")
-    let target_color = window
-      .getComputedStyle(target)
+    let buttonParent_color = window
+      .getComputedStyle(buttonParent)
       .getPropertyValue("background-color");
-    console.log(`${theEvent.target.style.backgroundColor} - ${target_color}`);
+    console.log(`style computed background-color: ${buttonParent_color}`);
     let color_under = [0, 0, 0, 0];
-    if (target_color != "") {
-      color_under = target_color
+    if (buttonParent_color != "") {
+      color_under = buttonParent_color
         .replace(/.*\((.*)\)/, "$1")
         .split(", ")
         .map((x) => parseFloat(x));
@@ -93,17 +103,18 @@ async function update_tooltipcolor(theEvent) {
       }
     }
     color[3] = alpha;
-    console.log(`color: ${color}`);
-    target = target.parentElement;
-  } while (target !== null && color[3] < 1);
+    console.log(`calculated color: ${color}`);
+    buttonParent = buttonParent.parentElement;
+  } while (buttonParent !== null && color[3] < 1);
   let tooltip_bgcolor = "rgba(" + color.join(", ") + ")";
   console.log(`result: ${tooltip_bgcolor}`);
   body.style.setProperty("--tooltip-bgcolor", tooltip_bgcolor);
-  tooltipColorUpdated = true;
 }
 
 async function themeChangedListener(themeUpdateInfo) {
   applyThemeColors(themeUpdateInfo.theme);
+  tooltipColorUpdated = false;
+  applyTooltipColor();
 }
 messenger.theme.onUpdated.addListener(themeChangedListener);
 applyThemeColors();
@@ -137,7 +148,7 @@ async function applyButtonSize(changedSizes) {
         rule.style.height = height;
       }
       if (margin !== undefined) {
-        rule.style.margin = `${margin}px 0`;
+        rule.style['margin-bottom'] = `${margin}px`;
       }
     }
   }
@@ -163,19 +174,13 @@ window.addEventListener("unload", windowRemovedListener);
 /*
  * Read settings
  */
-let defaultSettings = {
-  nbfolders: 30,
-  maxage: 31,
-  sortorder_name: true,
-  sortorder_parentname: false,
-  groupby_account: false,
-};
+import option_defaults from '../options/default_options.js';
 // settings cache, kept up to date using updateSetting
 let settingsCache;
 function updateSetting(setting, value) {
   if (value === undefined) {
     // if no value is given, take the default value
-    value = defaultSettings[setting];
+    value = option_defaults[setting];
   }
   if (setting == "nbfolders") {
     value = Number(value); // convert to number
@@ -184,11 +189,18 @@ function updateSetting(setting, value) {
     value = Math.floor((Date.now() - value * 24 * 60 * 60 * 1000) / 1000); // convert to milliseconds since epoch
   }
   settingsCache[setting] = value;
+  if (setting == "showoptionsbutton") {
+    if (value) {
+      showOptionsButton();
+    } else {
+      hideOptionsButton();
+    }
+  }
 }
 async function getSettings() {
   // if cache is empty, update the cache
   if (settingsCache === undefined) {
-    settingsCache = await messenger.storage.sync.get(defaultSettings);
+    settingsCache = await messenger.storage.sync.get(option_defaults);
     // recalculate these settings
     updateSetting("nbfolders");
     updateSetting("maxage");
@@ -314,63 +326,101 @@ const getFolderIndexInList = function (expandedFolder) {
   return foldersInList.indexOf(expandedFolder.fullPath);
 };
 
-const addAccount = async function (account) {
-  const title = document.createElement("h3");
+let listParent = document.getElementById("tidybirdFolderButtonList");
+let listAccountTitle = null;
+const addAccount = async function (account,tmpParent) {
+  let title;
+  if (listAccountTitle == null) {
+    title = document.createElement("h3");
+    listAccountTitle = title;
+  } else {
+    title = listAccountTitle.cloneNode(true);
+  }
   title.textContent = account.name;
-  document.querySelector("#tidybirdButtonList").appendChild(title);
+  tmpParent.appendChild(title);
 };
-const addButton = async function (expandedFolder) {
+
+let buttonTemplate = null;
+const addButton = async function (expandedFolder,buttonParent) {
   let path = expandedFolder.fullPath;
 
   if (!isFolderInList(expandedFolder)) {
     console.log(`adding button for folder ${expandedFolder.name}`);
 
-    const button = document.createElement("button");
-    button.className = "tidybird-folder-move-button";
+    let button;
+    if (buttonTemplate == null) {
+      button = document.createElement("button");
+      button.className = "tidybird-folder-move-button tidybird-button";
 
-    let label1 = document.createElement("div");
-    label1.className = "tidybird-folder-move-button-label-1";
-    label1.textContent = expandedFolder.name;
-    button.appendChild(label1);
+      let label1 = document.createElement("div");
+      label1.className = "tidybird-folder-move-button-label-1";
+      label1.textContent = expandedFolder.name;
+      button.appendChild(label1);
 
-    let label2 = document.createElement("div");
-    label2.className = "tidybird-folder-move-button-label-2";
-    label2.textContent = expandedFolder.root.name;
-    button.appendChild(label2);
+      let label2 = document.createElement("div");
+      label2.className = "tidybird-folder-move-button-label-2";
+      label2.textContent = expandedFolder.root.name;
+      button.appendChild(label2);
 
-    button.setAttribute("tooltiptext", path);
+      button.setAttribute("tooltiptext", path);
+      buttonTemplate = button;
+    } else {
+      button = buttonTemplate.cloneNode(true);
+      let firstLabel = button.firstElementChild;
+      firstLabel.textContent = expandedFolder.name;
+      firstLabel.nextElementSibling.textContent = expandedFolder.root.name;
+    }
 
     button.addEventListener("click", function () {
       moveSelectedMessageToFolder(expandedFolder);
     });
-    button.addEventListener("mouseenter", function (theEvent) {
-      update_tooltipcolor(theEvent);
-    });
-
-    document.querySelector("#tidybirdButtonList").appendChild(button);
+    console.debug("Appending button to parent");
+    buttonParent.appendChild(button);
+    // the parent may not be part of the document, so we can't calculate the tooltip color yet
+    console.debug("Appended button to parent");
 
     foldersInList.push(path);
+
+    return button;
   } else {
     console.log(
       `not adding ${expandedFolder.name}: already at ${getFolderIndexInList(
         expandedFolder
       )}`
     );
+    return false;
   }
 };
+let optionsButton;
+const addSettingsButton = async function(optionsButtonParent) {
+  optionsButton = document.createElement("button");
+  optionsButton.className = "tidybird-button hidden";
+  optionsButton.textContent = "Options";
+  optionsButton.addEventListener("click", function () {
+    showOptionsPage();
+  });
+  optionsButtonParent.appendChild(optionsButton);
+  update_tooltipcolor(optionsButton);
+  let settings = await getSettings();
+  if (settings.showoptionsbutton) {
+    showOptionsButton();
+  }
+}
+const showOptionsButton = async function() {
+  optionsButton.classList.remove('hidden');
+}
+const hideOptionsButton = async function() {
+  optionsButton.classList.add('hidden');
+}
+const showOptionsPage = async function() {
+  browser.runtime.openOptionsPage();
+}
 
 const updateButtonList = async function () {
   console.debug("tidybird: updating button list");
-  var buttonList = document.getElementById("tidybirdButtonList");
-  if (buttonList == null) {
-    console.warn(
-      "No tidybird buttonlist found, while it should have been created."
-    );
-    return;
-  }
-  while (buttonList.hasChildNodes()) {
+  while (listParent.hasChildNodes()) {
     foldersInList.pop();
-    buttonList.firstChild.remove();
+    listParent.firstChild.remove();
   }
   let settings = await getSettings();
   browser.tidybird_api.getMRMFolders.addListener(gotMRMFolders, settings.nbfolders, settings.maxage);
@@ -434,7 +484,7 @@ messenger.folders.onDeleted.addListener(async (deletedFolder) => {
   onFolderEvent(deletedFolder, null, "onDeleted");
 });
 
-async function addFolderList(folderList) {
+async function addFolderList(folderList,tmpParent) {
   let settings = await getSettings();
   // TODO: sort order of multiple layers
   if (settings.sortorder_name) {
@@ -449,30 +499,52 @@ async function addFolderList(folderList) {
     });
   }
   for (let folder of folderList) {
-    addButton(folder);
+    await addButton(folder,tmpParent); // this should be executed in order
   }
 }
 /**
  * Get the most recently changed folders
  **/
+let othersParent = document.getElementById("otherButtonList");
+//let start = true;
 async function gotMRMFolders(mostRecentlyModifiedFolders) {
   let settings = await getSettings();
+  browser.tidybird_api.getMRMFolders.removeListener(gotMRMFolders, settings.nbfolders, settings.maxage);
+  /*
+  // to test initial load without recent folders
+  if (start) {
+    mostRecentlyModifiedFolders = [];
+    start = false;
+  }
+  */
+
+  if (mostRecentlyModifiedFolders.length == 0) {
+    listParent.innerHTML = "<p>Buttons to move mails will appear (and this message will disappear) once you move a message to a folder that will also appear in Thunderbird's recent folders list.</p><p>You can also select the folders you want in the Options.<br/>Options can be opened using the \"Options\" button or using the Add-ons Manager</p>";
+    return;
+  }
+
   let folderList = mostRecentlyModifiedFolders.map((f) => getExpandedFolder(f)); // to get account names
+  let tmpListParent = document.createDocumentFragment();
   Promise.all(folderList).then(async (expandedFolderList) => {
     if ( settings.groupby_account ) { //sortOnAccount ) {
       let accounts = await messenger.accounts.list();
       for (let account of accounts) {
         let perAccountFolderList = expandedFolderList.filter((folder) => (folder.account.name == account.name));
         if (perAccountFolderList.length) {
-          addAccount(account);
-          addFolderList(perAccountFolderList);
+          // these should be executed in order
+          await addAccount(account,tmpListParent);
+          await addFolderList(perAccountFolderList,tmpListParent);
         }
       }
     } else {
-      addFolderList(expandedFolderList);
+      await addFolderList(expandedFolderList,tmpListParent);
     }
+    console.debug("Appending tmpList to list");
+    // folderlists should be added before the tmp parent is added to the real parent
+    listParent.appendChild(tmpListParent);
+    console.debug("Appended tmpList to list");
+    update_tooltipcolor(); // in this promise to make sure it fires after list are added
   });
-  browser.tidybird_api.getMRMFolders.removeListener(gotMRMFolders, settings.nbfolders, settings.maxage);
 }
 // do with events, as direct return raises an exception
 async function addMRMListener() {
@@ -481,6 +553,7 @@ async function addMRMListener() {
   //TODO: idea: keep our own list of MRM folders, so we can include or exclude any folder. Before of subfolders of removed/renamed folders (with MRM they are no longer in the list)
 }
 addMRMListener();
+addSettingsButton(othersParent);
 
 /*
  * Support live changing settings
@@ -489,12 +562,12 @@ async function settingsChangedListener(settingsUpdateInfo) {
   let changedSettings = Object.keys(settingsUpdateInfo).reduce((attrs, key) => ({...attrs, [key]: settingsUpdateInfo[key].newValue}), {});
   applyButtonSize(changedSettings);
   // settings that need an updateButtonList
-  let settingList = [ "nbfolders", "sortorder_name", "sortorder_parentname", "maxage", "groupby_account" ];
+  let settingList = [ "nbfolders", "maxage", "sortorder_mostrecent", "sortorder_name", "sortorder_parentname", "sortorder_accountname", "groupby_account" ];
   let needUpdateList = false;
-  for (let setting of settingList) {
-    if (changedSettings[setting] !== undefined) {
+  for (let setting in changedSettings) {
+    updateSetting(setting, changedSettings[setting]);
+    if (settingList.indexOf(setting)>-1) {
       needUpdateList = true;
-      updateSetting(setting, changedSettings[setting]);
     }
   }
   if (needUpdateList) {
