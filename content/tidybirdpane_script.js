@@ -527,7 +527,7 @@ async function gotMRMFolders(mostRecentlyModifiedFolders) {
   let tmpListParent = document.createDocumentFragment();
   Promise.all(folderList).then(async (expandedFolderList) => {
     if ( settings.groupby_account ) { //sortOnAccount ) {
-      let accounts = await messenger.accounts.list();
+      let accounts = await messenger.accounts.list(false);
       for (let account of accounts) {
         let perAccountFolderList = expandedFolderList.filter((folder) => (folder.account.name == account.name));
         if (perAccountFolderList.length) {
