@@ -327,8 +327,9 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
     // Returns an element containing the new frame and supporting all functions
     // documented for insertWebextFrame().
     // To remove frames created by this method, use removeSidebarWebextFrame().
-    const insertSidebarWebextFrame = function(location, url, document,
+    const insertSidebarWebextFrame = function(location, url, window,
         container, options) {
+      const document = window.document;
       const isXUL = container.namespaceURI
           === "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
       const sidebarBoxId = "customui-sidebar-box-" + location;
@@ -349,17 +350,35 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
 
           sidebar = document.createXULElement("vbox");
           sidebar.setAttribute("persist", "width");
+          sidebar.id = sidebarBoxId;
         } else {
-          // non-XUL container, use a fixed div for now
+          // non-XUL container
+          // we need to set with on splitter and body when using the grid; can't be set on browser here
+          const width = options.width ? options.width : 244;
           sidebar = document.createElement("div");
           sidebar.style.height = "100%";
-          sidebar.style.width = "244px";
           sidebar.style.display = "flex";
           sidebar.style.flexDirection = "column";
           sidebar.style.gridRow = "1/-1"; // in case we're in a grid
+          sidebar.style.gridArea = sidebarBoxId + "-sidebar-area";
+          sidebar.id = sidebarBoxId;
+
+          const splitter = document.createElement("hr", { is: "pane-splitter" });
+          splitter.setAttribute("is","pane-splitter");
+          splitter.resizeDirection = "horizontal";
+          splitter.resizeElement = sidebar;
+          splitter.setAttribute("collapse-width","30");
+          splitter.style.gridArea = sidebarBoxId + "-splitter-area";
+          splitter.id = sidebarBoxId + "-splitter";
+          splitter.width = width; // do not add px
+          container.appendChild(splitter);
+
+          let parentGridTemplate = window.getComputedStyle(container).gridTemplate;
+          container.style.setProperty(`--${splitter.id}-width`,width+"px");
+          //TODO generate this edit: add 2 columns
+          container.style.gridTemplate = `"folders folderPaneSplitter threads ${splitter.style.gridArea} ${sidebar.style.gridArea}" minmax(auto, 1fr) "folders folderPaneSplitter messagePaneSplitter ${splitter.style.gridArea} ${sidebar.style.gridArea}" min-content "folders folderPaneSplitter message ${splitter.style.gridArea} ${sidebar.style.gridArea}" minmax(auto, var(--messagePaneSplitter-height)) / minmax(auto, var(--folderPaneSplitter-width)) min-content minmax(auto, 1fr) min-content minmax(auto, var(--${splitter.id}-width))`;
         }
         
-        sidebar.id = sidebarBoxId;
         container.appendChild(sidebar);
       }
       const result = insertWebextFrame(location, url, sidebar);
@@ -368,9 +387,9 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
       // (if the largest requested width is too large); an implementation for
       // Core inclusion might want to address these issues.
       setWebextFrameDynamicVisibility(result, options);
-      setWebextFrameDynamicDimension(result, options, "width", 244);
       if (isXUL) {
         result.flex = "1";
+        setWebextFrameDynamicDimension(result, options, "width", 244);
       } else {
         result.style.flexBasis = "100%";
       }
@@ -383,6 +402,9 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
     const removeSidebarWebextFrame = function(tag, url, document) {
       const sidebar = removeWebextFrame(tag, url, document);
       if (sidebar && sidebar.childElementCount == 0) {
+        //TODO properly remove our edit, if it has been changed
+        // in case another addon also edited the gridTemplate
+        sidebar.parentNode.style.gridTemplate = null;
         sidebar.previousSibling.remove(); // splitter
         sidebar.remove();
       }
@@ -653,7 +675,7 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
               + "messengercompose/messengercompose.xhtml") {
             return; // incompatible window
           }
-          insertSidebarWebextFrame("compose", url, window.document,
+          insertSidebarWebextFrame("compose", url, window,
               window.document.getElementById("composeContentBox"), options);
         },
         uninjectFromWindow(window, url) {
@@ -669,12 +691,12 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
             // Before TB 115 (Supernova UI): inject into main window
             const messengerBox = window.document.getElementById("messengerBox");
             if (messengerBox) {
-              insertSidebarWebextFrame("messaging", url, window.document,
+              insertSidebarWebextFrame("messaging", url, window,
                   messengerBox, options);
             }
           } else if (window.location.toString() === "about:3pane") {
             // TB 115 (Supernova UI): inject into the messaging tab
-            insertSidebarWebextFrame("messaging", url, window.document,
+            insertSidebarWebextFrame("messaging", url, window,
                 window.document.body, options);
           }
         },
