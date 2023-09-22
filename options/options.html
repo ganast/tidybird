@@ -31,43 +31,8 @@
 
                 <div class="browser-style">
                     <label for="showoptionsbutton">Show "Options" button:</label>
-                    <input id="showoptionsbutton" name="showoptionsbutton" type="checkbox" value="mostrecent"/>
+                    <input id="showoptionsbutton" name="showoptionsbutton" type="checkbox"/>
                 </div>
-            </div>
-
-            <h2>Folders to show</h2>
-            <div>
-                <div class="browser-style">
-                    <label for="nbfolders">Number of folders to automatically show (-1: all):</label>
-                    <input id="nbfolders" name="nbfolders" type="number" size=3 min="-1"/>
-                </div>
-                <div class="browser-style">
-                    <label for="maxage">Number of days since last use to auto show (-1: any):</label>
-                    <input id="maxage" name="maxage" type="number" size=3 min="-1"/>
-                </div>
-                Folder order and selection. To change order: move the entry by moving the arrows
-                <!-- table does not work with sortable -->
-                <!-- grid wants to take all the space or may not be aligned-->
-                <div id="foldersort">
-                    <div><span></span><div>Folder</div><div>Show</div><div></div><div></div></div>
-                    <div class="header"><span></span><div></div><div>Always</div><div>Auto</div><div>Never</div><div>Pinned on top</div></div>
-                    <div class="movable"><span class="handle"></span><div>1</div><div><input type="checkbox"/></div><div><input type="checkbox"/></div><div><input type="checkbox"/></div></div>
-                    <div class="movable"><span class="handle"></span><div>2jkqdfmlkjdf</div><div><input type="checkbox"/></div><div><input type="checkbox"/></div><div><input type="checkbox"/></div></div>
-                    <div class="movable"><span class="handle"></span><div>3</div><div><input type="checkbox"/></div><div><input type="checkbox"/></div><div><input type="checkbox"/></div></div>
-                </div>
-<!--
-TODO sortable "table" with:
-                                                    always show        automatically show if recently moved to          never show         pinned on top (only pinned on top can be given an order)
-account (default for new folders in account, overridden by other defaults)
-|- foldera (only if folder can also take messages)
-|-- <default for new folders>
-|-- folder1 (only messages)
-|-- folder2
-|-- <all current folders in foldera>
-|- <all current folders in account>
-|- <all current folders under account, recursively: really ALL folders>
-
--->
             </div>
 
             <h2>Sorting</h2>
@@ -97,6 +62,52 @@ account (default for new folders in account, overridden by other defaults)
                     <label for="groupby_account">Group by account:</label>
                     <input id="groupby_account" name="groupby_account" type="checkbox"/>
                 </div>
+            </div>
+
+            <h2>Folders to show</h2>
+            <div>
+                <div class="browser-style">
+                    <label for="nbfolders">Number of folders to automatically show (-1: all):</label>
+                    <input id="nbfolders" name="nbfolders" type="number" size=3 min="-1"/>
+                </div>
+                <div class="browser-style">
+                    <label for="maxage">Number of days since last use to auto show (-1: any):</label>
+                    <input id="maxage" name="maxage" type="number" size=3 min="-1"/>
+                </div>
+                <p>Folder order and selection. To move the folder, use the dots handle on the left side.</p>
+                <!-- table does not work with sortable -->
+                <!-- grid wants to take all the space or may not be aligned-->
+                <table id="folderinput" class="folderview">
+                    <thead class="folderviewheader">
+                        <tr><th></th><th>Folder</th><th>Show</th><th></th><th></th><th>Manually ordered</th></tr>
+                        <tr class="header"><th></th><th></th><th>Always</th><th>Auto</th><th>Never</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><th class="folderviewsubtitle" colspan="6">Manually ordered folders</th></tr>
+                    </tbody>
+                    <tbody id="foldersort" class="folderviewbody">
+                        <tr class="placeholder"><td colspan="6">Folders that are manually sorted will be shown and can be put here</td></tr>
+                    </tbody>
+                    <tbody>
+                        <tr><th class="folderviewsubtitle" colspan="6">Automatic ordered folders</th></tr>
+                    </tbody>
+                    <tbody id="folderget" class="folderviewbody">
+                        <tr class="placeholder"><td colspan="6">Folders that are automatically sorted will be shown here</td></tr>
+                    </tbody>
+                </table>
+<!--
+TODO sortable "table" with:
+                                                    always show        automatically show if recently moved to          never show         pinned on top (only pinned on top can be given an order)
+account (default for new folders in account, overridden by other defaults)
+|- foldera (only if folder can also take messages)
+|-- <default for new folders>
+|-- folder1 (only messages)
+|-- folder2
+|-- <all current folders in foldera>
+|- <all current folders in account>
+|- <all current folders under account, recursively: really ALL folders>
+
+-->
             </div>
 
         </form>
