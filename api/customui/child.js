@@ -63,6 +63,15 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
                 + "custom ui");
           }
         },
+        async getInterfaceColor(cssvariable) {
+          const value = context.messageManager.sendSyncMessage(
+            "ex:customui:getInterfaceColor", cssvariable);
+          if (!value.length) {
+            throw new Error("getInterfaceColor may only be called from within a "
+                + "custom ui");
+          }
+          return value[0];
+        },
         onEvent: new ExtensionCommon.EventManager({
           context,
           name: "ex_customui.onEvent",

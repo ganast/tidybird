@@ -77,6 +77,19 @@
         "parameters": []
       },
       {
+        "name": "getInterfaceColor",
+        "description": "Get the real configured colors the interface is using. Template may not be complete and default themed colors are not available in the customui.",
+        "type": "function",
+        "async": true,
+        "parameters": [
+          {
+            "name": "cssvariable",
+            "type": "string",
+            "description": "A string with the name of the css variable to return"
+          }
+        ]
+      },
+      {
         "name": "setLocalOptions",
         "description": "If called from within a document loaded as custom UI through this API, this method can be used to supply location options for the current document only.",
         "type": "function",

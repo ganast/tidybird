@@ -1,23 +1,6 @@
 #tidybirdButton,
 [place="palette"] > #tidybirdButton {
-  list-style-image: url("chrome://tidybird/skin/icon.png");
-}
-
-#tidybirdSplitter {
-  min-height: 2px;
-  min-width: 2px;
-  border-inline-start: 1px solid var(--splitter-color);
-  margin-inline-end: -4px;
-  -moz-appearance: none;
-  width: 5px;
-  margin-top: 0;
-  position: relative;
-  z-index: 10;
-  transition: border-width .3s ease-in;
-}
-
-:root[lwt-tree-brighttext] #tidybirdPane {
-  scrollbar-color: rgba(249,249,250,.4) rgba(20,20,25,.3);
+list-style-image: url("chrome://tidybird/skin/icon.png");
 }
 
 #tidybirdPane {
@@ -26,11 +9,9 @@
   overflow: auto;
 }
 
-#tidybirdPane.themed {
-  /* messageHeader.css | messenger.css - for button color */
-  background-color: var(--toolbar-bgcolor) !important;
-  /* background-image: none !important */
-  color: var(--lwt-text-color);
+#tidybirdPane {
+  background-color: var(--tidybird-backgroundcolor) !important;
+  color: var(--tidybird-textcolor);
 }
 
 .tidybird-folder-move-button {
@@ -46,34 +27,29 @@
  *  and we have to change the background-color when a dark theme is used (as it is left default and may render the text unreadable
  * we try to re-set all necessary properties when a theme is used
  */
-.themed .tidybird-folder-move-button {
+.tidybird-folder-move-button {
   /* toolbarbutton.css */
   text-shadow: inherit;
   /* messenger.css */
   color: inherit !important;
   border: 1px solid transparent;
-  border-radius: var(--toolbarbutton-border-radius);
+  border-radius: 3px;
   transition: background-color .15s, border-color .15s;
 }
 
-.themed .tidybird-folder-move-button {
-  /*
-   * from thunderbird css
-   */
-  /* messageHeader.css */
-  border-color: var(--toolbarbutton-header-bordercolor);
-	/*
-	* inline css (theme, settings, ... ? )
-	*/
-  background-color: var(--button-bgcolor);
+.tidybird-folder-move-button {
+  border-color: var(--tidybird-button-bordercolor);
+  background-color: var(--tidybird-button-bgcolor);
 }
 
-.themed .tidybird-folder-move-button:hover {
-  background-color: var(--button-hover-bgcolor);
+.tidybird-folder-move-button:hover {
+  border-color: var(--tidybird-button-hover-bordercolor);
+  background-color: var(--tidybird-button-hover-bgcolor);
 }
 
-.themed .tidybird-folder-move-button:active {
-  background-color: var(--button-active-bgcolor);
+.tidybird-folder-move-button:active {
+  border-color: var(--tidybird-button-active-bordercolor);
+  background-color: var(--tidybird-button-active-bgcolor);
 }
 
 .tidybird-folder-move-button-label-1 {
@@ -108,8 +84,8 @@
   word-wrap: break-word; /* does not change anything, probably because the size is not fixed */
 }
 
-.themed [tooltiptext]:after {
-  color: var(--lwt-text-color);
+[tooltiptext]:after {
+  color: var(--tidybird-text-color);
 }
 
 [tooltiptext]:hover:after {
@@ -118,8 +94,8 @@
 
   /* customizable */
   margin-top: 1.5em;
-  transition-delay: 1s;
-  background-color: var(--tooltip-bgcolor);
+  transition-delay: 0.65s;
+  background-color: var(--tidybird-tooltip-bgcolor);
 }
 
 /* vi: set tabstop=2 shiftwidth=2 softtabstop=2 expandtab: */

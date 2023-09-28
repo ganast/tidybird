@@ -3,47 +3,85 @@
  */
 let messenger = browser;
 
+async function setCssVariable(variablename,value) {
+  document.documentElement.style.setProperty(variablename,value);
+}
 /*
  * Themed TB support: apply theme colors
  */
 async function applyThemeColors(theme) {
-  let body = document.querySelector("body");
   if (theme === undefined) {
     theme = await messenger.theme.getCurrent();
   }
 
-  // this is null when using the "system" theme
-  if (theme.colors !== null) {
-    body.classList.add("themed");
+  // when using the system theme all css properties are ok only if the system theme is light
+  // so we do always our thing, this makes it also more predictable
+  // ...we don't change colors when system theme changes, but probably this is not possible
 
-    body.style.setProperty("--toolbar-bgcolor", theme.colors.toolbar);
-    body.style.setProperty("--lwt-text-color", theme.colors.toolbar_field_text);
+  let tidybird_backgroundcolor = await messenger.ex_customui.getInterfaceColor("--layout-background-1");
+  setCssVariable("--tidybird-backgroundcolor", tidybird_backgroundcolor);
+  let tidybird_textcolor = await messenger.ex_customui.getInterfaceColor("--layout-color-1");
+  setCssVariable("--tidybird-textcolor", tidybird_textcolor);
+  let tidybird_button_bordercolor = await messenger.ex_customui.getInterfaceColor("--toolbarbutton-header-bordercolor");
+  setCssVariable("--tidybird-button-bordercolor", tidybird_button_bordercolor);
+  /*
+   * Buttons are transparent
+  let tidybird_button_bgcolor = await messenger.ex_customui.getInterfaceColor("--toolbarbutton-background");
+  setCssVariable("--tidybird-button-bgcolor", tidybird_button_bgcolor);
+  */
+  let tidybird_button_hover_bgcolor = await messenger.ex_customui.getInterfaceColor("--toolbarbutton-hover-background");
+  setCssVariable("--tidybird-button-hover-bgcolor", tidybird_button_hover_bgcolor);
+  let tidybird_button_active_bgcolor = await messenger.ex_customui.getInterfaceColor("--toolbarbutton-active-background");
+  setCssVariable("--tidybird-button-active-bgcolor", tidybird_button_active_bgcolor);
+  let tidybird_button_hover_bordercolor = await messenger.ex_customui.getInterfaceColor("--toolbarbutton-active-bordercolor"); // the active is not a mistake, that is really the used variable in Thunderbird
+  setCssVariable("--tidybird-button-hover-bordercolor", tidybird_button_hover_bordercolor);
+  let tidybird_button_active_bordercolor = await messenger.ex_customui.getInterfaceColor("--toolbarbutton-header-bordercolor");
+  setCssVariable("--tidybird-button-active-bordercolor", tidybird_button_active_bordercolor);
 
-    let bordercolor = theme.colors.input_border;
-    if (bordercolor === undefined) {
-      // 78.14.0 light & dark
-      bordercolor = theme.colors.toolbar_field_border;
+  if(theme.colors && !tidybird_backgroundcolor) { // this will never happen, but we keep this as failsafe
+                                                  // or when above is broken
+    if(theme.colors.sidebar) {
+      // sidebar background color is used in message header
+      setCssVariable("--tidybird-backgroundcolor", theme.colors.sidebar);
+    } else {
+      if(theme.colors.toolbar) {
+        // not sure why this is different
+        setCssVariable("--tidybird-backgroundcolor", theme.colors.toolbar);
+      }
     }
-    body.style.setProperty("--toolbarbutton-header-bordercolor", bordercolor);
+    if(theme.colors.toolbar_field_text) {
+      // this is used in the message header (instead of sidebar_text)
+      setCssVariable("--tidybird-textcolor", theme.colors.toolbar_field_text);
+    }
+
+    // bordercolor used in message header is just white/black with some transparency
+    // it also changes on active...
+    let bordercolor = theme.colors.input_border;
+    if (bordercolor) {
+      setCssVariable("--tidybird-button-header-bordercolor", bordercolor);
+    }
 
     // missing or bad in doc: https://webextension-api.thunderbird.net/en/latest/theme.html#themetype
-    body.style.setProperty("--button-bgcolor", theme.colors.button);
+    if (theme.colors.button) {
+      setCssVariable("--tidybird-button-bgcolor", theme.colors.button);
+    }
 
     let hovercolor = theme.colors.button_hover;
-    if (hovercolor === undefined) {
-      // 78.14.0 light & dark
-      hovercolor = theme.colors.toolbar_field_border;
+    if (!hovercolor) {
+      hovercolor = theme.colors.button_background_hover;
     }
-    body.style.setProperty("--button-hover-bgcolor", hovercolor);
+    if (hovercolor) {
+      setCssVariable("--tidybird-button-hover-bgcolor", hovercolor);
+    }
 
-    body.style.setProperty(
-      "--button-active-bgcolor",
-      theme.colors.button_active
-    );
-  } else {
-    body.classList.remove("themed");
+    let activecolor = theme.colors.button_active;
+    if (!activecolor) {
+      activecolor = theme.colors.button_background_active;
+    }
+    if (activecolor) {
+      setCssVariable("--tidybird-button-active-bgcolor", activecolor);
+    }
   }
-  body.style.setProperty("--toolbarbutton-border-radius", "3px");
   tooltipColorUpdated = false;
 }
 
@@ -74,7 +112,7 @@ async function update_tooltipcolor(theEvent) {
     let target_color = window
       .getComputedStyle(target)
       .getPropertyValue("background-color");
-    console.log(`${theEvent.target.style.backgroundColor} - ${target_color}`);
+    console.log(`${target.tagName}: ${target_color}`);
     let color_under = [0, 0, 0, 0];
     if (target_color != "") {
       color_under = target_color
@@ -103,7 +141,7 @@ async function update_tooltipcolor(theEvent) {
   } while (target !== null && color[3] < 1);
   let tooltip_bgcolor = "rgba(" + color.join(", ") + ")";
   console.log(`result: ${tooltip_bgcolor}`);
-  body.style.setProperty("--tooltip-bgcolor", tooltip_bgcolor);
+  body.style.setProperty("--tidybird-tooltip-bgcolor", tooltip_bgcolor);
   tooltipColorUpdated = true;
 }
 
