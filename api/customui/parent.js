@@ -267,6 +267,12 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
           return true;
         }
       });
+      result.messageManager.addMessageListener("ex:customui:getInterfaceColor", {
+        receiveMessage(message) {
+          let result = parentNode.ownerDocument.defaultView.getComputedStyle(parentNode).getPropertyValue(message.data);
+          return result;
+        }
+      });
       result.src = url;
       return result;
     };
