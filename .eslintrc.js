@@ -6,7 +6,7 @@ module.exports = {
     node: true, // eslint runs in node: set "module" global for eslint config
   },
   extends: [
-    "plugin:mozilla/recommended", // requires also: eslint-plugin-html, eslint-plugin-fetch-options
+    "plugin:mozilla/recommended", // requires also: eslint-plugin-html, eslint-plugin-fetch-options, eslint-plugin-json
     //'prettier' // deactives rules that conflict with prettier, deactivated as mozilla includes this
   ],
   plugins: ["mozilla"],

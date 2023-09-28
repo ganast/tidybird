@@ -43,11 +43,9 @@ async function applyThemeColors(theme) {
     if(theme.colors.sidebar) {
       // sidebar background color is used in message header
       setCssVariable("--tidybird-backgroundcolor", theme.colors.sidebar);
-    } else {
-      if(theme.colors.toolbar) {
-        // not sure why this is different
-        setCssVariable("--tidybird-backgroundcolor", theme.colors.toolbar);
-      }
+    } else if(theme.colors.toolbar) {
+      // not sure why this is different
+      setCssVariable("--tidybird-backgroundcolor", theme.colors.toolbar);
     }
     if(theme.colors.toolbar_field_text) {
       // this is used in the message header (instead of sidebar_text)
