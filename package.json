@@ -1,6 +1,6 @@
 {
   "name": "tidybird",
-  "version": "4.5",
+  "version": "5.0",
   "description": "Thunderbird add-on to organize email into folders quickly and easily",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
