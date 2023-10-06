@@ -33,6 +33,11 @@ async function applyThemeColors(theme) {
   setCssVariable("--tidybird-button-hover-bordercolor", tidybird_button_hover_bordercolor);
   let tidybird_button_active_bordercolor = await messenger.ex_customui.getInterfaceColor("--toolbarbutton-header-bordercolor");
   setCssVariable("--tidybird-button-active-bordercolor", tidybird_button_active_bordercolor);
+  // unread button colors, not available in any theme
+  let tidybird_thread_pane_unread_stroke = await messenger.ex_customui.getInterfaceColor("--thread-pane-unread-stroke");
+  setCssVariable("--tidybird-thread-pane-unread-stroke", tidybird_thread_pane_unread_stroke);
+  let tidybird_thread_pane_unread_fill = await messenger.ex_customui.getInterfaceColor("--thread-pane-unread-fill");
+  setCssVariable("--tidybird-thread-pane-unread-fill", tidybird_thread_pane_unread_fill);
 
   if(theme.colors && !tidybird_backgroundcolor) { // this will never happen, but we keep this as failsafe
                                                   // or when above is broken
@@ -117,7 +122,7 @@ async function update_tooltipcolor(aButton) {
     let buttonParent_color = window
       .getComputedStyle(buttonParent)
       .getPropertyValue("background-color");
-    console.log(`style computed background-color on ${target.tagName}: ${buttonParent_color}`);
+    console.log(`style computed background-color on ${buttonParent.tagName}: ${buttonParent_color}`);
     let color_under = [0, 0, 0, 0];
     if (buttonParent_color != "") {
       color_under = buttonParent_color
@@ -380,21 +385,27 @@ const addAccount = async function (account,tmpParent) {
 };
 
 let buttonTemplate = null;
-const addButton = async function (expandedFolder,buttonParent) {
+const addButton = async function (expandedFolder,buttonParent,options) {
   let path = expandedFolder.fullPath;
 
   if (!isFolderInList(expandedFolder)) {
     console.log(`adding button for folder ${expandedFolder.name}`);
 
     let button;
+    let label1;
+    let newTemplate = false;
     if (buttonTemplate == null) {
       button = document.createElement("button");
       button.className = "tidybird-folder-move-button tidybird-button";
 
-      let label1 = document.createElement("div");
+      label1 = document.createElement("div");
       label1.className = "tidybird-folder-move-button-label-1";
       label1.textContent = expandedFolder.name;
       button.appendChild(label1);
+
+      let response = await fetch(messenger.runtime.getURL("skin/unread-dot.svg"));
+      let svg = await response.text();
+      button.insertAdjacentHTML("beforeend",svg);
 
       let label2 = document.createElement("div");
       label2.className = "tidybird-folder-move-button-label-2";
@@ -403,11 +414,16 @@ const addButton = async function (expandedFolder,buttonParent) {
 
       button.setAttribute("tooltiptext", path);
       buttonTemplate = button;
-    } else {
-      button = buttonTemplate.cloneNode(true);
-      let firstLabel = button.firstElementChild;
-      firstLabel.textContent = expandedFolder.name;
-      firstLabel.nextElementSibling.textContent = expandedFolder.root.name;
+    }
+
+    button = buttonTemplate.cloneNode(true);
+    if (!newTemplate) {
+      label1 = button.firstElementChild;
+      label1.textContent = expandedFolder.name;
+      label1.nextElementSibling.nextElementSibling.textContent = expandedFolder.root.name;
+    }
+    if(!options.markAsRead) {
+      label1.nextElementSibling.remove(); // remove the "read" circle
     }
 
     button.addEventListener("click", function () {
@@ -538,7 +554,9 @@ async function addFolderList(folderList,tmpParent) {
     });
   }
   for (let folder of folderList) {
-    await addButton(folder,tmpParent); // this should be executed in order
+    let options = {};
+    //TODO: get options
+    await addButton(folder,tmpParent,options); // this should be executed in order
   }
 }
 /**

@@ -20,42 +20,9 @@ let folderElTemplate;
 async function addFolder(account, folder) {
   let folderEl;
   if (folderElTemplate === undefined) {
-    folderEl = document.createElement("tr");
-    folderEl.className = "notmovable";
-    let col_handle = document.createElement("td");
-    col_handle.className = "folderhandle";
-    folderEl.appendChild(col_handle);
-    let col_name = document.createElement("td");
-    folderEl.appendChild(col_name);
-    let col_showAlways = document.createElement("td");
-    let input_showAlways = document.createElement("input");
-    input_showAlways.type = "radio";
-    input_showAlways.value = "always";
-    col_showAlways.appendChild(input_showAlways);
-    folderEl.appendChild(col_showAlways);
-    let col_showAuto = document.createElement("td");
-    let input_showAuto = document.createElement("input");
-    input_showAuto.type = "radio";
-    input_showAuto.value = "auto";
-    input_showAuto.checked = "checked";
-    col_showAuto.appendChild(input_showAuto);
-    folderEl.appendChild(col_showAuto);
-    let col_showNever = document.createElement("td");
-    let input_showNever = document.createElement("input");
-    input_showNever.type = "radio";
-    input_showNever.value = "never";
-    col_showNever.appendChild(input_showNever);
-    folderEl.appendChild(col_showNever);
-    let col_pinned = document.createElement("td");
-    let input_pinned = document.createElement("input");
-    input_pinned.type = "checkbox";
-    col_pinned.appendChild(input_pinned);
-    folderEl.appendChild(col_pinned);
-
-    folderElTemplate = folderEl;
-  } else {
-    folderEl = folderElTemplate.cloneNode(true);
+    folderElTemplate = document.getElementById("newfolder");
   }
+  folderEl = folderElTemplate.cloneNode(true);
 
   let folderName = `${account.name}${folder.path}`;
   let folderAttribute = encodeURI(folderName);
@@ -63,18 +30,6 @@ async function addFolder(account, folder) {
   let col_next = folderEl.firstElementChild; // col_handle
   col_next = col_next.nextElementSibling; // col_name
   col_next.textContent = folderName;
-  let inputName = `show_${folderAttribute}`;
-  col_next = col_next.nextElementSibling; // always
-  col_next.firstElementChild.name = inputName;
-  col_next = col_next.nextElementSibling; // auto
-  col_next.firstElementChild.name = inputName;
-  col_next.firstElementChild.checked = "checked";
-  col_next = col_next.nextElementSibling; // never
-  col_next.firstElementChild.name = inputName;
-  inputName = `pin_${folderAttribute}`;
-  col_next = col_next.nextElementSibling; // pinned
-  col_next.firstElementChild.name = inputName;
-  col_next.firstElementChild.value = "pin";
   foldergetEl.appendChild(folderEl);
 
   for (let subfolder of await messenger.folders.getSubFolders(folder,false)) {
@@ -132,11 +87,43 @@ async function settingsChangedListener(settingsUpdateInfo) {
   setCurrentChoice(changedSettings);
 }
 
+let folderSettingValues = {
+  "show": {
+    "base": 2,
+    "values": {
+      "auto": 0,
+      "always": 1,
+      "never": 2,
+    },
+  },
+  "pin": {
+    "base": 1,
+  }
+  "markasread": {
+    "base": 4,
+    "values": {
+      "no": 0,
+      "yes": 1,
+      "double": 2,
+    }
+  }
+};
+function calculateFolderSetting(theRow) {
+  let checkedInputs = theRow.querySelectorAll("input:checked");
+  let folderSettings = 0;
+  for (let checkedInput in checkedInputs) {
+
+    folderSettings += folderSettingValues[checkedInput.name][checkedInput.value];
+  }
+}
+
 function folderInput(theEvent) {
   let theInput = theEvent.target;
   let theRow = theInput.parentNode.parentNode;
   let foldername = theRow.getAttribute("data-folder");
-  let folderSettings = 0; // a number, as it takes less place and we want to support many folders
+  // a number, as it takes less place and we want to support many folders
+  // note: numbers are probably stored in ascii (according to the byte usage: 1 byte per character)
+  let folderSettings = 0;
   if(theInput.value == "pin") {
     if(theInput.checked) {
       theRow.classList.add("movable");
@@ -149,9 +136,8 @@ function folderInput(theEvent) {
       foldergetEl.appendChild(theRow);
     }
   }
+  // do with save button, so we can cancel?
   /*
-   * FIXME do with save button, so we can cancel?
-   *
   messenger.storage.sync.set({
     [`F_${foldername}`]: folderSettings,
   });
@@ -169,7 +155,7 @@ function domReady() {
   foldergetEl = document.getElementById('folderget');
 
   // must be done before adding folders
-  for (const input of document.querySelectorAll("input")) {
+  for (const input of document.querySelectorAll("#basicsettings input")) {
     // input event fires also when focus does not change, but does not work for select
     input.addEventListener("input", save);
   }

@@ -7,7 +7,7 @@
         <link rel="stylesheet" href="options.css">
     </head>
     <body>
-        <form>
+        <div id="basicsettings">
             <h2>Display</h2>
             <div>
                 <div class="browser-style">
@@ -32,6 +32,7 @@
                 <div class="browser-style">
                     <label for="showoptionsbutton">Show "Options" button:</label>
                     <input id="showoptionsbutton" name="showoptionsbutton" type="checkbox"/>
+                    The options page can also be opened via the Add-ons Manager.
                 </div>
             </div>
 
@@ -57,7 +58,10 @@
                         <label for="sortorder_accountname">Account name</label>
                     </li>
                 </ol>
-                (update order when sorted by date on move not yet implemented - TODO)
+                <ul>
+                    <li>TODO: update order on move when sorted by date</li>
+                    <li>TODO: implement order by folder order (&gt;doable once we keep our own MRM)</li>
+                </ul>
                 <div class="browser-style">
                     <label for="groupby_account">Group by account:</label>
                     <input id="groupby_account" name="groupby_account" type="checkbox"/>
@@ -74,27 +78,88 @@
                     <label for="maxage">Number of days since last use to auto show (-1: any):</label>
                     <input id="maxage" name="maxage" type="number" size=3 min="-1"/>
                 </div>
-                <p>Folder order and selection. To move the folder, use the dots handle on the left side.</p>
-                <!-- table does not work with sortable -->
-                <!-- grid wants to take all the space or may not be aligned-->
-                <table id="folderinput" class="folderview">
-                    <thead class="folderviewheader">
-                        <tr><th></th><th>Folder</th><th>Show</th><th></th><th></th><th>Manually ordered</th></tr>
-                        <tr class="header"><th></th><th></th><th>Always</th><th>Auto</th><th>Never</th><th></th></tr>
-                    </thead>
-                    <tbody>
-                        <tr><th class="folderviewsubtitle" colspan="6">Manually ordered folders</th></tr>
-                    </tbody>
-                    <tbody id="foldersort" class="folderviewbody">
-                        <tr class="placeholder"><td colspan="6">Folders that are manually sorted will be shown and can be put here</td></tr>
-                    </tbody>
-                    <tbody>
-                        <tr><th class="folderviewsubtitle" colspan="6">Automatic ordered folders</th></tr>
-                    </tbody>
-                    <tbody id="folderget" class="folderviewbody">
-                        <tr class="placeholder"><td colspan="6">Folders that are automatically sorted will be shown here</td></tr>
-                    </tbody>
-                </table>
+                <div>
+                    <label for="allread">Mark messages as read while moving them. This will change the selection of the "Mark as read" column for all folders</label/>
+                    <input id="allread" name="allread" type="checkbox"/>
+                </div>
+                <div>
+                    Default automatically shown folders. This will change the selection of the "Show" column for the archive (a), junk (j) and trash (del) folders.
+                    <div>
+                        <input id="folderselection_default" name="folderselection" type="radio" value="default"/>
+                        <label for="folderselection_default">Exclude folders with existing shortcuts</label>
+                        <input id="folderselection_all" name="folderselection" type="radio" value="all"/>
+                        <label for="folderselection_all">All folders</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="expertsettings">
+            <ul>
+                <li>TODO: implement effects of additional folder controls
+                    <ol>
+                        <li>expert settings normal folders</li>
+                        <li>new folders expert settings</li>
+                        <li>own MRM</li>
+                        <li>simple settings</li>
+                        <li>keep last status of expert settings: expand or not</li>
+                        <li>test with a LOT of folders (#56)</li>
+                    </ol>
+                </li>
+                <li>once we have our own MRM: shorcut for our own undo (#74)</li>
+                <li>once we have our own MRM: check for reset, show info in iterface (#40)</li>
+                <li>Check if we handled remarks in ATN reviews</li>
+                <li>Low: themed options: check other addons</li>
+            </ul>
+            <p>Folder order and selection. To move the folder, use the dots handle on the left side.</p>
+            <!-- table does not work with sortable -->
+            <!-- grid wants to take all the space or may not be aligned-->
+            <table id="folderinput" class="folderview">
+                <thead class="folderviewheader">
+                    <tr>
+                        <th></th>
+                        <th>Folder</th>
+                        <th colspan="3">Show</th>
+                        <th>Manually ordered</th>
+                        <th colspan="2">Mark as read</th>
+                    </tr>
+                    <tr class="header">
+                        <th></th>
+                        <th></th>
+                        <th>Always</th>
+                        <th>Auto</th>
+                        <th>Never</th>
+                        <th></th>
+                        <th>Yes</th>
+                        <th>2 Buttons</th>
+                        <th>No</th>
+                    </tr>
+                </thead>
+                <tbody class="folderviewbody">
+                    <tr id="newfolder" data-folder="new">
+                        <td class="folderhandle"></td>
+                        <td><b>New folders</b></td>
+                        <td><input type="radio" value="always" name="show"/></td>
+                        <td><input type="radio" value="auto" checked="checked" name="show"/></td>
+                        <td><input type="radio" value="never" name="show"/></td>
+                        <td><input type="checkbox" value="pin" name="pin"/></td>
+                        <td><input type="radio" value="yes" name="markasread"/></td>
+                        <td><input type="radio" value="double" name="markasread"/></td>
+                        <td><input type="radio" value="no" name="markasread" checked="checked"/></td>
+                    </tr>
+                </tbody>
+                <tbody>
+                    <tr><th class="folderviewsubtitle" colspan="6">Manually ordered folders</th></tr>
+                </tbody>
+                <tbody id="foldersort" class="folderviewbody">
+                    <tr class="placeholder"><td colspan="9">Folders that are manually sorted will be shown and can be put here</td></tr>
+                </tbody>
+                <tbody>
+                    <tr><th class="folderviewsubtitle" colspan="6">Automatic ordered folders</th></tr>
+                </tbody>
+                <tbody id="folderget" class="folderviewbody">
+                    <tr class="placeholder"><td colspan="9">Folders that are automatically sorted will be shown here</td></tr>
+                </tbody>
+            </table>
 <!--
 TODO sortable "table" with:
                                                     always show        automatically show if recently moved to          never show         pinned on top (only pinned on top can be given an order)
@@ -108,9 +173,7 @@ account (default for new folders in account, overridden by other defaults)
 |- <all current folders under account, recursively: really ALL folders>
 
 -->
-            </div>
-
-        </form>
+        </div>
         <script type="module" src="options.js"></script>
     </body>
 </html>

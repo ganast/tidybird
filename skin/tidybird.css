@@ -63,19 +63,23 @@ list-style-image: url("chrome://tidybird/skin/icon.png");
   padding: 0;
   font-weight: bold;
   text-align: left;
-  flex: auto;
+  flex-grow: 0;
+  flex-shrink: 1;
+  flex-basis: auto;
 }
 
 .tidybird-folder-move-button-label-2 {
   text-align: right;
   vertical-align: bottom;
   font-size: 0.8em;
-  flex: auto;
+  flex-grow: 1;
+  flex-shrink: 1;
+  flex-basis: auto;
   align-self: center;
 }
 
 /* working tooltips thanks to https://stackoverflow.com/a/25813336 */
-[tooltiptext]:after {
+[tooltiptext]::after {
   /* needed */
   position: absolute;
   opacity: 0;
@@ -91,11 +95,11 @@ list-style-image: url("chrome://tidybird/skin/icon.png");
   word-wrap: break-word; /* does not change anything, probably because the size is not fixed */
 }
 
-[tooltiptext]:after {
-  color: var(--tidybird-text-color);
+[tooltiptext]::after {
+  color: var(--tidybird-textcolor);
 }
 
-[tooltiptext]:hover:after {
+[tooltiptext]:hover::after {
   /* needed: 0 << opacity <= 1  */
   opacity: .95;
 
@@ -104,5 +108,21 @@ list-style-image: url("chrome://tidybird/skin/icon.png");
   transition-delay: 0.65s;
   background-color: var(--tidybird-tooltip-bgcolor);
 }
+
+.tidybird-folder-move-button > svg {
+  /*
+   * changing a "replaced element" (content) with css does not work
+   * which is also according to the specs AFAICT
+   * no idea how they made it work in the main interface
+   * getting the svg through javascript is not permitted
+   */
+  fill: color-mix(in srgb, var(--tidybird-thread-pane-unread-fill) 50%, transparent);
+  stroke: var(--tidybird-thread-pane-unread-stroke);
+}
+/*
+.tidybird-folder-move-button-label-1::after {
+  content: url("chrome://messenger/skin/icons/new/unread-dot.svg");
+}
+*/
 
 /* vi: set tabstop=2 shiftwidth=2 softtabstop=2 expandtab: */

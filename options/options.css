@@ -12,13 +12,14 @@
 .folderviewheader {
     position: sticky;
     top: 0;
+    background-color: rgba(255,255,255,0.8);
 }
 .folderviewheader > .header > * {
     padding-left: .4em;
     padding-right: .4em;
     border-bottom-style: double;
 }
-.folderviewheader > .header>:nth-child(4) {
+.folderviewheader > .header > :nth-child(4n) {
     border-left-style: solid;
     border-right-style: solid;
     border-left-width: 1px;
@@ -28,7 +29,7 @@
 .folderviewbody > * >:nth-child(2) {
   text-align: left;
 }
-.folderviewbody > * {
+.folderviewbody > * > * {
     border-bottom-style: solid;
     border-width: 1px;
 }
