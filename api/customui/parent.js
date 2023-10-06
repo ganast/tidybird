@@ -325,7 +325,209 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
       setWebextFrameDynamicVisibility(frame, options);
       setWebextFrameDynamicDimension(frame, options, "height", 100);
     }
-    
+
+    // get the grid-template css rule of a container
+    const getGridTemplate = function(container,document) {
+      // getComputedStyle replaces variables by pixels
+      // they should stay variables, if not, interface is not resizable
+      //return window.getComputedStyle(container).gridTemplate;
+      for (let sheet of document.styleSheets) {
+        for (let rule of sheet.rules) {
+          if (container.matches(rule.selectorText) && rule.style.gridTemplate) {
+            return rule.style.gridTemplate;
+          }
+        }
+      }
+      return null;
+    }
+
+    // Split grid area/row/column templates into "cells"
+    const splitGridParts = function (template, separator, mergeSeparators) {
+      //return template.trim(); //.split(/\s+/); // fails on "minmax(auto, 1fr)", so we don't split
+      let theGrid = template.trim();
+      let currentPosition = 0,
+        parenthesesCounter = 0,
+        inComment = false,
+        currentPart = "",
+        previousCharacter = "",
+        foundParts = [];
+      while ( currentPosition <= theGrid.length ) {
+        let currentCharacter = theGrid.charAt(currentPosition),
+          foundSeparator = false,
+          newPreviousCharacter = "";
+        if (previousCharacter !== "" ) {
+          // we are possibly in a 2-character construction
+          if (previousCharacter === "\\" ) {
+            // do nothing
+          } else if (previousCharacter === "/" && currentCharacter === "*" ) {
+            // open a comment
+            inComment = true;
+          } else if (inComment && previousCharacter === "*" && currentCharacter === "/" ) {
+            // close a comment
+            inComment = false;
+          } else if (!inComment && parenthesesCounter === 0 && previousCharacter === separator) {
+            // previous character was the separator, not part of a 2-character construct
+            currentPart = currentPart.slice(0,-1);
+            foundSeparator = true;
+          } //else: previous character was just a random character (already added to the currentPart)
+          newPreviousCharacter = "";
+        } else {
+          if (currentCharacter === "\\") {
+            // next character is escaped, whatever & wherever it is
+            newPreviousCharacter = currentCharacter;
+          } else if (currentCharacter === "/") {
+            // maybe enter a comment
+            newPreviousCharacter = currentCharacter;
+          } else if (inComment && currentCharacter === "*") {
+            // maybe exit a comment
+            newPreviousCharacter = currentCharacter;
+          } else if (!inComment && parenthesesCounter === 0 && currentCharacter === separator) {
+            foundSeparator = true;
+          }
+        }
+        if (foundSeparator) {
+          if (!mergeSeparators || currentPart !== "") {
+            foundParts.push(currentPart);
+            currentPart = previousCharacter !== "" ? currentCharacter : previousCharacter;
+          } // else: no new part, nothing to do
+        } else {
+          currentPart+=currentCharacter;
+        }
+        if (currentCharacter === "(") {
+          parenthesesCounter++;
+        } else if (currentCharacter === ")") {
+          parenthesesCounter--;
+        }
+        previousCharacter = newPreviousCharacter;
+        currentPosition++;
+      }
+      if ( currentPart !== "" ) {
+        foundParts.push(currentPart);
+      }
+      return foundParts;
+    }
+
+    // Parse a grid-template
+    const parseGridTemplate = function (gridTemplate) {
+      if (gridTemplate == "none") {
+        return {
+          'gridTemplateAreas': "none",
+          'gridTemplateRows': "none",
+          'gridTemplateColumns': "none",
+        }
+      }
+      if (
+          gridTemplate == "inherit"
+          || gridTemplate == "initial"
+          || gridTemplate == "revert"
+          || gridTemplate == "revert-layer"
+          || gridTemplate == "unset"
+        ) {
+        // values not explicitly set
+        return null;
+      }
+      let templateParts = splitGridParts(gridTemplate.trim(),"/",false);
+      let gridTemplateColumns = splitGridParts(templateParts[1]," ",true);
+      // line names are not conclusive when no newlines are present (which is not defined in the syntax...)
+      // Only in computedStyle newlines are not present, it is possible they are simply removed from computed style
+      // so in fact, this may be a syntax and computedStyle bug
+      // or the syntax should be more clear about the names for grid-template
+      // as there are no line names in the thunderbird grid, we just ignore them
+      let stringRegex = /[^\\]["']/;
+      if ( gridTemplate.match(stringRegex) === null ) {
+        // grid-template-rows / grid-template-columns format as there are no strings (the areas) present
+        return {
+          'gridTemplateAreas': "none",
+          'gridTemplateRows': splitGridParts(templateParts[0]," ",true),
+          gridTemplateColumns
+        }
+      }
+      let gridTemplateAreas = [];
+      let gridTemplateRows = [];
+      let gridTemplateAreasRowsRegex = /["'](?<gridTemplateArea>[^'"]*)['"](?<gridTemplateRow>[^\/'"]*)/gm;
+      let gridTemplateAreasRows = [...gridTemplate.matchAll(gridTemplateAreasRowsRegex)];
+      for ( let row of gridTemplateAreasRows ) {
+        gridTemplateAreas.push(splitGridParts(row.groups.gridTemplateArea," ",true));
+        gridTemplateRows.push(splitGridParts(row.groups.gridTemplateRow," ",true));
+      }
+      return {
+        gridTemplateAreas,
+        gridTemplateRows,
+        gridTemplateColumns,
+      }
+    }
+
+    // Add a column to a parsed grid template
+    const addColumn = function (parsedGridTemplate, areaname, columntemplate) {
+      let newGridTemplate = parsedGridTemplate;
+      for ( let templateAreaRowIndex in newGridTemplate.gridTemplateAreas ) {
+        newGridTemplate.gridTemplateAreas[templateAreaRowIndex].push(areaname);
+      }
+      newGridTemplate.gridTemplateColumns.push(columntemplate);
+      return newGridTemplate;
+    }
+
+    // Delete a column from a parsed grid template
+    const deleteColumn = function (parsedGridTemplate, areaname) {
+      let newGridTemplate = parsedGridTemplate;
+      let columnIndex = -1;
+      for ( let templateAreaRowIndex in parsedGridTemplate.gridTemplateAreas ) {
+        if (columnIndex === -1) {
+          // search & find 1 time, then assume we are removing that column index
+          columnIndex = parsedGridTemplate.gridTemplateAreas[templateAreaRowIndex].indexOf(areaname);
+        }
+        if (columnIndex !== -1) {
+          newGridTemplate.gridTemplateAreas[templateAreaRowIndex].splice(columnIndex,1);
+        }
+      }
+      newGridTemplate.gridTemplateColumns.splice(columnIndex,1);
+      return newGridTemplate;
+    }
+
+    // Constract a css string grid-template from a parsed grid template object
+    const constructGridTemplate = function(parsedGridTemplate) {
+      let result = "";
+      parsedGridTemplate.gridTemplateAreas.forEach(function(templateRowAreas,index) {
+        // for each row
+        result += '"'+templateRowAreas.join(" ")+'" '+parsedGridTemplate.gridTemplateRows[index]+"\n";
+      });
+      result += "/ "+parsedGridTemplate.gridTemplateColumns.join(" ");
+      return result;
+    }
+
+    const addColumnsToElementGridTemplate = function(container, window, columns) {
+      console.log("Adding columns to grid");
+      let gridTemplate = getGridTemplate(container, window.document);
+      let parsedGridTemplate = parseGridTemplate(gridTemplate);
+      let newGridTemplate = parsedGridTemplate;
+      for ( let column of columns ) {
+        newGridTemplate = addColumn(newGridTemplate, column.areaname, column.columnTemplate);
+      }
+      let newGrid = constructGridTemplate(newGridTemplate);
+      container.style.gridTemplate = newGrid;
+    }
+
+    const removeColumnsFromElementGridTemplate = function(container, window, columns) {
+      console.log("Removing columns from grid");
+      let gridTemplate = container.style.gridTemplate; // our gridTemplate
+      let parsedGridTemplate = parseGridTemplate(gridTemplate);
+      let newGridTemplate = parsedGridTemplate;
+      for ( let column of columns ) {
+        newGridTemplate = deleteColumn(newGridTemplate, column);
+      }
+      let newGrid = constructGridTemplate(newGridTemplate);
+
+      let classGridTemplate = getGridTemplate(container, window.document);
+      // compare parsed gridTemplate, so formatting changes do not play (additional leading spaces)
+      if ( JSON.stringify(newGridTemplate) != JSON.stringify(parseGridTemplate(classGridTemplate)) ) {
+        // something else changed the grid template
+        container.style.gridTemplate = newGrid;
+      } else {
+        // reset to defaults
+        container.style.gridTemplate = null;
+      }
+    }
+
     // Creates and inserts the WebExtension frame with additional user provided
     // options for the given URL and location id as element of a
     // customUI-specific sidebar within the container given by a document and
@@ -379,12 +581,31 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
           splitter.width = width; // do not add px
           container.appendChild(splitter);
 
-          let parentGridTemplate = window.getComputedStyle(container).gridTemplate;
           container.style.setProperty(`--${splitter.id}-width`,width+"px");
-          //TODO generate this edit: add 2 columns
-          container.style.gridTemplate = `"folders folderPaneSplitter threads ${splitter.style.gridArea} ${sidebar.style.gridArea}" minmax(auto, 1fr) "folders folderPaneSplitter messagePaneSplitter ${splitter.style.gridArea} ${sidebar.style.gridArea}" min-content "folders folderPaneSplitter message ${splitter.style.gridArea} ${sidebar.style.gridArea}" minmax(auto, var(--messagePaneSplitter-height)) / minmax(auto, var(--folderPaneSplitter-width)) min-content minmax(auto, 1fr) min-content minmax(auto, var(--${splitter.id}-width))`;
+
+          // set an observer on the container to act on class changes
+          const updateGridTemplate = (mutationList, observer) => {
+            addColumnsToElementGridTemplate(
+              container,
+              window,
+              [
+                {
+                  areaname:splitter.style.gridArea,
+                  columnTemplate:"min-content/*customuisplitter*/",
+                },
+                {
+                  areaname:sidebar.style.gridArea,
+                  columnTemplate:`minmax(auto, var(--${splitter.id}-width))`
+                }
+              ]
+            );
+          };
+          updateGridTemplate();
+          const observer = new window.MutationObserver(updateGridTemplate);
+          window.customuiObserver = observer;
+          observer.observe(container, {attributes: true,attributeFilter: ["class"]});
         }
-        
+
         container.appendChild(sidebar);
       }
       const result = insertWebextFrame(location, url, sidebar);
@@ -405,13 +626,28 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
     // Removes the WebExtension frame with the given tag and URL from the given
     // document, and returns its parent node (or null if there is no such
     // frame.
-    const removeSidebarWebextFrame = function(tag, url, document) {
-      const sidebar = removeWebextFrame(tag, url, document);
+    const removeSidebarWebextFrame = function(tag, url, window) {
+      const sidebar = removeWebextFrame(tag, url, window.document);
       if (sidebar && sidebar.childElementCount == 0) {
-        //TODO properly remove our edit, if it has been changed
-        // in case another addon also edited the gridTemplate
-        sidebar.parentNode.style.gridTemplate = null;
-        sidebar.previousSibling.remove(); // splitter
+        let splitter = sidebar.previousSibling;
+
+        // disable and unset the observer
+        if (window.customuiObserver) {
+          let observer = window.customuiObserver;
+          delete window.customuiObserver;
+          observer.disconnect();
+        }
+        // reset the gridTemplate
+        removeColumnsFromElementGridTemplate(
+          sidebar.parentNode,
+          window,
+          [
+            splitter.style.gridArea,
+            sidebar.style.gridArea,
+          ]
+        );
+
+        splitter.remove();
         sidebar.remove();
       }
     };
@@ -685,7 +921,7 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
               window.document.getElementById("composeContentBox"), options);
         },
         uninjectFromWindow(window, url) {
-          removeSidebarWebextFrame("compose", url, window.document);
+          removeSidebarWebextFrame("compose", url, window);
         }
       });
       
@@ -707,7 +943,7 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
           }
         },
         uninjectFromWindow(window, url) {
-          removeSidebarWebextFrame("messaging", url, window.document);
+          removeSidebarWebextFrame("messaging", url, window);
         }
       });
 
