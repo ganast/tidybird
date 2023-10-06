@@ -109,15 +109,16 @@ list-style-image: url("chrome://tidybird/skin/icon.png");
   background-color: var(--tidybird-tooltip-bgcolor);
 }
 
-.tidybird-folder-move-button > svg {
-  /*
-   * changing a "replaced element" (content) with css does not work
-   * which is also according to the specs AFAICT
-   * no idea how they made it work in the main interface
-   * getting the svg through javascript is not permitted
-   */
+/*
+ * in the main interface, the css uses context-fill and context-stroke
+ * to put the colors on the css "content" in the image
+ * this does not work in the extensions, so we do it this way
+ */
+.tidybird-folder-move-button > svg > path[fill=context-fill]{
   fill: color-mix(in srgb, var(--tidybird-thread-pane-unread-fill) 50%, transparent);
-  stroke: var(--tidybird-thread-pane-unread-stroke);
+}
+.tidybird-folder-move-button > svg > path[fill=context-stroke]{
+  fill: var(--tidybird-thread-pane-unread-stroke);
 }
 /*
 .tidybird-folder-move-button-label-1::after {

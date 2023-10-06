@@ -1,7 +1,6 @@
 /*
  * Themed TB support: apply theme colors
  */
-let body = document.getElementById("tidybirdPane");
 async function setCssVariable(variablename,value) {
   document.documentElement.style.setProperty(variablename,value);
 }
@@ -21,7 +20,7 @@ async function applyThemeColors(theme) {
   let tidybird_button_bordercolor = await messenger.ex_customui.getInterfaceColor("--toolbarbutton-header-bordercolor");
   setCssVariable("--tidybird-button-bordercolor", tidybird_button_bordercolor);
   /*
-   * Buttons are transparent
+   * Buttons are transparent, --toolbarbutton-background is not defined
   let tidybird_button_bgcolor = await messenger.ex_customui.getInterfaceColor("--toolbarbutton-background");
   setCssVariable("--tidybird-button-bgcolor", tidybird_button_bgcolor);
   */
@@ -152,13 +151,13 @@ async function update_tooltipcolor(aButton) {
   let tooltip_bgcolor = "rgba(" + color.join(", ") + ")";
   console.log(`result: ${tooltip_bgcolor}`);
   setCssVariable("--tidybird-tooltip-bgcolor", tooltip_bgcolor);
-  tooltipColorUpdated = true;
 }
 
 async function themeChangedListener(themeUpdateInfo) {
-  applyThemeColors(themeUpdateInfo.theme);
+  await applyThemeColors(themeUpdateInfo.theme);
   tooltipColorUpdated = false;
-  applyTooltipColor();
+  // theme colors should be fully applied before we can calculate the hover bg color
+  update_tooltipcolor();
 }
 messenger.theme.onUpdated.addListener(themeChangedListener);
 applyThemeColors();
@@ -388,56 +387,7 @@ let buttonTemplate = null;
 const addButton = async function (expandedFolder,buttonParent,options) {
   let path = expandedFolder.fullPath;
 
-  if (!isFolderInList(expandedFolder)) {
-    console.log(`adding button for folder ${expandedFolder.name}`);
-
-    let button;
-    let label1;
-    let newTemplate = false;
-    if (buttonTemplate == null) {
-      button = document.createElement("button");
-      button.className = "tidybird-folder-move-button tidybird-button";
-
-      label1 = document.createElement("div");
-      label1.className = "tidybird-folder-move-button-label-1";
-      label1.textContent = expandedFolder.name;
-      button.appendChild(label1);
-
-      let response = await fetch(messenger.runtime.getURL("skin/unread-dot.svg"));
-      let svg = await response.text();
-      button.insertAdjacentHTML("beforeend",svg);
-
-      let label2 = document.createElement("div");
-      label2.className = "tidybird-folder-move-button-label-2";
-      label2.textContent = expandedFolder.root.name;
-      button.appendChild(label2);
-
-      button.setAttribute("tooltiptext", path);
-      buttonTemplate = button;
-    }
-
-    button = buttonTemplate.cloneNode(true);
-    if (!newTemplate) {
-      label1 = button.firstElementChild;
-      label1.textContent = expandedFolder.name;
-      label1.nextElementSibling.nextElementSibling.textContent = expandedFolder.root.name;
-    }
-    if(!options.markAsRead) {
-      label1.nextElementSibling.remove(); // remove the "read" circle
-    }
-
-    button.addEventListener("click", function () {
-      moveSelectedMessageToFolder(expandedFolder);
-    });
-    console.debug("Appending button to parent");
-    buttonParent.appendChild(button);
-    // the parent may not be part of the document, so we can't calculate the tooltip color yet
-    console.debug("Appended button to parent");
-
-    foldersInList.push(path);
-
-    return button;
-  } else {
+  if (isFolderInList(expandedFolder)) {
     console.log(
       `not adding ${expandedFolder.name}: already at ${getFolderIndexInList(
         expandedFolder
@@ -445,6 +395,61 @@ const addButton = async function (expandedFolder,buttonParent,options) {
     );
     return false;
   }
+
+  console.log(`adding button for folder ${expandedFolder.name}`);
+
+  let button;
+  let label1;
+  let newTemplate = false;
+  if (buttonTemplate == null) {
+    button = document.createElement("button");
+    button.className = "tidybird-folder-move-button tidybird-button";
+
+    label1 = document.createElement("div");
+    label1.className = "tidybird-folder-move-button-label-1";
+    label1.textContent = expandedFolder.name;
+    button.appendChild(label1);
+
+    // we can't use the svg as css content as context-fill and context-stroke
+    // are only implemented in the main interface (both FF & TB)
+    let response = await fetch(messenger.runtime.getURL("skin/unread-dot.svg"));
+    let svg = await response.text();
+    let parser = new DOMParser();
+    let doc = parser.parseFromString(svg, "image/svg+xml");
+    button.appendChild(doc.children[0]);
+    // this is interpreted as unsafe, while above is not
+    //button.insertAdjacentHTML("beforeend",svg);
+
+    let label2 = document.createElement("div");
+    label2.className = "tidybird-folder-move-button-label-2";
+    label2.textContent = expandedFolder.root.name;
+    button.appendChild(label2);
+
+    button.setAttribute("tooltiptext", path);
+    buttonTemplate = button;
+  }
+
+  button = buttonTemplate.cloneNode(true);
+  if (!newTemplate) {
+    label1 = button.firstElementChild;
+    label1.textContent = expandedFolder.name;
+    label1.nextElementSibling.nextElementSibling.textContent = expandedFolder.root.name;
+  }
+  if(!options.markAsRead) {
+    //label1.nextElementSibling.remove(); // remove the "read" circle
+  }
+
+  button.addEventListener("click", function () {
+    moveSelectedMessageToFolder(expandedFolder);
+  });
+  console.debug("Appending button to parent");
+  buttonParent.appendChild(button);
+  // the parent may not be part of the document, so we can't calculate the tooltip color yet
+  console.debug("Appended button to parent");
+
+  foldersInList.push(path);
+
+  return button;
 };
 let optionsButton;
 const addSettingsButton = async function(optionsButtonParent) {
@@ -575,7 +580,7 @@ async function gotMRMFolders(mostRecentlyModifiedFolders) {
   }
   */
 
-  if (mostRecentlyModifiedFolders.length == 0) {
+  if (!mostRecentlyModifiedFolders.length) {
     listParent.innerHTML = "<p>Buttons to move mails will appear (and this message will disappear) once you move a message to a folder that will also appear in Thunderbird's recent folders list.</p><p>You can also select the folders you want in the Options.<br/>Options can be opened using the \"Options\" button or using the Add-ons Manager</p>";
     return;
   }

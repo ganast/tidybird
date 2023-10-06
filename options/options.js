@@ -98,7 +98,7 @@ let folderSettingValues = {
   },
   "pin": {
     "base": 1,
-  }
+  },
   "markasread": {
     "base": 4,
     "values": {
