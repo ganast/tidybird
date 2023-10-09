@@ -10,13 +10,20 @@
   "name": "Tidybird",
   "description": "Organize email into folders quickly and easily.",
   "author": "George Anastassakis",
+  "homepage_url": "https://github.com/ganast/tidybird",
+  "icons": {
+    "16": "skin/icon16.png",
+    "32": "skin/icon32.png",
+    "64": "skin/icon64.png"
+  },
   "version": "5.0",
   "browser_action": {
-    "default_icon": "skin/icon.png",
+    "default_icon": "skin/icon64.png",
     "default_title": "Tidybird"
   },
   "background": {
-    "scripts": ["background.js"]
+    "scripts": ["background.js"],
+    "type": "module"
   },
   "options_ui": {
     "page": "options/options.html",

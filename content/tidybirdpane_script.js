@@ -168,7 +168,7 @@ applyThemeColors();
 async function applyButtonSize(changedSizes) {
   if (changedSizes === undefined) {
     // default are set in css, no need to redo
-    changedSizes = await messenger.storage.sync.get([
+    changedSizes = await messenger.storage.local.get([
       "buttonheight",
       "buttonmargin",
     ]);
@@ -243,7 +243,7 @@ function updateSetting(setting, value) {
 async function getSettings() {
   // if cache is empty, update the cache
   if (settingsCache === undefined) {
-    settingsCache = await messenger.storage.sync.get(option_defaults);
+    settingsCache = await messenger.storage.local.get(option_defaults);
     // recalculate these settings
     updateSetting("nbfolders");
     updateSetting("maxage");
@@ -636,6 +636,6 @@ async function settingsChangedListener(settingsUpdateInfo) {
     updateButtonList();
   }
 }
-messenger.storage.sync.onChanged.addListener(settingsChangedListener);
+messenger.storage.local.onChanged.addListener(settingsChangedListener);
 
 /* vi: set tabstop=2 shiftwidth=2 softtabstop=2 expandtab: */

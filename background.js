@@ -1,51 +1,52 @@
+import option_defaults from '../options/default_options.js';
 (async () => {
   // the first parameter of this function gets tab information when using the button
-  function toggleTidybirdBySettings(startupEvent = false) {
+  async function toggleTidybirdBySettings(startupEvent = false) {
     let htmlPage = "content/tidybirdpane.html";
 
-    // default parameter only used at first startup
-    async function toggleTidybird(settings) {
-      let isShowing = settings.isShowing;
-      let width = settings.width;
-
-      let showOnStartup = false;
-      if(startupEvent === true) { // startupEvent can also be an event
-        let startupSetting = await messenger.storage.sync.get({
-          startup: "latest", //TODO only 1 place to define defaults
-        });
-        if (startupSetting.startup == "shown") {
-          showOnStartup = true;
-        } else if (startupSetting.startup == "hidden") {
-          showOnStartup = false;
-        } else {
-          showOnStartup = isShowing;
-        }
-      }
-      if ( showOnStartup || (startupEvent !== true && !isShowing) ) {
-        messenger.ex_customui.add(
-          messenger.ex_customui.LOCATION_MESSAGING,
-          htmlPage,
-          { width } // this is an "object shorthand" = { "width": width }
-        );
-        messenger.storage.local.set({ ["isShowing"]: true });
-      } else {
-        messenger.storage.local.set({ ["isShowing"]: false });
-        messenger.ex_customui.remove(
-          messenger.ex_customui.LOCATION_MESSAGING,
-          htmlPage
-        );
-      }
-    }
-
-    function onError(error) {
-      console.error(`Error in tidybird getting settings: ${error}`);
-    }
-
-    let gettingSetting = messenger.storage.local.get({
-      isShowing: true,
-      width: undefined
+    // upgrade from 4 to 5: get settings from sync
+    let displaySettings = await messenger.storage.sync.get({
+      isShowing: true, // we want the default on startup to be "restore showing"
+      width: undefined, // undefined is also returned when no default asked
     });
-    gettingSetting.then(toggleTidybird, onError);
+
+    displaySettings = await messenger.storage.local.get({
+      isShowing: displaySettings.isShowing,
+      width: displaySettings.width,
+      startup: option_defaults.startup,
+    });
+
+    let showOnStartup = false;
+    if(startupEvent === true) { // startupEvent can also be an event
+      if (displaySettings.startup == "shown") {
+        showOnStartup = true;
+      } else if (displaySettings.startup == "hidden") {
+        showOnStartup = false;
+      } else { // displaySettings.startup == "auto"
+        showOnStartup = displaySettings.isShowing; // last known state
+      }
+    }
+    if (
+      ( startupEvent === true && showOnStartup ) // startup
+      ||
+      ( startupEvent !== true && !displaySettings.isShowing ) // toggle
+    ) {
+      messenger.ex_customui.add(
+        messenger.ex_customui.LOCATION_MESSAGING,
+        htmlPage,
+        { "width": displaySettings.width }
+      );
+      messenger.storage.local.set({ ["isShowing"]: true });
+    } else {
+      messenger.storage.local.set({ ["isShowing"]: false });
+      messenger.ex_customui.remove(
+        messenger.ex_customui.LOCATION_MESSAGING,
+        htmlPage
+      );
+    }
+
+    // remove old version 4 settings
+    messenger.storage.sync.clear();
   }
 
   // initial startup (or not)

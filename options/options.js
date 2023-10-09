@@ -37,7 +37,7 @@ async function save() {
   } else {
     value = this.value;
   }
-  messenger.storage.sync.set({
+  messenger.storage.local.set({
     [this.name]: value
   });
 }
@@ -62,7 +62,7 @@ async function addFolder(account, folder) {
 
   let parentEl = foldergetEl;
 
-  let settings = (await messenger.storage.sync.get(folderAttribute))[folderAttribute]
+  let settings = (await messenger.storage.local.get(folderAttribute))[folderAttribute]
   // we are out of DOM, so no querySelectorAll here
   for (let input of folderEl.getElementsByTagName("input")) {
     if (input.name) {
@@ -139,7 +139,7 @@ function onError(error) {
   console.log(`Error: ${error}`);
 }
 function restoreOptions() {
-  let getting = messenger.storage.sync.get(option_defaults);
+  let getting = messenger.storage.local.get(option_defaults);
   getting.then(setCurrentChoice, onError);
 }
 
@@ -192,10 +192,9 @@ function folderInput(theEvent) {
 
   let theInput = theEvent.target;
   let theRow = theInput.parentNode.parentNode;
-  //let foldername = theRow.getAttribute("data-folder");
-  let varParts = theInput.name.split("_");
-  let inputname = varParts[0];
-  let foldername = varParts[1];
+  let splitterIndex = theInput.name.indexOf("_"); // split splits always, max is just the nb of parts to return
+  let inputname = theInput.name.substring(0,splitterIndex);
+  let foldername = theRow.getAttribute("data-folder"); // or theInput.name.substring(splitterIndex+1)
   // a number, as it takes less place and we want to support many folders
   // note: numbers are probably stored in ascii (according to the byte usage: 1 byte per character)
   if(inputname == "pin") {
@@ -217,8 +216,8 @@ function folderInput(theEvent) {
   // - max item size: 8192 byte => on 2000 folders, only about 4 byte per folder...
   // also, sync storage is not really used in Thunderbird
   // so we don't use sync storage for tidybird, because mixing may lead to confusion
-  // we should however throw an error when we can't save a setting
-  messenger.storage.sync.set({
+  //TODO we should however throw an error when we can't save a setting
+  messenger.storage.local.set({
     [foldername]: folderSettings,
   });
   console.log(`folderSave on ${foldername}: ${folderSettings}`);
@@ -265,5 +264,5 @@ function domReady() {
     }
   );
   // update the settings shown in this window as they may have been changed in another window
-  messenger.storage.sync.onChanged.addListener(settingsChangedListener);
+  messenger.storage.local.onChanged.addListener(settingsChangedListener);
 }
