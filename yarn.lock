@@ -1301,10 +1301,10 @@ eslint-plugin-json@^3.1.0:
     lodash "^4.17.21"
     vscode-json-languageservice "^4.1.6"
 
-eslint-plugin-mozilla@^3.1.0:
-  version "3.2.0"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-mozilla/-/eslint-plugin-mozilla-3.2.0.tgz#255babc8a0e38fa03195bce084c962a9d066bc39"
-  integrity sha512-BlNWL9yHDx4dcC5AnHuPueH+PiW2rLcUkCcIGVv0KpIIeveKGh1LSvA/ArUNbENioi+hgsd7AehS4SuUD/7YAw==
+eslint-plugin-mozilla@^3.3.2:
+  version "3.3.2"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-mozilla/-/eslint-plugin-mozilla-3.3.2.tgz#4945e2c598f4981217237e936d95253cd10f30d7"
+  integrity sha512-4NcBtaizgNh6uUyVmSqSrCUvkUnyuQc1K6fKtJiBGeSXLmswqPGwFcktj+GNLquHk5nrWTwBWP1x4APXuvMcJQ==
   dependencies:
     "@babel/core" "^7.20.12"
     "@babel/eslint-parser" "^7.19.1"
@@ -1313,6 +1313,7 @@ eslint-plugin-mozilla@^3.1.0:
     estraverse "^5.3.0"
     htmlparser2 "^8.0.1"
     multi-ini "^2.3.2"
+    toml-eslint-parser "0.6.0"
 
 eslint-plugin-no-unsanitized@4.0.2:
   version "4.0.2"
@@ -1343,7 +1344,7 @@ eslint-scope@^7.1.1, eslint-scope@^7.2.2:
     esrecurse "^4.3.0"
     estraverse "^5.2.0"
 
-eslint-visitor-keys@3.4.3, eslint-visitor-keys@^3.3.0, eslint-visitor-keys@^3.4.1, eslint-visitor-keys@^3.4.3:
+eslint-visitor-keys@3.4.3, eslint-visitor-keys@^3.0.0, eslint-visitor-keys@^3.3.0, eslint-visitor-keys@^3.4.1, eslint-visitor-keys@^3.4.3:
   version "3.4.3"
   resolved "https://registry.yarnpkg.com/eslint-visitor-keys/-/eslint-visitor-keys-3.4.3.tgz#0cd72fe8550e3c2eae156a96a4dddcd1c8ac5800"
   integrity sha512-wpc+LXeiyiisxPlEkUzU6svyS1frIO3Mgxj1fdy7Pm8Ygzguax2N3Fa/D/ag1WqbOprdI+uY6wMUl8/a2G+iag==
@@ -3462,6 +3463,13 @@ to-regex-range@^5.0.1:
   integrity sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==
   dependencies:
     is-number "^7.0.0"
+
+toml-eslint-parser@0.6.0:
+  version "0.6.0"
+  resolved "https://registry.yarnpkg.com/toml-eslint-parser/-/toml-eslint-parser-0.6.0.tgz#aaf394f2efd94d84d881113479d57d7597dc5d47"
+  integrity sha512-aTmQa0RFb+2URe8IZOfo/oxt3b5rlXlpG9xE+6FmeI8immCGLnZYvKVxbnCYJx4bIKIaEwl0BnCDhwO70yeWSA==
+  dependencies:
+    eslint-visitor-keys "^3.0.0"
 
 tosource@1.0.0:
   version "1.0.0"
