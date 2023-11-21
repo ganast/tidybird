@@ -1,3 +1,8 @@
+import * as common from '../options/default_options.js';
+
+// settings cache, kept up to date using updateSetting
+let settingsCache;
+
 /*
  * Themed TB support: apply theme colors
  */
@@ -167,15 +172,14 @@ applyThemeColors();
  */
 async function applyButtonSize(changedSizes) {
   if (changedSizes === undefined) {
-    // default are set in css, no need to redo
-    changedSizes = await messenger.storage.local.get([
-      "buttonheight",
-      "buttonmargin",
-    ]);
-  }
-  if (changedSizes.buttonheight === undefined && changedSizes.buttonmargin === undefined) {
-    // default settings have not changed
-    return;
+    // initial load size
+    let settings = await getSettings();
+    changedSizes = {
+      "buttonheight": settings["buttonheight"],
+      "buttonmargin": settings["buttonmargin"],
+    };
+    // Default are set in css, no need to redo, but this does not cost much
+    //  so we don't check and do this anyway
   }
   let height = changedSizes.buttonheight;
   let margin = changedSizes.buttonmargin;
@@ -202,7 +206,7 @@ applyButtonSize();
  * Keep track of the width
  *  must be run in this context: access to window
  */
-async function windowRemovedListener(anEvent) {
+function windowRemovedListener(anEvent) {
   let innerWidth = window.innerWidth;
   if (innerWidth != 0) {
     // as the context is removed in TB78, the width is 0
@@ -217,13 +221,10 @@ window.addEventListener("unload", windowRemovedListener);
 /*
  * Read settings
  */
-import option_defaults from '../options/default_options.js';
-// settings cache, kept up to date using updateSetting
-let settingsCache;
 function updateSetting(setting, value) {
   if (value === undefined) {
-    // if no value is given, take the default value
-    value = option_defaults[setting];
+    // if no value is given, take the default value (setting value has been removed)
+    value = common.option_defaults[setting];
   }
   if (setting == "nbfolders") {
     value = Number(value); // convert to number
@@ -232,21 +233,31 @@ function updateSetting(setting, value) {
     value = Math.floor((Date.now() - value * 24 * 60 * 60 * 1000) / 1000); // convert to milliseconds since epoch
   }
   settingsCache[setting] = value;
-  if (setting == "showoptionsbutton") {
-    if (value) {
-      showOptionsButton();
-    } else {
-      hideOptionsButton();
-    }
+  switch(true) {
+    case setting == "startup":
+      break;
+    case setting.startsWith("button"):
+      applyButtonSize({[setting]: value});
+      break;
+    case setting == "showoptionsbutton":
+      if (value) {
+        showOptionsButton();
+      } else {
+        hideOptionsButton();
+      }
+      break;
+    case setting.startsWith("sortorder"):
+      changeOrder(); //FIXME implement: change order without recreating nodes, also used when updating order on move when sorted by date
+      break;
   }
 }
 async function getSettings() {
   // if cache is empty, update the cache
   if (settingsCache === undefined) {
-    settingsCache = await messenger.storage.local.get(option_defaults);
+    settingsCache = await messenger.storage.local.get(common.option_defaults);
     // recalculate these settings
-    updateSetting("nbfolders");
-    updateSetting("maxage");
+    updateSetting("nbfolders",settingsCache.nbfolders);
+    updateSetting("maxage",settingsCache.maxage);
   }
   return settingsCache;
 }
@@ -332,35 +343,37 @@ const getFolder = function (account, pathArray) {
 
 let foldersInList = [];
 
-const getRoot = async function(folder) {
-  let path = folder.fullPath;
-  let account = folder.account;
-
+const getRoot = async function(folderFullPath) {
   // ancestor example: [ "<accountname>", "INBOX", "a_folder_in_inbox" ]
-  const ancestors = path.split("/");
+  const ancestors = folderFullPath.split("/");
   // TODO make the "2" configurable (?)
   const rootIndex = ancestors.length > 3 ? 2 : ancestors.length - 2;
   // set a "fake" root folder with the account name if there is no folder ancestor
-  let root = { name: ancestors[0] };
   if (ancestors.length > 2) {
     // The name is not always the same as the path(part)
-    root = getFolder(account, ancestors.slice(1, rootIndex + 1));
+    //  but we ignore this fact as getting the human readable name
+    //  costs just too much TODO do test with many folders
+    return ancestors[rootIndex];
   }
-  return root;
+  return ancestors[0]; // return account name
 }
-const getExpandedFolder = async function (folder) {
-  let expandedFolder = { ...folder };
-  expandedFolder.account = await browser.accounts.get(folder.accountId);
-  expandedFolder.fullPath = expandedFolder.account.name + expandedFolder.path;
-  expandedFolder.root = await getRoot(expandedFolder);
-  return expandedFolder;
-};
+/**
+ * Return a folder object usable by the folder webextensions API
+ * from the name used in the settings
+ **/
+const getFolderFromSetting = async function(folderSetting) {
+  let folder = decodeURI(common.getFolderFromSettingsKey(folderSetting));
+  let accountSplitIndex = folder.indexOf("/");
+  return {
+    accountId: folder.substring(0,accountSplitIndex), // for MailFolder "constructor"
+    path: folder.substring(accountSplitIndex), // for MailFolder "constructor"
+  };
+}
 const getFolderFromExpanded = async function(expandedFolder) {
-  let folder = { ...expandedFolder };
-  delete folder.account;
-  delete folder.fullPath;
-  delete folder.root;
-  return folder;
+  return {
+    accountId: expandedFolder.accountId,
+    path: expandedFolder.path,
+  };
 }
 const isFolderInList = function (expandedFolder) {
   return foldersInList.includes(expandedFolder.fullPath);
@@ -371,7 +384,7 @@ const getFolderIndexInList = function (expandedFolder) {
 
 let listParent = document.getElementById("tidybirdFolderButtonList");
 let listAccountTitle = null;
-const addAccount = async function (account,tmpParent) {
+const addAccount = async function (accountName,tmpParent) {
   let title;
   if (listAccountTitle == null) {
     title = document.createElement("h3");
@@ -379,7 +392,7 @@ const addAccount = async function (account,tmpParent) {
   } else {
     title = listAccountTitle.cloneNode(true);
   }
-  title.textContent = account.name;
+  title.textContent = accountName;
   tmpParent.appendChild(title);
 };
 
@@ -422,7 +435,7 @@ const addButton = async function (expandedFolder,buttonParent,options) {
 
     let label2 = document.createElement("div");
     label2.className = "tidybird-folder-move-button-label-2";
-    label2.textContent = expandedFolder.root.name;
+    label2.textContent = expandedFolder.rootName;
     button.appendChild(label2);
 
     button.setAttribute("tooltiptext", path);
@@ -433,7 +446,7 @@ const addButton = async function (expandedFolder,buttonParent,options) {
   if (!newTemplate) {
     label1 = button.firstElementChild;
     label1.textContent = expandedFolder.name;
-    label1.nextElementSibling.nextElementSibling.textContent = expandedFolder.root.name;
+    label1.nextElementSibling.nextElementSibling.textContent = expandedFolder.rootName;
   }
   if(!options.markAsRead) {
     //label1.nextElementSibling.remove(); // remove the "read" circle
@@ -482,8 +495,7 @@ const updateButtonList = async function () {
     foldersInList.pop();
     listParent.firstChild.remove();
   }
-  let settings = await getSettings();
-  browser.tidybird_api.getMRMFolders.addListener(gotMRMFolders, settings.nbfolders, settings.maxage);
+  showButtons();
 };
 
 const updateButtonListIfNeeded = async function (folder, neededIfNotPresent) {
@@ -546,16 +558,21 @@ messenger.folders.onDeleted.addListener(async (deletedFolder) => {
 
 async function addFolderList(folderList,tmpParent) {
   let settings = await getSettings();
-  // TODO: sort order of multiple layers
-  if (settings.sortorder_name) {
+  let collator = new Intl.Collator();
+  if (settings.sortorder_initial == "namecasein") {
     // sort by name instead of moved-to-date
     folderList.sort(function (a, b) {
-      return a.name.localeCompare(b.name);
+      return collator.compare(a.name,b.name);
+    });
+  }
+  if (settings.sortorder_fullpath) {
+    folderList.sort(function (a, b) {
+      return collator.compare(a.fullpath,b.fullpath);
     });
   }
   if (settings.sortorder_parentname) {
     folderList.sort(function (a, b) {
-      return a.root.name.localeCompare(b.root.name);
+      return collator.compare(a.parentName,b.parentName);
     });
   }
   for (let folder of folderList) {
@@ -564,57 +581,181 @@ async function addFolderList(folderList,tmpParent) {
     await addButton(folder,tmpParent,options); // this should be executed in order
   }
 }
+let recentFolders, alwaysFolders;
+let recentFoldersSize; // so we don't have to get the length every time
+let oldestTime;
+let earliestBirth, nbFolders;
+async function addFolderToAutoList(folderAttributeSetting, MRMTimeSetting) {
+  let time = common.parseNumber(MRMTimeSetting);
+  if (
+    // time == 0 should not happen, this folder should not have an MRMTime in settings
+    ( earliestBirth != -1 && time < earliestBirth )
+    ||
+    ( time <= oldestTime && recentFoldersSize >= nbFolders && nbFolders > -1 )
+  ) {
+    // no need to add this folder, it is older than the oldest and we already have enough
+    return false;
+  }
+  // update oldestTime
+  if (time < oldestTime) {
+    oldestTime = time;
+  }
+  recentFolders.push({ folderAttributeSetting, time }); // do not expand yet (costly operation and we may throw away this folder)
+  recentFoldersSize++;
+}
+/**
+ * Add the folder given in the settings to the appropriate list
+ **/
+async function addFolderToList(folderAttributeSetting, folderSettings, allSettings) {
+  if (common.folder_doAlwaysShow(folderSettings)) {
+    alwaysFolders.push({folderAttributeSetting}); //without MRM, we will add it when/if needed
+  } else if(common.folder_doAutoShow(folderSettings)) {
+    // FIXME: get the MRM setting
+    const folderMRMAttribute = "M"+common.getFolderFromSettingsKey(folderAttributeSetting);
+    const MRMTimeSetting = allSettings[folderMRMAttribute];
+    if (MRMTimeSetting !== undefined) {
+      addFolderToAutoList(folderAttributeSetting, MRMTimeSetting);
+    } // no auto show, folder never used to move to
+  } //else: never show, do nothing
+}
+async function addToGroupedList(folder, settings) {
+  let expandedFolder = await getFolderFromSetting(folder.folderAttributeSetting);
+  expandedFolder.time = folder.time; // for rearranging when moved to if sorted on MRMTime
+  // We assume here (and in getRoot) the folder names are also path members
+  //  as otherwise it would cost too much to get the folder object
+  //  to get the folder name and the folder parent name
+  //  TODO check this statement when testing a LOT of folders
+  let path = expandedFolder.path;
+  let splittedPath = path.split("/");
+  expandedFolder.name = splittedPath[splittedPath.length-1];
+  expandedFolder.parentName = splittedPath[splittedPath.length-2];
+  let accountId = expandedFolder.accountId;
+  let account = accountList[accountId];
+  if (account == undefined) {
+    account = await messenger.accounts.get(accountId);
+    accountList[accountId] = account;
+  }
+  if (settings.groupby_account) {
+    expandedFolder.accountName = account.name; // to show if grouped by account
+  }
+  let fullPath = account.name + path;
+  expandedFolder.rootName = await getRoot(fullPath);
+  expandedFolder.fullPath = fullPath;
+  // Add the folder according to the settings, so we can sort if needed
+  if (settings.groupby_account || settings.sortorder_accountname) {
+    let accountSortValue = accountId;
+    if (settings.sortorder_accountname) {
+      accountSortValue = account.name;
+    }
+    if (groupedFolderList[accountSortValue] === undefined) {
+      groupedFolderList[accountSortValue] = [];
+    }
+    groupedFolderList[accountSortValue].push(expandedFolder);
+  } else {
+    groupedFolderList.folderList.push(expandedFolder);
+  }
+}
 /**
  * Get the most recently changed folders
  **/
 let othersParent = document.getElementById("otherButtonList");
 //let start = true;
-async function gotMRMFolders(mostRecentlyModifiedFolders) {
+let accountList, groupedFolderList;
+async function showButtons() {
+  //TODO: keep settings synchronized, so we don't have to get them here
   let settings = await getSettings();
-  browser.tidybird_api.getMRMFolders.removeListener(gotMRMFolders, settings.nbfolders, settings.maxage);
-  /*
-  // to test initial load without recent folders
-  if (start) {
-    mostRecentlyModifiedFolders = [];
-    start = false;
-  }
-  */
+  earliestBirth = settings.maxage;
+  nbFolders = settings.nbfolders;
 
-  if (!mostRecentlyModifiedFolders.length) {
+  recentFolders = [];
+  alwaysFolders = [];
+  recentFoldersSize = 0;
+  oldestTime = common.getTimestamp(); // initialize, so we don't have to check for undefined every loop
+
+  // First get folders, then loop over accounts, so we can honour nb of days and max nb of folders
+  //TODO: button to purge old MRMs (for performance)
+  // based on own implementation of getMostRecentFolders, probably more efficient in cpu (not in memory)
+  let allSettings = await messenger.storage.local.get(); // get ALL SET settings
+  let defaultSettings = allSettings.Fdefault;
+  if (common.folder_doAlwaysShow(defaultSettings)) {
+    // Run over ALL folders while checking if they have specific settings
+    // least efficient, but may be desired to always show new folders
+    //FIXME filter on folder.canFileMessages is not done as we do not have that info (also needed in settings)
+    // FIXME
+  } else if (common.folder_doNeverShow(defaultSettings)) {
+    // Run only over folders that have settings
+    // most efficient, run only over folders with specific settings
+    for (let setting in allSettings) {
+      if (setting.startsWith("F")) {
+        addFolderToList(setting, allSettings[setting], allSettings);
+      }
+    }
+  } else { // folder_doAutoShow(defaultSettings))
+    // First run over folders that have settings
+    // Then run over folder that have timestamps
+    for (const setting in allSettings) {
+      if (setting.startsWith("F")) {
+        // minority should be handled here
+        // these are always handled first
+        addFolderToList(setting, allSettings[setting], allSettings);
+      } else if (setting.startsWith("M")) {
+        //TODO only if there is still space, set total nb of folders, not auto
+        //TODO show number of auto folders where we select total nb of folders
+        let folderAttributeSetting = "F"+common.getFolderFromSettingsKey(setting);
+        if (allSettings[folderAttributeSetting] === undefined) {
+          addFolderToAutoList(setting, allSettings[setting]);
+        } // already handled above
+      }
+    }
+  }
+
+  //TODO and no settings and/or always folders
+  if (recentFoldersSize == 0 && ( nbFolders == -1 || nbFolders > 0) ) {
     listParent.innerHTML = "<p>Buttons to move mails will appear (and this message will disappear) once you move a message to a folder that will also appear in Thunderbird's recent folders list.</p><p>You can also select the folders you want in the Options.<br/>Options can be opened using the \"Options\" button or using the Add-ons Manager</p>";
     return;
   }
 
-  let folderList = mostRecentlyModifiedFolders.map((f) => getExpandedFolder(f)); // to get account names
-  let tmpListParent = document.createDocumentFragment();
-  Promise.all(folderList).then(async (expandedFolderList) => {
-    if ( settings.groupby_account ) { //sortOnAccount ) {
-      let accounts = await messenger.accounts.list(false);
-      for (let account of accounts) {
-        let perAccountFolderList = expandedFolderList.filter((folder) => (folder.account.name == account.name));
-        if (perAccountFolderList.length) {
-          // these should be executed in order
-          await addAccount(account,tmpListParent);
-          await addFolderList(perAccountFolderList,tmpListParent);
-        }
-      }
-    } else {
-      await addFolderList(expandedFolderList,tmpListParent);
+  // now limit to the number we asked for
+  //TODO if needed
+  //TODO reorder while ordening later, if needed (if there are alwaysFolders that are not manually ordened)
+  //TODO limit by folderselection setting
+  if (nbFolders > 1 || settings.sortorder_initial == "mostrecent") {
+    recentFolders.sort((a, b) => a.time < b.time);
+    if (nbFolders > 0) {
+      // at index <first argument>, delete <second argument> elements
+      recentFolders.splice(nbFolders, recentFoldersSize - nbFolders);
     }
-    console.debug("Appending tmpList to list");
-    // folderlists should be added before the tmp parent is added to the real parent
-    listParent.appendChild(tmpListParent);
-    console.debug("Appended tmpList to list");
-    update_tooltipcolor(); // in this promise to make sure it fires after list are added
-  });
+  }
+
+  // - Expand folders with extra information: account, parent
+  // - Group folders if needed
+  accountList = {}; // reinitialize every time: account may be renamed TODO act on account rename, as we also may have to update the button list
+  groupedFolderList = {};
+  if (!(settings.groupby_account || settings.sortorder_accountname)) {
+    groupedFolderList.folderList = [];
+  }
+  // Should be done in order: may already be ordered
+  for (let folder of alwaysFolders) {
+    await addToGroupedList(folder, settings);
+  }
+  for (let folder of recentFolders) {
+    await addToGroupedList(folder, settings);
+  }
+
+  let tmpListParent = document.createDocumentFragment();
+  // sorted by account id, account name or just a single value, depending on the settings
+  for ( let accountSortValue of Object.keys(groupedFolderList).sort() ) {
+    if (settings.groupby_account) {
+      await addAccount(groupedFolderList[accountSortValue][0].accountName,tmpListParent);
+    }
+    await addFolderList(groupedFolderList[accountSortValue],tmpListParent);
+  }
+
+  // folderlists should be added before the tmp parent is added to the real parent
+  listParent.appendChild(tmpListParent);
+  update_tooltipcolor();
 }
-// do with events, as direct return raises an exception
-async function addMRMListener() {
-  let settings = await getSettings();
-  browser.tidybird_api.getMRMFolders.addListener(gotMRMFolders, settings.nbfolders, settings.maxage);
-  //TODO: idea: keep our own list of MRM folders, so we can include or exclude any folder. Before of subfolders of removed/renamed folders (with MRM they are no longer in the list)
-}
-addMRMListener();
+showButtons();
 addSettingsButton(othersParent);
 
 /*
@@ -622,15 +763,9 @@ addSettingsButton(othersParent);
  */
 async function settingsChangedListener(settingsUpdateInfo) {
   let changedSettings = Object.keys(settingsUpdateInfo).reduce((attrs, key) => ({...attrs, [key]: settingsUpdateInfo[key].newValue}), {});
-  applyButtonSize(changedSettings);
-  // settings that need an updateButtonList
-  let settingList = [ "nbfolders", "maxage", "sortorder_mostrecent", "sortorder_name", "sortorder_parentname", "sortorder_accountname", "groupby_account" ];
   let needUpdateList = false;
   for (let setting in changedSettings) {
-    updateSetting(setting, changedSettings[setting]);
-    if (settingList.indexOf(setting)>-1) {
-      needUpdateList = true;
-    }
+    needUpdateList = needUpdateList || updateSetting(setting, changedSettings[setting]);
   }
   if (needUpdateList) {
     updateButtonList();

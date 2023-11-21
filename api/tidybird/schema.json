@@ -23,18 +23,6 @@
           }
         ],
         "extraParameters": [
-          {
-            "name": "number",
-            "description": "number of MRM folders to return",
-            "type": "integer",
-            "required": true
-          },
-          {
-            "name": "number",
-            "description": "number of milliseconds since epoch for MRM event",
-            "type": "integer",
-            "required": false
-          }
         ]
 
       }

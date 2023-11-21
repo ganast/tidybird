@@ -19,7 +19,7 @@
     padding-right: .4em;
     border-bottom-style: double;
 }
-.folderviewheader > .header > :nth-child(4n) {
+.folderviewheader > .header > :nth-child(4n+1) {
     border-left-style: solid;
     border-right-style: solid;
     border-left-width: 1px;
@@ -32,4 +32,7 @@
 .folderviewbody > * > * {
     border-bottom-style: solid;
     border-width: 1px;
+}
+.default button.resetbutton {
+    display: none;
 }

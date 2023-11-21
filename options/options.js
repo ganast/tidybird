@@ -2,35 +2,13 @@
 import Sortable from './sortablejs/modular/sortable.core.esm.js';
 // remark: sortable needs "open_in_tab": true in the manifest for options_ui
 // TODO: find out why
-import option_defaults from './default_options.js';
 
-let folderSettingValues = {
-  "show": {
-    "bitindex": 1,
-    "bitmask": 0b11,
-    "values": {
-      "auto": 0,
-      "always": 1,
-      "never": 2,
-    },
-  },
-  "pin": {
-    "bitindex": 0,
-    "bitmask": 0b1,
-  },
-  "markasread": {
-    "bitindex": 3,
-    "bitmask": 0b11,
-    "values": {
-      "no": 0,
-      "yes": 1,
-      "double": 2,
-    }
-  }
-};
+// general options can't start with "F" or "M"
+// those are reserved for folder Options and MRMTime
+// yes, it is cryptic, but it takes the least space
+import * as common from './default_options.js';
 
 async function save() {
-  console.log("save");
   let value;
   if (this.type == "checkbox") {
     value = this.checked;
@@ -41,20 +19,34 @@ async function save() {
     [this.name]: value
   });
 }
+async function setNonDefault(folderEl) {
+  folderEl.classList.remove("default");
+}
+async function setDefault(folderEl) {
+  folderEl.classList.add("default");
+}
+async function getFolderinputName(folderOptionsAttribute, settingname) {
+  return settingname+"_"+folderOptionsAttribute;
+}
+async function getFolderinput(folderOptionsAttribute, settingname, inputValue) {
+  const folderinputName = await getFolderinputName(folderOptionsAttribute, settingname);
+  return document.querySelector(`[name="${folderinputName}"][value="${inputValue}"]`);
+}
 let folderElTemplate;
+let unpinnedOrder = [];
 async function addFolder(account, folder) {
   let folderEl;
   if (folderElTemplate === undefined) {
-    folderElTemplate = document.getElementById("newfolder");
+    folderElTemplate = document.getElementById("defaultfolder");
   }
   folderEl = folderElTemplate.cloneNode(true);
   folderEl.removeAttribute('id');
 
   let folderName = `${account.name}${folder.path}`;
-  let folderAttribute = encodeURI(folderName);
-  // use this attribute to get folder, not the displayed name, if we once decide to show something else
-  // foldername needs to be there for the new folder
-  // and we need access to all settings of a certain folder
+  let folderAttribute = encodeURI(`${folder.accountId}${folder.path}`);
+  let folderOptionsAttribute = "F"+folderAttribute;
+  let folderMRMAttribute = "M"+folderAttribute;
+
   folderEl.setAttribute("data-folder",folderAttribute);
   let col_next = folderEl.firstElementChild; // col_handle
   col_next = col_next.nextElementSibling; // col_name
@@ -62,18 +54,19 @@ async function addFolder(account, folder) {
 
   let parentEl = foldergetEl;
 
-  let settings = (await messenger.storage.local.get(folderAttribute))[folderAttribute]
+  let settings = (await messenger.storage.local.get([folderOptionsAttribute,folderMRMAttribute]));
+  let folderOptions = settings[folderOptionsAttribute];
+  if (folderOptions !== undefined) {
+    setNonDefault(folderEl);
+  }
   // we are out of DOM, so no querySelectorAll here
   for (let input of folderEl.getElementsByTagName("input")) {
     if (input.name) {
-      let settingname = input.name
-      // the name must be unique per folder for the radio buttons
-      input.name = settingname+"_"+folderAttribute;
-      if (settings !== undefined) {
-        let settingConfiguration = folderSettingValues[settingname];
-        let inputSettingValue = calculateFolderSingleSettingValue(settingname,input.value);
-        let maskedSetting = (settings & (settingConfiguration.bitmask << settingConfiguration.bitindex));
-        if ( maskedSetting === inputSettingValue ) {
+      let settingname = common.getSettingFromInput(input);
+      // the name must be unique per folder for the radio buttons, so we set one here
+      input.name = await getFolderinputName(folderOptionsAttribute, settingname);
+      if (folderOptions !== undefined) {
+        if (common.folder_hasSetting(settingname, input.value, folderOptions)) {
           input.checked = true;
           if (settingname == "pin") {
             folderEl.classList.add("movable");
@@ -81,8 +74,7 @@ async function addFolder(account, folder) {
             parentEl = foldersortEl;
           }
         } else {
-          // needed, otherwise the default html checked is taken if it is after the checked element
-          input.checked = false;
+          input.checked = false; // needed, otherwise the default html checked is taken if it is after a checked element
           if (settingname == "pin") {
             folderEl.classList.remove("movable");
             folderEl.classList.add("notmovable");
@@ -91,18 +83,123 @@ async function addFolder(account, folder) {
         }
       }
     }
-  };
+  }
+  for (let span of folderEl.getElementsByTagName("span")) {
+    if (span.getAttribute("data-name") == "MRM") {
+      let MRMTime = settings[folderMRMAttribute];
+      if (MRMTime) {
+        span.textContent = common.parseDate(settings[folderMRMAttribute]);
+      }
+    }
+  }
+  unpinnedOrder.push(folderAttribute); // order if they would all not be pinned, so if they are inpinned, they are put in the right order
   parentEl.appendChild(folderEl);
 
   for (let subfolder of await messenger.folders.getSubFolders(folder,false)) {
     await addFolder(account, subfolder);
   }
 }
-async function setCurrentChoice(result) {
+/**
+ * Set the current options
+ * This may be when opening options page or when changing an options
+ * When opening the page, the folder options should not be set as they are added and set
+ **/
+async function setCurrentChoice(result,setFolderOptions) {
   for (let [key, value] of Object.entries(result)) {
     console.log(`${key}: ${value}`);
-    if(key.includes("/")) {
-      // changed a folder setting, no loading desired as the list may take some time
+    if(key[0] === "F") {
+      if(!setFolderOptions && !key == "Fdefault") {
+        continue;
+      }
+      let folderEl;
+      const folderAttribute = common.getFolderFromSettingsKey(key);
+      const folderEls = document.querySelectorAll(`[data-folder='${folderAttribute}']`);
+      if (!folderEls.length) {
+        console.error(`Did not find the textfield to set ${key}`);
+      } else {
+        for (const thisFolderEl of folderEls) {
+          // there should only be 1
+          folderEl = thisFolderEl;
+        }
+      }
+      if(key == "Fdefault") {
+        // change the inputs of folders with default settings
+        //FIXME
+      } else if(value === undefined) {
+        // settings has been removed => mark as default
+        setDefault(folderEl);
+      } else {
+        // mark as non default, to add "reset" button
+        // remark: when setting with same value as default, we do not remove the "default" status
+        //  as it may be wanted that the folder's settings to not change with default settings
+        setNonDefault(folderEl);
+      }
+      for (const folderSettingName in common.folderSettingValues) {
+        // calculate for every setting value if it is set
+        // can also be done without running over al possible values, but then we need to lookup the value anyway
+        if(common.folderSettingValues[folderSettingName].values === undefined) { // checkbox
+          const inputField = await getFolderinput(key, folderSettingName, folderSettingName);
+          const isChecked = common.folder_hasSetting(folderSettingName, folderSettingName, value);
+          inputField.checked = isChecked;
+          if(folderSettingName == "pin") {
+            let folderParent;
+            //TODO also default folders can be given a place: put new pinned folders above this
+            if(isChecked) {
+              folderEl.classList.add("movable");
+              folderEl.classList.remove("notmovable");
+              folderParent = foldersortEl;
+            } else {
+              folderEl.classList.remove("movable");
+              folderEl.classList.add("notmovable");
+              if(key != "Fdefault") {
+                folderParent = foldergetEl;
+              }
+            }
+            if(folderParent && folderParent != folderEl.parentNode) {
+              folderParent.appendChild(folderEl);
+              //TODO append after default settings (if default pinned)
+              //TODO put in original place if unpinned
+              //FIXME signal order change to tidybird
+            }
+            if(foldersortElSortable !== undefined) {
+              //FIXME foldersortElSortable.sort(unpinnedOrder);
+            }
+            if(foldergetElSortable !== undefined) {
+              foldergetElSortable.sort(unpinnedOrder);
+            }
+          }
+        } else {
+          for (const folderSettingsValue in common.folderSettingValues[folderSettingName].values) {
+            const hasSetting = common.folder_hasSetting(folderSettingName, folderSettingsValue, value);
+            if (hasSetting) {
+              const inputField = await getFolderinput(key, folderSettingName, folderSettingsValue);
+              inputField.checked = true;
+            } // else: not checked, uncheck not needed: radio
+          }
+        }
+      }
+      continue;
+    }
+    if(key[0] === "M") {
+      if(!setFolderOptions) {
+        continue;
+      }
+      let folderAttribute = common.getFolderFromSettingsKey(key);
+      let textFields = document.querySelectorAll(`[data-folder='${folderAttribute}'] [data-name='MRM']`);
+      if (!textFields.length) {
+        console.error(`Did not find the textfield to set ${key}`);
+      } else {
+        for (let textField of textFields) {
+          // there should only be 1
+          textField.textContent = common.parseDate(value);
+        }
+      }
+      continue;
+    }
+    if(key === "manualorder") {
+      if(foldersortElSortable !== undefined) {
+        foldersortElSortable.sort(value);
+      }
       continue;
     }
     let inputNodes = document.querySelectorAll(`[name='${encodeURI(key)}']`);
@@ -123,123 +220,22 @@ async function setCurrentChoice(result) {
       }
     }
   }
-
-  // FIXME: remove existing list
-  // FIXME: do this as less as possible, only if a setting changing the order has changed
-  // FIXME: get settings for folders
+}
+async function loadFolders() {
+  // FIXME: do this if a setting changing the order has changed or if a folder is added/removed
   foldergetEl.textContent = "";
   let accounts = await messenger.accounts.list(true);
   for (let account of accounts) {
+    // TODO file a bug for Thunderbird to include canFileMessages property in MailFolder(Info)
     for (let folder of account.folders) {
       await addFolder(account, folder);
     }
   }
-}
-function onError(error) {
-  console.log(`Error: ${error}`);
-}
-function restoreOptions() {
-  let getting = messenger.storage.local.get(option_defaults);
-  getting.then(setCurrentChoice, onError);
-}
 
-let weAreSetting = [];
-async function settingsChangedListener(settingsUpdateInfo) {
-  let changedSettings = (Object.keys(settingsUpdateInfo)).reduce(
-    function(attrs, key) {
-      let settingIndex = weAreSetting.indexOf(key);
-      if (settingIndex === -1) {
-        // only add the setting if we are not the one changing it
-        return {
-            ...attrs,
-            [key]: settingsUpdateInfo[key].newValue
-          };
-      }
-      weAreSetting.splice(key,1);
-      return attrs;
-    },
-    {},
-  );
-  if (Object.keys(changedSettings).length) {
-    setCurrentChoice(changedSettings);
-  }
-}
-function calculateFolderSingleSettingValue(name, textvalue) {
-  let value = 1; // checkbox is checked
-  let settingValues = folderSettingValues[name];
-  if (settingValues.values !== undefined) {
-    value = settingValues.values[textvalue];
-  }
-  if (value > 0) {
-    value = value << settingValues.bitindex
-  }
-  return value;
-}
-function calculateFolderSetting(theRow) {
-  let checkedInputs = theRow.querySelectorAll("input:checked");
-  let folderSettings = 0;
-  for (let checkedInput of checkedInputs) {
-    let varParts = checkedInput.name.split("_",1);
-    let inputname = varParts[0];
-    console.log(`Getting values for ${inputname}`);
-    folderSettings += calculateFolderSingleSettingValue(inputname,checkedInput.value);
-  }
-  return folderSettings;
-}
-function folderInput(theEvent) {
-  console.log(this);
-  console.log(theEvent);
-
-  let theInput = theEvent.target;
-  let theRow = theInput.parentNode.parentNode;
-  let splitterIndex = theInput.name.indexOf("_"); // split splits always, max is just the nb of parts to return
-  let inputname = theInput.name.substring(0,splitterIndex);
-  let foldername = theRow.getAttribute("data-folder"); // or theInput.name.substring(splitterIndex+1)
-  // a number, as it takes less place and we want to support many folders
-  // note: numbers are probably stored in ascii (according to the byte usage: 1 byte per character)
-  if(inputname == "pin") {
-    if(theInput.checked) {
-      theRow.classList.add("movable");
-      theRow.classList.remove("notmovable");
-      foldersortEl.appendChild(theRow);
-    } else {
-      theRow.classList.remove("movable");
-      theRow.classList.add("notmovable");
-      foldergetEl.appendChild(theRow);
-    }
-  }
-  let folderSettings = calculateFolderSetting(theRow);
-  // do with save button, so we can cancel?
-  weAreSetting.push(foldername);
-  // Limits for sync storage:
-  // - max 512 items => we can't store folders in separate items
-  // - max item size: 8192 byte => on 2000 folders, only about 4 byte per folder...
-  // also, sync storage is not really used in Thunderbird
-  // so we don't use sync storage for tidybird, because mixing may lead to confusion
-  //TODO we should however throw an error when we can't save a setting
-  messenger.storage.local.set({
-    [foldername]: folderSettings,
-  });
-  console.log(`folderSave on ${foldername}: ${folderSettings}`);
-}
-
-let foldersortEl;
-let foldergetEl;
-document.addEventListener("DOMContentLoaded", domReady);
-function domReady() {
-  foldersortEl = document.getElementById('foldersort');
-  foldergetEl = document.getElementById('folderget');
-
-  // must be done before adding folders
-  for (const input of document.querySelectorAll("#basicsettings input")) {
-    // input event fires also when focus does not change, but does not work for select
-    input.addEventListener("input", save);
-  }
-
-  restoreOptions();
-
-  document.getElementById('folderinput').addEventListener("input", folderInput);
-  Sortable.create(
+  let manualorder = (await messenger.storage.local.get({"manualorder":[]})).manualorder;
+  document.getElementById('folderinput').addEventListener("click", folderClick);
+  document.getElementById('folderinput').addEventListener("change", folderInput);
+  foldersortElSortable = Sortable.create(
     foldersortEl,
     {
       group: 'folders',
@@ -247,9 +243,22 @@ function domReady() {
       animation: 150,
       //draggable: ".movable", // optional, default: all children
       //filter: ".notmovable", // makes unmovable elements responsive to moving other elements in between
+      dataIdAttr: 'data-folder',
+      store: {
+        get: function(sortable) {
+          // only called one single time at startup
+          return manualorder;
+        },
+        set: function(sortable) {
+          const order = sortable.toArray();
+          messenger.storage.local.set({
+            ["manualorder"]: order,
+          });
+        },
+      },
     }
   );
-  Sortable.create(
+  foldergetElSortable = Sortable.create(
     foldergetEl,
     {
       group: {
@@ -261,8 +270,105 @@ function domReady() {
       //draggable: ".movable", // optional, default: all children
       //filter: ".notmovable", // makes unmovable elements responsive to moving other elements in between
       sort: false,
+      dataIdAttr: 'data-folder', //TODO maybe a tmp id to keep a small ordered list of the original order
     }
   );
-  // update the settings shown in this window as they may have been changed in another window
-  messenger.storage.local.onChanged.addListener(settingsChangedListener);
+}
+
+async function settingsChangedListener(settingsUpdateInfo) {
+  let changedSettings = (Object.keys(settingsUpdateInfo)).reduce(
+    function(attrs, key) {
+      /*
+      let settingIndex = weAreSetting.indexOf(key);
+      if (settingIndex === -1) {
+        // only add the setting if we are not the one changing it
+      */
+        return {
+            ...attrs,
+            [key]: settingsUpdateInfo[key].newValue
+          };
+      /*
+      }
+      weAreSetting.splice(key,1);
+      return attrs;
+      */
+    },
+    {},
+  );
+  if (Object.keys(changedSettings).length) {
+    setCurrentChoice(changedSettings,true);
+  }
+}
+function calculateFolderSetting(theRow) {
+  let checkedInputs = theRow.querySelectorAll("input:checked");
+  let folderSettings = 0;
+  for (let checkedInput of checkedInputs) {
+    const inputname = common.getSettingFromInput(checkedInput);
+    console.log(`Getting values for ${inputname}`);
+    folderSettings += common.calculateFolderSingleSettingValue(inputname,checkedInput.value);
+  }
+  return folderSettings;
+}
+async function setFolderSettings(foldername, folderSettings) {
+  // Limits for sync storage:
+  // - max 512 items => we can't store folders in separate items
+  // - max item size: 8192 byte => on 2000 folders, only about 4 byte per folder...
+  // also, sync storage is not really used in Thunderbird
+  // so we don't use sync storage for tidybird, because mixing may lead to confusion
+  //TODO we should however throw an error when we can't save a setting
+  messenger.storage.local.set({
+    ["F"+foldername]: folderSettings,
+  });
+  console.log(`folderSave on ${foldername}: ${folderSettings}`);
+}
+async function resetFolderSettings(foldername) {
+  messenger.storage.local.remove("F"+foldername);
+}
+async function folderClick(theEvent) {
+  let theInput = theEvent.target;
+  if(theInput.className == "resetbutton") {
+    const theRow = theInput.parentNode.parentNode;
+    const foldername = theRow.getAttribute("data-folder");
+    resetFolderSettings(foldername);
+  }
+}
+async function folderInput(theEvent) {
+  console.log(this);
+  console.log(theEvent);
+
+  let theInput = theEvent.target;
+  if(theInput.name === undefined) {
+    // input without a name, event not thrown by an input of ours (probably sortable)
+    return;
+  }
+  let theRow = theInput.parentNode.parentNode;
+  let splitterIndex = theInput.name.indexOf("_"); // split splits always, max is just the nb of parts to return
+  let inputname = theInput.name.substring(0,splitterIndex);
+  let foldername = theRow.getAttribute("data-folder"); // or theInput.name.substring(splitterIndex+1)
+  // a number, as it takes less place and we want to support many folders
+  // note: numbers are probably stored in ascii (according to the byte usage: 1 byte per character)
+
+  let folderSettings = calculateFolderSetting(theRow);
+  setFolderSettings(foldername, folderSettings);
+}
+
+let foldersortEl, foldergetEl, foldersortElSortable, foldergetElSortable;
+document.addEventListener("DOMContentLoaded", domReady);
+function domReady() {
+  foldersortEl = document.getElementById('foldersort');
+  foldergetEl = document.getElementById('folderget');
+
+  // must be done before adding folders
+  for (const input of document.querySelectorAll("#basicsettings input")) {
+    // input event fires also when focus does not change, but does not work for select
+    input.addEventListener("input", save);
+  }
+
+  let settingsPromise = messenger.storage.local.get(common.option_defaults);
+  settingsPromise.then((settings) => setCurrentChoice(settings,false));
+  settingsPromise.then(() => loadFolders())
+  .then(() => {
+    // update the settings shown in this window as they may have been changed in another window
+    messenger.storage.local.onChanged.addListener(settingsChangedListener);
+  });
 }

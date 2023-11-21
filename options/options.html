@@ -34,24 +34,40 @@
                     <input id="showoptionsbutton" name="showoptionsbutton" type="checkbox"/>
                     The options page can also be opened via the Add-ons Manager.
                 </div>
+
+                <div class="browser-style">
+                    Current status (updated when closing Tidybird):
+                    <label for="isShowing">Show Tidybird:</label>
+                    <input id="isShowing" name="isShowing" type="checkbox" readonly="readonly" disabled="disabled"/>
+                    <label for="width">Tidybird width:</label>
+                    <input id="width" name="width" type="number" size="4" min="0" readonly="readonly" disabled="disabled"/>px
+                </div>
             </div>
 
             <h2>Sorting</h2>
             <div>
                 Sort by:
                 <!-- TODO: by default, folders should be ordered as listed in the folder pane, not by most recent -->
-                <ol>
+                <ol start="0">
                     <li>
-                        <input id="sortorder_mostrecent" name="sortorder_mostrecent" type="checkbox" value="mostrecent"/>
+                        <input id="sortorder_no" name="sortorder_initial" type="radio" value="no"/>
+                        <label for="sortorder_no">No initial ordening.<br/>If number of folders is -1, this results in ordered as received from the settings (by full path, uppercase first).<br/>Otherwise, this results in ordered by most recently used.</label>
+                    </li>
+                    <li>
+                        <input id="sortorder_mostrecent" name="sortorder_initial" type="radio" value="mostrecent"/>
                         <label for="sortorder_mostrecent">Most recently used</label>
                     </li>
                     <li>
-                        <input id="sortorder_name" name="sortorder_name" type="checkbox" value="name"/>
-                        <label for="sortorder_name">Name</label>
+                        <input id="sortorder_namecasein" name="sortorder_initial" type="radio" value="namecasein"/>
+                        <label for="sortorder_namecasein">Name</label>
+                    </li>
+                    <li>
+                        <input id="sortorder_fullpath" name="sortorder_fullpath" type="checkbox" value="fullpath"/>
+                        <label for="sortorder_fullpath">Full path (as shown in tooltip)</label>
                     </li>
                     <li>
                         <input id="sortorder_parentname" name="sortorder_parentname" type="checkbox" value="parentname"/>
-                        <label for="sortorder_parentname">Parent name</label>
+                        <label for="sortorder_parentname">Shown parent name</label>
                     </li>
                     <li>
                         <input id="sortorder_accountname" name="sortorder_accountname" type="checkbox" value="accountname"/>
@@ -59,8 +75,9 @@
                     </li>
                 </ol>
                 <ul>
+                    <li>TODO: switch "no" description based on number of days + complete description with Always Show folders</li>
+                    <li>TODO: test fullpath</li>
                     <li>TODO: update order on move when sorted by date</li>
-                    <li>TODO: implement order by folder order (&gt;doable once we keep our own MRM)</li>
                 </ul>
                 <div class="browser-style">
                     <label for="groupby_account">Group by account:</label>
@@ -75,33 +92,52 @@
                     <input id="nbfolders" name="nbfolders" type="number" size=3 min="-1"/>
                 </div>
                 <div class="browser-style">
+                    Cut off the abundant folders by:
+                    <div class="browser-style">
+                        <input id="folderselection_alphabetical" name="folderselection" type="radio" value="alphabetical"/>
+                        <label for="folderselection_alphabetical">alphabetical order (show 0folder, afolder, anotherfolder, ...)</label>
+                    </div>
+                    <div class="browser-style">
+                        <input id="folderselection_reversealphabetical" name="folderselection" type="radio" value="reversealphabetical"/>
+                        <label for="folderselection_reversealphabetical">reverse alphabetical order (show zzfolder, zzanotherfolder, zoo, ...)</label>
+                    </div>
+                    <div class="browser-style">
+                        <input id="folderselection_mostrecent" name="folderselection" type="radio" value="mostrecent"/>
+                        <label for="folderselection_mostrecent">recently moved to date (show most recently used folders)</label>
+                    </div>
+                </div>
+                <div class="browser-style">
                     <label for="maxage">Number of days since last use to auto show (-1: any):</label>
-                    <input id="maxage" name="maxage" type="number" size=3 min="-1"/>
+                    <input id="maxage" name="maxage" type="number" size=4 min="-1"/>
                 </div>
                 <div>
                     <label for="allread">Mark messages as read while moving them. This will change the selection of the "Mark as read" column for all folders</label/>
                     <input id="allread" name="allread" type="checkbox"/>
                 </div>
                 <div>
-                    Default automatically shown folders. This will change the selection of the "Show" column for the archive (a), junk (j) and trash (del) folders.
+                    Default automatically shown folders:
                     <div>
                         <input id="folderselection_default" name="folderselection" type="radio" value="default"/>
-                        <label for="folderselection_default">Exclude folders with existing shortcuts</label>
+                        <label for="folderselection_default">"Show Never" folders with existing shortcuts (Archive[a], Junk[j] and Trash[del]) - default, previous behavior</label>
+                    </div>
+                    <div>
                         <input id="folderselection_all" name="folderselection" type="radio" value="all"/>
-                        <label for="folderselection_all">All folders</label>
+                        <label for="folderselection_all">"Show Auto" for all folders</label>
                     </div>
                 </div>
             </div>
         </div>
         <div id="expertsettings">
             <ul>
+                <li>FIXME: number of days -1, sortorder: defaults</li>
                 <li>TODO: implement effects of additional folder controls
                     <ol>
-                        <li>own MRM</li>
                         <li>expert settings: implement effect</li>
-                        <li>new folders expert settings</li>
+                        <li>own MRM: also act on folder actions</li>
                         <li>simple settings</li>
                         <li>keep last status of expert settings: expand or not</li>
+                        <li>expert settings: implement immediate effect</li>
+                        <li>expert settings: (return to) automatic ordered folders in correct order</li>
                     </ol>
                 </li>
                 <li>once we have our own MRM: shorcut for our own undo (#74)</li>
@@ -111,7 +147,7 @@
                 <li>Store a list of tests to do before release</li>
                 <li>
                     <ol>
-                        <li>test with a LOT of folders (#56)</li>
+                        <li>test with a LOT of folders (#56) and maybe do some stuff we thought too costly, like getting account name and path from folder setting name to add to list</li>
                         <li>test with different themes</li>
                         <li>test with different layouts</li>
                         <li>test with UTF8 folders</li>
@@ -127,46 +163,62 @@
                     <tr>
                         <th></th>
                         <th>Folder</th>
+                        <th></th>
                         <th colspan="3">Show</th>
-                        <th>Manually ordered</th>
-                        <th colspan="2">Mark as read</th>
+                        <th>Manual order</th>
+                        <th colspan="3">Mark as read</th>
+                        <th>Last time used to</th>
                     </tr>
                     <tr class="header">
+                        <th></th>
                         <th></th>
                         <th></th>
                         <th>Always</th>
                         <th>Auto</th>
                         <th>Never</th>
-                        <th></th>
+                        <th>on top</th>
                         <th>Yes</th>
                         <th>2 Buttons</th>
                         <th>No</th>
+                        <th>move message to</th>
                     </tr>
                 </thead>
                 <tbody class="folderviewbody">
-                    <tr id="newfolder" data-folder="new">
+                    <!--data-folder should not contain a "/", so we are sure this is not a folder-->
+                    <!--default settings, settings for just new folders is not possible: they can be created elsewhere-->
+                    <tr id="defaultfolder" data-folder="default" class="default">
                         <td class="folderhandle"></td>
-                        <td><b>New folders</b></td>
-                        <td><input type="radio" value="always" name="show"/></td>
-                        <td><input type="radio" value="auto" checked="checked" name="show"/></td>
-                        <td><input type="radio" value="never" name="show"/></td>
-                        <td><input type="checkbox" value="pin" name="pin"/></td>
-                        <td><input type="radio" value="yes" name="markasread"/></td>
-                        <td><input type="radio" value="double" name="markasread"/></td>
-                        <td><input type="radio" value="no" name="markasread" checked="checked"/></td>
+                        <td><b>Default folder options</b></td>
+                        <td><button class="resetbutton">Reset to default</button></td>
+                        <td><input type="radio" value="always" name="show_Fdefault"/></td>
+                        <td><input type="radio" value="auto" checked="checked" name="show_Fdefault"/></td>
+                        <td><input type="radio" value="never" name="show_Fdefault"/></td>
+                        <td><input type="checkbox" value="pin" name="pin_Fdefault"/></td>
+                        <td><input type="radio" value="yes" name="markasread_Fdefault"/></td>
+                        <td><input type="radio" value="double" name="markasread_Fdefault"/></td>
+                        <td><input type="radio" value="no" name="markasread_Fdefault" checked="checked"/></td>
+                        <td><span data-name="MRM"></span></td>
                     </tr>
                 </tbody>
                 <tbody>
-                    <tr><th class="folderviewsubtitle" colspan="6">Manually ordered folders</th></tr>
+                    <tr>
+                        <th class="folderviewsubtitle" colspan="5">Manually ordered folders</th>
+                    </tr>
                 </tbody>
                 <tbody id="foldersort" class="folderviewbody">
-                    <tr class="placeholder"><td colspan="9">Folders that are manually sorted will be shown and can be put here</td></tr>
+                    <tr class="placeholder">
+                        <td colspan="5">Folders that are manually sorted will be shown and can be put here</td>
+                    </tr>
                 </tbody>
                 <tbody>
-                    <tr><th class="folderviewsubtitle" colspan="6">Automatic ordered folders</th></tr>
+                    <tr>
+                        <th class="folderviewsubtitle" colspan="5">Automatic ordered folders</th>
+                    </tr>
                 </tbody>
                 <tbody id="folderget" class="folderviewbody">
-                    <tr class="placeholder"><td colspan="9">Folders that are automatically sorted will be shown here</td></tr>
+                    <tr class="placeholder">
+                        <td colspan="5">Folders that are automatically sorted will be shown here</td>
+                    </tr>
                 </tbody>
             </table>
 <!--
