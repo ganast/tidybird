@@ -66,6 +66,9 @@ export const folder_doAlwaysShow = function(settings) {
 export const folder_doNeverShow = function(settings) {
   return folder_hasSetting("show","never",settings);
 }
+export const folder_isPinned = function(settings) {
+  return folder_hasSetting("pin",1,settings);
+}
 // also implemented in options.js
 export const getFolderMRMSettingsKey = function(folder) {
   return encodeURI(`M${folder.accountId}${folder.path}`);

@@ -265,14 +265,20 @@ async function getSettings() {
 /*
  * The move functionality
  */
-function moveMessages(messageArray, folder) {
+function moveMessages(messageArray, folder, markAsRead) {
+  // first mark as read, as messageIds are not retained after moving to another folder
+  if (markAsRead) {
+    for (const message of messageArray) {
+      messenger.messages.update(message.id, { "read": true });
+    }
+  }
   browser.messages.move(
     messageArray.map((message) => message.id),
     folder
   );
 }
 
-const moveSelectedMessageToFolder = async function (expandedFolder) {
+const moveSelectedMessageToFolder = async function (expandedFolder, markAsRead) {
   let folder = await getFolderFromExpanded(expandedFolder); //moveMessages does not work on expandedFolder
   /*
   A message can be displayed in either a 3-pane tab, a tab of its own, or in a window of its own. All
@@ -301,10 +307,10 @@ const moveSelectedMessageToFolder = async function (expandedFolder) {
      *  so we first detect the type
      */
     let page = await browser.mailTabs.getSelectedMessages();
-    moveMessages(page.messages, folder);
+    moveMessages(page.messages, folder, markAsRead);
     while (page.id) {
       page = await browser.messages.continueList(page.id);
-      moveMessages(page.messages, folder);
+      moveMessages(page.messages, folder, markAsRead);
     }
   } else {
     // Use displayed messages if this tab is not a mailTab (we get a result if the tab is showing a message)
@@ -320,7 +326,7 @@ const moveSelectedMessageToFolder = async function (expandedFolder) {
       // in that tab, there are no at this very moment(!) displayed messages found
       return;
     }
-    moveMessages(messages, folder);
+    moveMessages(messages, folder, markAsRead);
   }
 };
 
@@ -396,8 +402,9 @@ const addAccount = async function (accountName,tmpParent) {
   tmpParent.appendChild(title);
 };
 
+let buttonReadTemplate = null;
 let buttonTemplate = null;
-const addButton = async function (expandedFolder,buttonParent,options) {
+const addFolderButtons = async function (expandedFolder,buttonParent,options) {
   let path = expandedFolder.fullPath;
 
   if (isFolderInList(expandedFolder)) {
@@ -414,7 +421,7 @@ const addButton = async function (expandedFolder,buttonParent,options) {
   let button;
   let label1;
   let newTemplate = false;
-  if (buttonTemplate == null) {
+  if (buttonReadTemplate == null) {
     button = document.createElement("button");
     button.className = "tidybird-folder-move-button tidybird-button";
 
@@ -439,31 +446,50 @@ const addButton = async function (expandedFolder,buttonParent,options) {
     button.appendChild(label2);
 
     button.setAttribute("tooltiptext", path);
-    buttonTemplate = button;
+    buttonReadTemplate = button;
   }
 
-  button = buttonTemplate.cloneNode(true);
-  if (!newTemplate) {
-    label1 = button.firstElementChild;
-    label1.textContent = expandedFolder.name;
-    label1.nextElementSibling.nextElementSibling.textContent = expandedFolder.rootName;
-  }
-  if(!options.markAsRead) {
-    //label1.nextElementSibling.remove(); // remove the "read" circle
-  }
 
-  button.addEventListener("click", function () {
-    moveSelectedMessageToFolder(expandedFolder);
-  });
-  console.debug("Appending button to parent");
-  buttonParent.appendChild(button);
-  // the parent may not be part of the document, so we can't calculate the tooltip color yet
-  console.debug("Appended button to parent");
+  console.log(expandedFolder.settings);
+  let markAsReads = [];
+  let isDoubleMarkAsRead = common.folder_hasSetting("markasread","double",expandedFolder.settings);
+  if (isDoubleMarkAsRead || common.folder_hasSetting("markasread","no",expandedFolder.settings)) {
+    markAsReads.push("no");
+  }
+  if (isDoubleMarkAsRead || common.folder_hasSetting("markasread","yes",expandedFolder.settings)) {
+    markAsReads.push("yes");
+  }
+  for (const markAsRead of markAsReads) {
+    if(markAsRead == "no") {
+      // can't use label1 here
+      if (buttonTemplate === null) {
+        // use buttonTemplate, so we don't have to load and remove the svg on every clone
+        buttonTemplate = buttonReadTemplate.cloneNode(true);
+        buttonTemplate.firstElementChild.nextElementSibling.remove(); // remove the "read" circle
+        button = buttonTemplate;
+      } else {
+        button = buttonTemplate.cloneNode(true);
+      }
+    } else {
+      button = buttonReadTemplate.cloneNode(true);
+    }
+    if (!newTemplate) {
+      // may be done twice, but probably less heavy than cloning and removing the svg for every button
+      button.firstElementChild.textContent = expandedFolder.name;
+      button.lastElementChild.textContent = expandedFolder.rootName;
+    }
 
+    button.addEventListener("click", function () {
+      moveSelectedMessageToFolder(expandedFolder, markAsRead == "yes");
+    });
+    console.debug("Appending button to parent");
+    buttonParent.appendChild(button);
+    // the parent may not be part of the document, so we can't calculate the tooltip color yet
+    console.debug("Appended button to parent");
+  }
   foldersInList.push(path);
-
-  return button;
 };
+
 let optionsButton;
 const addSettingsButton = async function(optionsButtonParent) {
   optionsButton = document.createElement("button");
@@ -555,8 +581,26 @@ messenger.folders.onMoved.addListener(async (originalFolder, movedFolder) => {
 messenger.folders.onDeleted.addListener(async (deletedFolder) => {
   onFolderEvent(deletedFolder, null, "onDeleted");
 });
-
-async function addFolderList(folderList,tmpParent) {
+async function addOrderedFolderList(folderList, tmpParent) {
+  if (folderList === undefined) {
+    return;
+  }
+  for (let folder of folderList) {
+    await addFolderButtons(folder,tmpParent); // this should be executed in order
+  }
+}
+async function addFolderListPinned(folderList, tmpParent) {
+  let settings = await getSettings();
+  let order = settings.manualorder;
+  let orderedList = [];
+  for (let folderInternalName of order) {
+    if (folderList[folderInternalName] !== undefined) {
+      orderedList.push(folderList[folderInternalName]);
+    }
+  }
+  await addOrderedFolderList(orderedList, tmpParent);
+}
+async function addFolderListAuto(folderList, tmpParent) {
   let settings = await getSettings();
   let collator = new Intl.Collator();
   if (settings.sortorder_initial == "namecasein") {
@@ -575,17 +619,22 @@ async function addFolderList(folderList,tmpParent) {
       return collator.compare(a.parentName,b.parentName);
     });
   }
-  for (let folder of folderList) {
-    let options = {};
-    //TODO: get options
-    await addButton(folder,tmpParent,options); // this should be executed in order
+  await addOrderedFolderList(folderList, tmpParent);
+}
+async function addFolderList(folderList, tmpParent) {
+  for (let listType in folderList) {
+    if (listType === "pinned") {
+      await addFolderListPinned(folderList[listType], tmpParent);
+    } else {
+      await addFolderListAuto(folderList[listType], tmpParent);
+    }
   }
 }
 let recentFolders, alwaysFolders;
 let recentFoldersSize; // so we don't have to get the length every time
 let oldestTime;
 let earliestBirth, nbFolders;
-async function addFolderToAutoList(folderAttributeSetting, MRMTimeSetting) {
+async function addFolderToAutoList(folderAttributeSetting, MRMTimeSetting, folderSettings) {
   let time = common.parseNumber(MRMTimeSetting);
   if (
     // time == 0 should not happen, this folder should not have an MRMTime in settings
@@ -600,25 +649,31 @@ async function addFolderToAutoList(folderAttributeSetting, MRMTimeSetting) {
   if (time < oldestTime) {
     oldestTime = time;
   }
-  recentFolders.push({ folderAttributeSetting, time }); // do not expand yet (costly operation and we may throw away this folder)
+  recentFolders.push({ folderAttributeSetting, time, folderSettings }); // do not expand yet (costly operation and we may throw away this folder)
   recentFoldersSize++;
 }
 /**
  * Add the folder given in the settings to the appropriate list
+ * This is done for, in worst case, all folders
+ *  so it should do as less as possible
+ *  and filter out as much folders as possible
  **/
 async function addFolderToList(folderAttributeSetting, folderSettings, allSettings) {
   if (common.folder_doAlwaysShow(folderSettings)) {
-    alwaysFolders.push({folderAttributeSetting}); //without MRM, we will add it when/if needed
+    alwaysFolders.push({folderAttributeSetting, folderSettings}); //without MRM, we will add it when/if needed
   } else if(common.folder_doAutoShow(folderSettings)) {
-    // FIXME: get the MRM setting
     const folderMRMAttribute = "M"+common.getFolderFromSettingsKey(folderAttributeSetting);
     const MRMTimeSetting = allSettings[folderMRMAttribute];
     if (MRMTimeSetting !== undefined) {
-      addFolderToAutoList(folderAttributeSetting, MRMTimeSetting);
+      addFolderToAutoList(folderAttributeSetting, MRMTimeSetting, folderSettings);
     } // no auto show, folder never used to move to
   } //else: never show, do nothing
 }
 async function addToGroupedList(folder, settings) {
+  let listType = "auto";
+  if (common.folder_isPinned(folder.folderSettings)) {
+    listType = "pinned";
+  }
   let expandedFolder = await getFolderFromSetting(folder.folderAttributeSetting);
   expandedFolder.time = folder.time; // for rearranging when moved to if sorted on MRMTime
   // We assume here (and in getRoot) the folder names are also path members
@@ -641,18 +696,28 @@ async function addToGroupedList(folder, settings) {
   let fullPath = account.name + path;
   expandedFolder.rootName = await getRoot(fullPath);
   expandedFolder.fullPath = fullPath;
+  expandedFolder.internalPath = accountId + path;
+  expandedFolder.settings = folder.folderSettings;
   // Add the folder according to the settings, so we can sort if needed
+  let accountSortValue;
   if (settings.groupby_account || settings.sortorder_accountname) {
-    let accountSortValue = accountId;
+    accountSortValue = accountId;
     if (settings.sortorder_accountname) {
       accountSortValue = account.name;
     }
-    if (groupedFolderList[accountSortValue] === undefined) {
-      groupedFolderList[accountSortValue] = [];
-    }
-    groupedFolderList[accountSortValue].push(expandedFolder);
   } else {
-    groupedFolderList.folderList.push(expandedFolder);
+    accountSortValue = "folderList";
+  }
+  if (groupedFolderList[accountSortValue] === undefined) {
+    groupedFolderList[accountSortValue] = {
+      "pinned": [],
+      "auto": [],
+    };
+  }
+  if (listType == "pinned") {
+    groupedFolderList[accountSortValue][listType][expandedFolder.internalPath] = expandedFolder;
+  } else {
+    groupedFolderList[accountSortValue][listType].push(expandedFolder);
   }
 }
 /**
@@ -663,6 +728,7 @@ let othersParent = document.getElementById("otherButtonList");
 let accountList, groupedFolderList;
 async function showButtons() {
   //TODO: keep settings synchronized, so we don't have to get them here
+  //FIXME: these are old cached settings, so statement above must be done!
   let settings = await getSettings();
   earliestBirth = settings.maxage;
   nbFolders = settings.nbfolders;
@@ -680,8 +746,7 @@ async function showButtons() {
   if (common.folder_doAlwaysShow(defaultSettings)) {
     // Run over ALL folders while checking if they have specific settings
     // least efficient, but may be desired to always show new folders
-    //FIXME filter on folder.canFileMessages is not done as we do not have that info (also needed in settings)
-    // FIXME
+    //FIXME filter on folder.canFileMessages is not done as we do not have that info (also needed in settings), it is available in the newest >115 TB release (yippie)
   } else if (common.folder_doNeverShow(defaultSettings)) {
     // Run only over folders that have settings
     // most efficient, run only over folders with specific settings
@@ -703,8 +768,8 @@ async function showButtons() {
         //TODO show number of auto folders where we select total nb of folders
         let folderAttributeSetting = "F"+common.getFolderFromSettingsKey(setting);
         if (allSettings[folderAttributeSetting] === undefined) {
-          addFolderToAutoList(setting, allSettings[setting]);
-        } // already handled above
+          addFolderToAutoList(setting, allSettings[setting], allSettings.Fdefault);
+        } //else: already handled above
       }
     }
   }
@@ -732,7 +797,9 @@ async function showButtons() {
   accountList = {}; // reinitialize every time: account may be renamed TODO act on account rename, as we also may have to update the button list
   groupedFolderList = {};
   if (!(settings.groupby_account || settings.sortorder_accountname)) {
-    groupedFolderList.folderList = [];
+    for (let folderType in groupedFolderList) {
+      groupedFolderList[folderType].folderList = [];
+    }
   }
   // Should be done in order: may already be ordered
   for (let folder of alwaysFolders) {
@@ -744,9 +811,14 @@ async function showButtons() {
 
   let tmpListParent = document.createDocumentFragment();
   // sorted by account id, account name or just a single value, depending on the settings
+  // FIXME CREATE LIST OF ACCOUNTS
   for ( let accountSortValue of Object.keys(groupedFolderList).sort() ) {
     if (settings.groupby_account) {
-      await addAccount(groupedFolderList[accountSortValue][0].accountName,tmpListParent);
+      let takeAccountFrom = groupedFolderList.auto;
+      if (!groupedFolderList[accountSortValue] === undefined) {
+        takeAccountFrom = groupedFolderList.pinned;
+      }
+      await addAccount(takeAccountFrom[accountSortValue][0].accountName,tmpListParent);
     }
     await addFolderList(groupedFolderList[accountSortValue],tmpListParent);
   }
