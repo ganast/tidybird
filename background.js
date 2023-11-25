@@ -1,4 +1,4 @@
-import {option_defaults,getFolderMRMSettingsKey,encodeDate,getTimestamp} from '../options/default_options.js';
+import * as common from '../options/default_options.js';
 
 //(async () => {
 async function run() {
@@ -15,7 +15,7 @@ async function run() {
     displaySettings = await messenger.storage.local.get({
       isShowing: displaySettings.isShowing,
       width: displaySettings.width,
-      startup: option_defaults.startup,
+      startup: common.option_defaults.startup,
     });
 
     let showOnStartup = false;
@@ -65,10 +65,8 @@ async function run() {
     // To save settings space, this can be the same as the options
     // although first getting the current value before doing an update is unwanted
     // so we should then load and keep track of the other folder options
-    let folderMRMAttribute = getFolderMRMSettingsKey(folder);
-    // Bitwise Or ) with ZERO converts value to integer by discarding any value after decimal point
-    // https://stackoverflow.com/a/75235699
-    messenger.storage.local.set({[folderMRMAttribute]:encodeDate(getTimestamp())});
+    let folderMRMAttribute = common.getFolderMRMSettingsKey(folder);
+    messenger.storage.local.set({[folderMRMAttribute]:common.encodeDate(common.getTimestamp())});
   }
   // add the MRM registrator
   messenger.messages.onMoved.addListener(
@@ -99,7 +97,7 @@ function install() {
     let foldersMRMSettings = {};
     for (let folder of mostRecentlyModifiedFolders) {
       if (folder.MRMTime > 0) {
-        foldersMRMSettings[getFolderMRMSettingsKey(folder)] = encodeDate(Number(folder.MRMTime));
+        foldersMRMSettings[common.getFolderMRMSettingsKey(folder)] = common.encodeDate(Number(folder.MRMTime));
       }
     }
     messenger.storage.local.set(foldersMRMSettings);

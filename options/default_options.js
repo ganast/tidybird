@@ -88,6 +88,8 @@ export const getSettingFromInput= function(input) {
  * Calculate the timestamp like Thunderbird does
  **/
 export const getTimestamp = function() {
+  // Bitwise Or ) with ZERO converts value to integer by discarding any value after decimal point
+  // https://stackoverflow.com/a/75235699
   return Date.now()/1000 | 0;
 }
 /**

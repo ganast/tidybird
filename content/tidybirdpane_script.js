@@ -381,11 +381,11 @@ const getFolderFromExpanded = async function(expandedFolder) {
     path: expandedFolder.path,
   };
 }
-const isFolderInList = function (expandedFolder) {
-  return foldersInList.includes(expandedFolder.fullPath);
+const isFolderInList = function (internalPath) {
+  return foldersInList.includes(internalPath);
 };
-const getFolderIndexInList = function (expandedFolder) {
-  return foldersInList.indexOf(expandedFolder.fullPath);
+const getFolderIndexInList = function (internalPath) {
+  return foldersInList.indexOf(internalPath);
 };
 
 let listParent = document.getElementById("tidybirdFolderButtonList");
@@ -405,12 +405,10 @@ const addAccount = async function (accountName,tmpParent) {
 let buttonReadTemplate = null;
 let buttonTemplate = null;
 const addFolderButtons = async function (expandedFolder,buttonParent,options) {
-  let path = expandedFolder.fullPath;
-
-  if (isFolderInList(expandedFolder)) {
+  if (isFolderInList(expandedFolder.internalPath)) {
     console.log(
       `not adding ${expandedFolder.name}: already at ${getFolderIndexInList(
-        expandedFolder
+        expandedFolder.internalPath
       )}`
     );
     return false;
@@ -445,12 +443,10 @@ const addFolderButtons = async function (expandedFolder,buttonParent,options) {
     label2.textContent = expandedFolder.rootName;
     button.appendChild(label2);
 
-    button.setAttribute("tooltiptext", path);
+    button.setAttribute("tooltiptext", expandedFolder.displayPath);
     buttonReadTemplate = button;
   }
 
-
-  console.log(expandedFolder.settings);
   let markAsReads = [];
   let isDoubleMarkAsRead = common.folder_hasSetting("markasread","double",expandedFolder.settings);
   if (isDoubleMarkAsRead || common.folder_hasSetting("markasread","no",expandedFolder.settings)) {
@@ -487,7 +483,7 @@ const addFolderButtons = async function (expandedFolder,buttonParent,options) {
     // the parent may not be part of the document, so we can't calculate the tooltip color yet
     console.debug("Appended button to parent");
   }
-  foldersInList.push(path);
+  foldersInList.push(expandedFolder.internalPath);
 };
 
 let optionsButton;
@@ -525,19 +521,13 @@ const updateButtonList = async function () {
 };
 
 const updateButtonListIfNeeded = async function (folder, neededIfNotPresent) {
-  if (folder.type == "archives") {
-    // As there is already an "Archive"-button
-    // and this folder is set as the Archive-folder
-    // we don't add it in our list.
-    // (MRMTime does not change using the Archive button)
-    return;
-  }
-  const expandedFolder = await getExpandedFolder(folder);
-  const folderIsInList = isFolderInList(expandedFolder);
+  const internalPath = folder.accountId + folder.path;
+  const folderIsInList = isFolderInList(internalPath);
   if (
     (neededIfNotPresent && !folderIsInList) || // folder should be added
     (!neededIfNotPresent && folderIsInList) // folder should be removed
   ) {
+    //FIXME: more efficient: just add button; if never: do nothing, ...
     updateButtonList();
   }
   //TODO: else if sorted by most recently used: move folder to the top
@@ -693,9 +683,9 @@ async function addToGroupedList(folder, settings) {
   if (settings.groupby_account) {
     expandedFolder.accountName = account.name; // to show if grouped by account
   }
-  let fullPath = account.name + path;
-  expandedFolder.rootName = await getRoot(fullPath);
-  expandedFolder.fullPath = fullPath;
+  let displayPath = account.name + path;
+  expandedFolder.rootName = await getRoot(displayPath);
+  expandedFolder.displayPath = displayPath;
   expandedFolder.internalPath = accountId + path;
   expandedFolder.settings = folder.folderSettings;
   // Add the folder according to the settings, so we can sort if needed
@@ -792,7 +782,6 @@ async function showButtons() {
     }
   }
 
-  // - Expand folders with extra information: account, parent
   // - Group folders if needed
   accountList = {}; // reinitialize every time: account may be renamed TODO act on account rename, as we also may have to update the button list
   groupedFolderList = {};
