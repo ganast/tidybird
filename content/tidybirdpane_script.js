@@ -443,7 +443,6 @@ const addFolderButtons = async function (expandedFolder,buttonParent,options) {
     label2.textContent = expandedFolder.rootName;
     button.appendChild(label2);
 
-    button.setAttribute("tooltiptext", expandedFolder.displayPath);
     buttonReadTemplate = button;
   }
 
@@ -474,6 +473,7 @@ const addFolderButtons = async function (expandedFolder,buttonParent,options) {
       button.firstElementChild.textContent = expandedFolder.name;
       button.lastElementChild.textContent = expandedFolder.rootName;
     }
+    button.setAttribute("tooltiptext", expandedFolder.displayPath);
 
     button.addEventListener("click", function () {
       moveSelectedMessageToFolder(expandedFolder, markAsRead == "yes");
@@ -731,10 +731,11 @@ async function showButtons() {
   // First get folders, then loop over accounts, so we can honour nb of days and max nb of folders
   //TODO: button to purge old MRMs (for performance)
   // based on own implementation of getMostRecentFolders, probably more efficient in cpu (not in memory)
+  // also handle delete queue of MRM manager here as we run over all settings in most cases
   let allSettings = await messenger.storage.local.get(); // get ALL SET settings
   let defaultSettings = allSettings.Fdefault;
   if (common.folder_doAlwaysShow(defaultSettings)) {
-    // Run over ALL folders while checking if they have specific settings
+    //FIXME Run over ALL folders while checking if they have specific settings
     // least efficient, but may be desired to always show new folders
     //FIXME filter on folder.canFileMessages is not done as we do not have that info (also needed in settings), it is available in the newest >115 TB release (yippie)
   } else if (common.folder_doNeverShow(defaultSettings)) {

@@ -69,13 +69,19 @@ export const folder_doNeverShow = function(settings) {
 export const folder_isPinned = function(settings) {
   return folder_hasSetting("pin",1,settings);
 }
-// also implemented in options.js
-export const getFolderMRMSettingsKey = function(folder) {
-  return encodeURI(`M${folder.accountId}${folder.path}`);
-};
+export const getFolderAttributename = function(folder) {
+  return encodeURI(`${folder.accountId}${folder.path}`);
+}
+export const getFolderMRMDeleteKey = function(folder) {
+  return "D" + getFolderAttributename(folder); // should come alphabetically before Folder setting
+}
 // also implemented in options.js
 export const getFolderSettingsKey = function(folder) {
-  return encodeURI(`F${folder.accountId}${folder.path}`); // should come alphabetically before MRM
+  return "F" + getFolderAttributename(folder); // should come alphabetically before MRM setting
+};
+// also implemented in options.js
+export const getFolderMRMSettingsKey = function(folder) {
+  return "M" + getFolderAttributename(folder);
 };
 export const getFolderFromSettingsKey = function(setting) {
   return setting.substring(1);
