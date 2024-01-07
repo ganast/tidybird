@@ -51,27 +51,27 @@
                 <ol start="0">
                     <li>
                         <input id="sortorder_no" name="sortorder_initial" type="radio" value="no"/>
-                        <label for="sortorder_no">No initial ordening.<br/>If number of folders is -1, this results in ordered as received from the settings (by full path, uppercase first).<br/>Otherwise, this results in ordered by most recently used.</label>
+                        <label for="sortorder_no">no initial ordening.<br/>If number of folders is -1, this results in ordered as received from the settings (by full path, uppercase first).<br/>Otherwise, this results in ordered by most recently used.</label>
                     </li>
                     <li>
                         <input id="sortorder_mostrecent" name="sortorder_initial" type="radio" value="mostrecent"/>
-                        <label for="sortorder_mostrecent">Most recently used</label>
+                        <label for="sortorder_mostrecent">most recently used</label>
                     </li>
                     <li>
                         <input id="sortorder_namecasein" name="sortorder_initial" type="radio" value="namecasein"/>
-                        <label for="sortorder_namecasein">Name</label>
+                        <label for="sortorder_namecasein">name</label>
                     </li>
                     <li>
                         <input id="sortorder_fullpath" name="sortorder_fullpath" type="checkbox" value="fullpath"/>
-                        <label for="sortorder_fullpath">Full path (as shown in tooltip)</label>
+                        <label for="sortorder_fullpath">full path (as shown in tooltip)</label>
                     </li>
                     <li>
                         <input id="sortorder_parentname" name="sortorder_parentname" type="checkbox" value="parentname"/>
-                        <label for="sortorder_parentname">Shown parent name</label>
+                        <label for="sortorder_parentname">shown parent name</label>
                     </li>
                     <li>
                         <input id="sortorder_accountname" name="sortorder_accountname" type="checkbox" value="accountname"/>
-                        <label for="sortorder_accountname">Account name</label>
+                        <label for="sortorder_accountname">account name</label>
                     </li>
                 </ol>
                 <ul>
@@ -94,16 +94,20 @@
                 <div class="browser-style">
                     Cut off the abundant folders by:
                     <div class="browser-style">
-                        <input id="folderselection_alphabetical" name="folderselection" type="radio" value="alphabetical"/>
-                        <label for="folderselection_alphabetical">alphabetical order (show 0folder, afolder, anotherfolder, ...)</label>
-                    </div>
-                    <div class="browser-style">
-                        <input id="folderselection_reversealphabetical" name="folderselection" type="radio" value="reversealphabetical"/>
-                        <label for="folderselection_reversealphabetical">reverse alphabetical order (show zzfolder, zzanotherfolder, zoo, ...)</label>
+                        <input id="folderselection_sortorder" name="folderselection" type="radio" value="sortorder"/>
+                        <label for="folderselection_sortorder">sorted order (cut off last folders)</label>
                     </div>
                     <div class="browser-style">
                         <input id="folderselection_mostrecent" name="folderselection" type="radio" value="mostrecent"/>
                         <label for="folderselection_mostrecent">recently moved to date (show most recently used folders)</label>
+                    </div>
+                    <div class="browser-style">
+                        <input id="folderselection_namecasein" name="folderselection" type="radio" value="namecasein"/>
+                        <label for="folderselection_namecasein">name in alphabetical order, case insensitive (show 0folder, afolder, Afolderfolder, anotherfolder, ...)</label>
+                    </div>
+                    <div class="browser-style">
+                        <input id="folderselection_reversenamecasein" name="folderselection" type="radio" value="reversenamecasein"/>
+                        <label for="folderselection_reversenamecasein">name in reverse alphabetical order, case insensitive (show zzfolder, Zzanotherfolder, zoo, ...)</label>
                     </div>
                 </div>
                 <div class="browser-style">
@@ -152,6 +156,7 @@
                     </ol>
                 </li>
                 <li>Store release procedure</li>
+                <li>Moved folders not removed from MRM =&gt; removed folders in buttons that do not longer exist if we don't run over the folders but over the settings</li>
             </ul>
             <p>Folder order and selection. To move the folder, use the dots handle on the left side.</p>
             <!-- table does not work with sortable -->

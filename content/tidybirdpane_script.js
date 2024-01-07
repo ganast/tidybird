@@ -175,8 +175,8 @@ async function applyButtonSize(changedSizes) {
     // initial load size
     let settings = await getSettings();
     changedSizes = {
-      "buttonheight": settings["buttonheight"],
-      "buttonmargin": settings["buttonmargin"],
+      "buttonheight": settings.buttonheight,
+      "buttonmargin": settings.buttonmargin,
     };
     // Default are set in css, no need to redo, but this does not cost much
     //  so we don't check and do this anyway
@@ -230,26 +230,31 @@ function updateSetting(setting, value) {
     value = Number(value); // convert to number
   }
   if (setting == "maxage") {
-    value = Math.floor((Date.now() - value * 24 * 60 * 60 * 1000) / 1000); // convert to milliseconds since epoch
+    if (value != -1) {
+      value = Math.floor((Date.now() - value * 24 * 60 * 60 * 1000) / 1000); // convert to milliseconds since epoch
+    }
   }
   settingsCache[setting] = value;
   switch(true) {
     case setting == "startup":
-      break;
+      return false;
     case setting.startsWith("button"):
       applyButtonSize({[setting]: value});
-      break;
+      return false;
     case setting == "showoptionsbutton":
       if (value) {
         showOptionsButton();
       } else {
         hideOptionsButton();
       }
-      break;
+      return false;
     case setting.startsWith("sortorder"):
-      changeOrder(); //FIXME implement: change order without recreating nodes, also used when updating order on move when sorted by date
+      updateButtonList();
+      //changeOrder(); //FIXME implement: change order without recreating nodes, also used when updating order on move when sorted by date
+      //and if cut off is sorted order, then remove also some buttons
       break;
   }
+  return true;
 }
 async function getSettings() {
   // if cache is empty, update the cache
@@ -348,33 +353,6 @@ const getFolder = function (account, pathArray) {
 };
 
 let foldersInList = [];
-
-const getRoot = async function(folderFullPath) {
-  // ancestor example: [ "<accountname>", "INBOX", "a_folder_in_inbox" ]
-  const ancestors = folderFullPath.split("/");
-  // TODO make the "2" configurable (?)
-  const rootIndex = ancestors.length > 3 ? 2 : ancestors.length - 2;
-  // set a "fake" root folder with the account name if there is no folder ancestor
-  if (ancestors.length > 2) {
-    // The name is not always the same as the path(part)
-    //  but we ignore this fact as getting the human readable name
-    //  costs just too much TODO do test with many folders
-    return ancestors[rootIndex];
-  }
-  return ancestors[0]; // return account name
-}
-/**
- * Return a folder object usable by the folder webextensions API
- * from the name used in the settings
- **/
-const getFolderFromSetting = async function(folderSetting) {
-  let folder = decodeURI(common.getFolderFromSettingsKey(folderSetting));
-  let accountSplitIndex = folder.indexOf("/");
-  return {
-    accountId: folder.substring(0,accountSplitIndex), // for MailFolder "constructor"
-    path: folder.substring(accountSplitIndex), // for MailFolder "constructor"
-  };
-}
 const getFolderFromExpanded = async function(expandedFolder) {
   return {
     accountId: expandedFolder.accountId,
@@ -404,14 +382,14 @@ const addAccount = async function (accountName,tmpParent) {
 
 let buttonReadTemplate = null;
 let buttonTemplate = null;
-const addFolderButtons = async function (expandedFolder,buttonParent,options) {
+const addFolderButtons = async function (expandedFolder,buttonParent) {
   if (isFolderInList(expandedFolder.internalPath)) {
     console.log(
       `not adding ${expandedFolder.name}: already at ${getFolderIndexInList(
         expandedFolder.internalPath
       )}`
     );
-    return false;
+    return;
   }
 
   console.log(`adding button for folder ${expandedFolder.name}`);
@@ -592,22 +570,8 @@ async function addFolderListPinned(folderList, tmpParent) {
 }
 async function addFolderListAuto(folderList, tmpParent) {
   let settings = await getSettings();
-  let collator = new Intl.Collator();
-  if (settings.sortorder_initial == "namecasein") {
-    // sort by name instead of moved-to-date
-    folderList.sort(function (a, b) {
-      return collator.compare(a.name,b.name);
-    });
-  }
-  if (settings.sortorder_fullpath) {
-    folderList.sort(function (a, b) {
-      return collator.compare(a.fullpath,b.fullpath);
-    });
-  }
-  if (settings.sortorder_parentname) {
-    folderList.sort(function (a, b) {
-      return collator.compare(a.parentName,b.parentName);
-    });
+  if (!alreadySorted) {
+    common.sortFoldersBySortorder(folderList,settings);
   }
   await addOrderedFolderList(folderList, tmpParent);
 }
@@ -633,7 +597,7 @@ async function addFolderToAutoList(folderAttributeSetting, MRMTimeSetting, folde
     ( time <= oldestTime && recentFoldersSize >= nbFolders && nbFolders > -1 )
   ) {
     // no need to add this folder, it is older than the oldest and we already have enough
-    return false;
+    return;
   }
   // update oldestTime
   if (time < oldestTime) {
@@ -659,63 +623,12 @@ async function addFolderToList(folderAttributeSetting, folderSettings, allSettin
     } // no auto show, folder never used to move to
   } //else: never show, do nothing
 }
-async function addToGroupedList(folder, settings) {
-  let listType = "auto";
-  if (common.folder_isPinned(folder.folderSettings)) {
-    listType = "pinned";
-  }
-  let expandedFolder = await getFolderFromSetting(folder.folderAttributeSetting);
-  expandedFolder.time = folder.time; // for rearranging when moved to if sorted on MRMTime
-  // We assume here (and in getRoot) the folder names are also path members
-  //  as otherwise it would cost too much to get the folder object
-  //  to get the folder name and the folder parent name
-  //  TODO check this statement when testing a LOT of folders
-  let path = expandedFolder.path;
-  let splittedPath = path.split("/");
-  expandedFolder.name = splittedPath[splittedPath.length-1];
-  expandedFolder.parentName = splittedPath[splittedPath.length-2];
-  let accountId = expandedFolder.accountId;
-  let account = accountList[accountId];
-  if (account == undefined) {
-    account = await messenger.accounts.get(accountId);
-    accountList[accountId] = account;
-  }
-  if (settings.groupby_account) {
-    expandedFolder.accountName = account.name; // to show if grouped by account
-  }
-  let displayPath = account.name + path;
-  expandedFolder.rootName = await getRoot(displayPath);
-  expandedFolder.displayPath = displayPath;
-  expandedFolder.internalPath = accountId + path;
-  expandedFolder.settings = folder.folderSettings;
-  // Add the folder according to the settings, so we can sort if needed
-  let accountSortValue;
-  if (settings.groupby_account || settings.sortorder_accountname) {
-    accountSortValue = accountId;
-    if (settings.sortorder_accountname) {
-      accountSortValue = account.name;
-    }
-  } else {
-    accountSortValue = "folderList";
-  }
-  if (groupedFolderList[accountSortValue] === undefined) {
-    groupedFolderList[accountSortValue] = {
-      "pinned": [],
-      "auto": [],
-    };
-  }
-  if (listType == "pinned") {
-    groupedFolderList[accountSortValue][listType][expandedFolder.internalPath] = expandedFolder;
-  } else {
-    groupedFolderList[accountSortValue][listType].push(expandedFolder);
-  }
-}
 /**
  * Get the most recently changed folders
  **/
 let othersParent = document.getElementById("otherButtonList");
+let alreadySorted;
 //let start = true;
-let accountList, groupedFolderList;
 async function showButtons() {
   //TODO: keep settings synchronized, so we don't have to get them here
   //FIXME: these are old cached settings, so statement above must be done!
@@ -735,9 +648,16 @@ async function showButtons() {
   let allSettings = await messenger.storage.local.get(); // get ALL SET settings
   let defaultSettings = allSettings.Fdefault;
   if (common.folder_doAlwaysShow(defaultSettings)) {
-    //FIXME Run over ALL folders while checking if they have specific settings
+    //TODO test
     // least efficient, but may be desired to always show new folders
-    //FIXME filter on folder.canFileMessages is not done as we do not have that info (also needed in settings), it is available in the newest >115 TB release (yippie)
+    common.foreachAllFolders(async (folder,account) => {
+      let setting = await common.getFolderSettingsKey(folder);
+      let folderSettings = allSettings[setting];
+      if (folderSettings === undefined) {
+        folderSettings = defaultSettings;
+      }
+      addFolderToList(setting, folderSettings, allSettings);
+    });
   } else if (common.folder_doNeverShow(defaultSettings)) {
     // Run only over folders that have settings
     // most efficient, run only over folders with specific settings
@@ -767,45 +687,47 @@ async function showButtons() {
 
   //TODO and no settings and/or always folders
   if (recentFoldersSize == 0 && ( nbFolders == -1 || nbFolders > 0) ) {
-    listParent.innerHTML = "<p>Buttons to move mails will appear (and this message will disappear) once you move a message to a folder that will also appear in Thunderbird's recent folders list.</p><p>You can also select the folders you want in the Options.<br/>Options can be opened using the \"Options\" button or using the Add-ons Manager</p>";
+    listParent.innerHTML = "<p>Buttons to move mails will appear (and this message will disappear) once you move a message to a plain mail folder.</p><p>You can also select the folders you want in the Options.<br/>Options can be opened using the \"Options\" button or using the Add-ons Manager</p>";
     return;
   }
 
   // now limit to the number we asked for
-  //TODO if needed
-  //TODO reorder while ordening later, if needed (if there are alwaysFolders that are not manually ordened)
   //TODO limit by folderselection setting
-  if (nbFolders > 1 || settings.sortorder_initial == "mostrecent") {
-    recentFolders.sort((a, b) => a.time < b.time);
-    if (nbFolders > 0) {
-      // at index <first argument>, delete <second argument> elements
-      recentFolders.splice(nbFolders, recentFoldersSize - nbFolders);
+  //FIXME initial folder selection following folderselection setting
+  alreadySorted = false;
+  if (nbFolders > 1 && recentFoldersSize > nbFolders) {
+    let sortby = settings.folderselection;
+    if (sortby == "sortorder") {
+      await common.sortFoldersBySortorder(recentFolders,settings);
+      alreadySorted = true;
+    } else {
+      await common.folderSort(recentFolders, sortby);
+      alreadySorted = sortby;
     }
+    // at index <first argument>, delete <second argument> elements
+    recentFolders.splice(nbFolders, recentFoldersSize - nbFolders);
   }
 
   // - Group folders if needed
-  accountList = {}; // reinitialize every time: account may be renamed TODO act on account rename, as we also may have to update the button list
-  groupedFolderList = {};
-  if (!(settings.groupby_account || settings.sortorder_accountname)) {
-    for (let folderType in groupedFolderList) {
-      groupedFolderList[folderType].folderList = [];
-    }
-  }
+  common.resetLists();
   // Should be done in order: may already be ordered
-  for (let folder of alwaysFolders) {
-    await addToGroupedList(folder, settings);
+  for (let folderInfo of alwaysFolders) {
+    const folder = await common.getFolderFromSetting(folderInfo.folderAttributeSetting);
+    await common.addExpandedToGroupedList(folder, settings);
   }
-  for (let folder of recentFolders) {
-    await addToGroupedList(folder, settings);
+  for (let folderInfo of recentFolders) {
+    const folder = await common.getFolderFromSetting(folderInfo.folderAttributeSetting);
+    await common.addExpandedToGroupedList(folder, settings);
   }
 
   let tmpListParent = document.createDocumentFragment();
   // sorted by account id, account name or just a single value, depending on the settings
-  // FIXME CREATE LIST OF ACCOUNTS
+  // FIXME CREATE LIST OF ACCOUNTS to loop over
+  const groupedFolderList = await common.getGroupedFolderList();
   for ( let accountSortValue of Object.keys(groupedFolderList).sort() ) {
     if (settings.groupby_account) {
       let takeAccountFrom = groupedFolderList.auto;
-      if (!groupedFolderList[accountSortValue] === undefined) {
+      if (groupedFolderList[accountSortValue] !== undefined) {
         takeAccountFrom = groupedFolderList.pinned;
       }
       await addAccount(takeAccountFrom[accountSortValue][0].accountName,tmpListParent);
@@ -831,6 +753,8 @@ async function settingsChangedListener(settingsUpdateInfo) {
   }
   if (needUpdateList) {
     updateButtonList();
+  } else {
+    console.log("no update needed");
   }
 }
 messenger.storage.local.onChanged.addListener(settingsChangedListener);

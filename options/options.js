@@ -34,7 +34,7 @@ async function getFolderinput(folderOptionsAttribute, settingname, inputValue) {
 }
 let folderElTemplate;
 let unpinnedOrder = [];
-async function addFolder(account, folder) {
+async function addFolder(folder) {
   let folderEl;
   if (folderElTemplate === undefined) {
     folderElTemplate = document.getElementById("defaultfolder");
@@ -42,19 +42,17 @@ async function addFolder(account, folder) {
   folderEl = folderElTemplate.cloneNode(true);
   folderEl.removeAttribute('id');
 
-  let folderName = `${account.name}${folder.path}`;
   let folderAttribute = encodeURI(`${folder.accountId}${folder.path}`);
   let folderOptionsAttribute = "F"+folderAttribute;
-  let folderMRMAttribute = "M"+folderAttribute;
 
   folderEl.setAttribute("data-folder",folderAttribute);
   let col_next = folderEl.firstElementChild; // col_handle
   col_next = col_next.nextElementSibling; // col_name
-  col_next.textContent = folderName;
+  col_next.textContent = folder.displayPath;
 
   let parentEl = foldergetEl;
 
-  let settings = (await messenger.storage.local.get([folderOptionsAttribute,folderMRMAttribute]));
+  let settings = (await messenger.storage.local.get([folderOptionsAttribute]));
   let folderOptions = settings[folderOptionsAttribute];
   if (folderOptions !== undefined) {
     setNonDefault(folderEl);
@@ -86,18 +84,13 @@ async function addFolder(account, folder) {
   }
   for (let span of folderEl.getElementsByTagName("span")) {
     if (span.getAttribute("data-name") == "MRM") {
-      let MRMTime = settings[folderMRMAttribute];
-      if (MRMTime) {
-        span.textContent = common.parseDate(settings[folderMRMAttribute]);
+      if (folder.time) {
+        span.textContent = common.parseDate(folder.time);
       }
     }
   }
   unpinnedOrder.push(folderAttribute); // order if they would all not be pinned, so if they are inpinned, they are put in the right order
   parentEl.appendChild(folderEl);
-
-  for (let subfolder of await messenger.folders.getSubFolders(folder,false)) {
-    await addFolder(account, subfolder);
-  }
 }
 /**
  * Set the current options
@@ -162,6 +155,7 @@ async function setCurrentChoice(result,setFolderOptions) {
               //FIXME signal order change to tidybird
             }
             if(foldersortElSortable !== undefined) {
+              //FIXME sort according to manual sorted folder list
               //FIXME foldersortElSortable.sort(unpinnedOrder);
             }
             if(foldergetElSortable !== undefined) {
@@ -221,15 +215,22 @@ async function setCurrentChoice(result,setFolderOptions) {
     }
   }
 }
-async function loadFolders() {
+async function loadFolders(settings) {
   // FIXME: do this if a setting changing the order has changed or if a folder is added/removed
   foldergetEl.textContent = "";
-  let accounts = await messenger.accounts.list(true);
-  for (let account of accounts) {
-    // TODO file a bug for Thunderbird to include canFileMessages property in MailFolder(Info)
-    for (let folder of account.folders) {
-      await addFolder(account, folder);
-    }
+
+  common.resetLists();
+  let allFolders = await common.foreachAllFolders(async (folder,account) => {
+    let MRMSettingsKey = common.getFolderMRMSettingsKey(folder);
+    folder.time = (await messenger.storage.local.get(MRMSettingsKey))[MRMSettingsKey];
+    await common.addExpandedToGroupedList(folder, settings);
+  });
+
+  //FIXME sort folders
+  const groupedFolderList = await common.getGroupedFolderList();
+  await common.sortFoldersBySortorder(groupedFolderList.folderList.auto, settings, false);
+  for (let expandedFolder of groupedFolderList.folderList.auto) {
+    await addFolder(expandedFolder);
   }
 
   let manualorder = (await messenger.storage.local.get({"manualorder":[]})).manualorder;
@@ -245,11 +246,11 @@ async function loadFolders() {
       //filter: ".notmovable", // makes unmovable elements responsive to moving other elements in between
       dataIdAttr: 'data-folder',
       store: {
-        get: function(sortable) {
+        get: (sortable) => {
           // only called one single time at startup
           return manualorder;
         },
-        set: function(sortable) {
+        set: (sortable) => {
           const order = sortable.toArray();
           messenger.storage.local.set({
             ["manualorder"]: order,
@@ -342,8 +343,6 @@ async function folderInput(theEvent) {
     return;
   }
   let theRow = theInput.parentNode.parentNode;
-  let splitterIndex = theInput.name.indexOf("_"); // split splits always, max is just the nb of parts to return
-  let inputname = theInput.name.substring(0,splitterIndex);
   let foldername = theRow.getAttribute("data-folder"); // or theInput.name.substring(splitterIndex+1)
   // a number, as it takes less place and we want to support many folders
   // note: numbers are probably stored in ascii (according to the byte usage: 1 byte per character)
@@ -366,7 +365,7 @@ function domReady() {
 
   let settingsPromise = messenger.storage.local.get(common.option_defaults);
   settingsPromise.then((settings) => setCurrentChoice(settings,false));
-  settingsPromise.then(() => loadFolders())
+  settingsPromise.then((settings) => loadFolders(settings))
   .then(() => {
     // update the settings shown in this window as they may have been changed in another window
     messenger.storage.local.onChanged.addListener(settingsChangedListener);

@@ -141,16 +141,20 @@ async function run() {
   // TODO check if it also acts this way on POP: only 1 move for parent folders; delete for parent & sub folders
   ///////////////////
   async function actOnFolderMove(originalFolder, newFolder) {
-    // would the newFolder have been removed before and added to the queue to delete, remove it from the queue
+    // Would the newFolder have been removed before and added to the queue to delete, remove it from the queue
+    // The previous MRM time will be overwritten
     removeFromDeleteQueue(newFolder);
     // move MRM time to the new folder setting
     let oldAttributeName = common.getFolderMRMSettingsKey(originalFolder);
-    let originalMRMTime = await getAttribute(oldAttributeName);
-    setAttribute(common.getFolderMRMSettingsKey(newFolder), originalMRMTime);
-    deleteAttribute(oldAttributeName); // here we can remove the old folder setting
+    let originalMRMTime = (await getAttribute(oldAttributeName)).oldAttributeName;
+    if (originalMRMTime !== undefined) {
+      setAttribute(common.getFolderMRMSettingsKey(newFolder), originalMRMTime);
+      deleteAttribute(oldAttributeName); // now we can remove the old folder setting
+      removeFromDeleteQueue(originalFolder); // and even remove it from the delete queue, if it was already added
+    }
 
     // also do above actions for the subfolders
-    let newSubFolders = newFolder.newSubFolders;
+    let newSubFolders = newFolder.subFolders;
     if (!newSubFolders) {
       newSubFolders = await messenger.folders.getSubFolders(newFolder,true);
     }
@@ -161,7 +165,7 @@ async function run() {
         // known case: parent folder path is part of subfolder path
         originalSubFolder = {
           "accountId": originalFolder.accountId,
-          "path": originalFolder.path + newSubFolder.path.substring(newFolder.length),
+          "path": originalFolder.path + newSubFolder.path.substring(newFolder.path.length),
           // we don't know the name
         };
       } else {
