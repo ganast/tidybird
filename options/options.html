@@ -46,12 +46,12 @@
 
             <h2>Sorting</h2>
             <div>
-                Sort by:
+                Sort automatic sorted folders by:
                 <!-- TODO: by default, folders should be ordered as listed in the folder pane, not by most recent -->
                 <ol start="0">
                     <li>
                         <input id="sortorder_no" name="sortorder_initial" type="radio" value="no"/>
-                        <label for="sortorder_no">no initial ordening.<br/>If number of folders is -1, this results in ordered as received from the settings (by full path, uppercase first).<br/>Otherwise, this results in ordered by most recently used.</label>
+                        <label for="sortorder_no">no initial ordening: <span>most recently used because cutoff; otherwise</span> order is as received from setting list, for efficiency.</label>
                     </li>
                     <li>
                         <input id="sortorder_mostrecent" name="sortorder_initial" type="radio" value="mostrecent"/>
@@ -75,7 +75,7 @@
                     </li>
                 </ol>
                 <ul>
-                    <li>TODO: switch "no" description based on number of days + complete description with Always Show folders</li>
+                    <li>TODO: change initial description based on real initial order by cutoff</li>
                     <li>TODO: test fullpath</li>
                     <li>TODO: update order on move when sorted by date</li>
                 </ul>
@@ -159,7 +159,6 @@
                 <li>Moved folders not removed from MRM =&gt; removed folders in buttons that do not longer exist if we don't run over the folders but over the settings</li>
             </ul>
             <p>Folder order and selection. To move the folder, use the dots handle on the left side.</p>
-            <!-- table does not work with sortable -->
             <!-- grid wants to take all the space or may not be aligned-->
             <table id="folderinput" class="folderview">
                 <thead class="folderviewheader">

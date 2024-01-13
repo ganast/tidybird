@@ -228,7 +228,7 @@ async function expandFolder(folder) {
   let displayPath = account.name + path;
   expandedFolder.rootName = await getRoot(displayPath);
   expandedFolder.displayPath = displayPath;
-  expandedFolder.internalPath = accountId + path;
+  expandedFolder.internalPath = encodeURI(accountId + path);
   expandedFolder.settings = folder.folderSettings;
   return expandedFolder;
 }

@@ -42,7 +42,7 @@ async function addFolder(folder) {
   folderEl = folderElTemplate.cloneNode(true);
   folderEl.removeAttribute('id');
 
-  let folderAttribute = encodeURI(`${folder.accountId}${folder.path}`);
+  let folderAttribute = folder.internalPath;
   let folderOptionsAttribute = "F"+folderAttribute;
 
   folderEl.setAttribute("data-folder",folderAttribute);
@@ -191,10 +191,31 @@ async function setCurrentChoice(result,setFolderOptions) {
       continue;
     }
     if(key === "manualorder") {
+      if(!setFolderOptions) {
+        // no inputs to select
+        continue;
+      }
       if(foldersortElSortable !== undefined) {
         foldersortElSortable.sort(value);
       }
       continue;
+    }
+    if(key.startsWith("sortorder_") && setFolderOptions) {
+      const groupedFolderList = await common.getGroupedFolderList();
+      const settings = await messenger.storage.local.get(common.option_defaults);
+      await common.sortFoldersBySortorder(groupedFolderList.folderList.auto, settings, false);
+      // no folders have been removed, so just move them in the corect order
+      const childrenMap = new Map();
+      Array.from(foldergetEl.children).forEach((child) => {
+        childrenMap.set(child.getAttribute('data-folder'), child);
+      });
+      for (let expandedFolder of groupedFolderList.folderList.auto) {
+        const mapRow = childrenMap.get(expandedFolder.internalPath);
+        if (mapRow !== undefined) {
+          foldergetEl.appendChild(mapRow);
+        } // else: mapRow is in manual sorted list
+      }
+      // and continue to set checkboxes in other options instances
     }
     let inputNodes = document.querySelectorAll(`[name='${encodeURI(key)}']`);
     if (!inputNodes.length) {
@@ -220,13 +241,12 @@ async function loadFolders(settings) {
   foldergetEl.textContent = "";
 
   common.resetLists();
-  let allFolders = await common.foreachAllFolders(async (folder,account) => {
+  await common.foreachAllFolders(async (folder,account) => {
     let MRMSettingsKey = common.getFolderMRMSettingsKey(folder);
     folder.time = (await messenger.storage.local.get(MRMSettingsKey))[MRMSettingsKey];
     await common.addExpandedToGroupedList(folder, settings);
   });
 
-  //FIXME sort folders
   const groupedFolderList = await common.getGroupedFolderList();
   await common.sortFoldersBySortorder(groupedFolderList.folderList.auto, settings, false);
   for (let expandedFolder of groupedFolderList.folderList.auto) {
@@ -367,7 +387,9 @@ function domReady() {
   settingsPromise.then((settings) => setCurrentChoice(settings,false));
   settingsPromise.then((settings) => loadFolders(settings))
   .then(() => {
-    // update the settings shown in this window as they may have been changed in another window
+    // update the settings shown in this window as:
+    // * they may have been changed in another window
+    // * it may be needed to act upon, to show updated order for example
     messenger.storage.local.onChanged.addListener(settingsChangedListener);
   });
 }
