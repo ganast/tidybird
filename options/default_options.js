@@ -174,13 +174,25 @@ export const getGroupedFolderList = async function() {
  * Return a folder object usable by the folder webextensions API
  * from the name used in the settings
  **/
-export const getFolderFromSetting = async function(folderSetting) {
+const getFolderObjectFromSetting = async function(folderSetting) {
   let folder = decodeURI(getFolderFromSettingsKey(folderSetting));
   let accountSplitIndex = folder.indexOf("/");
   return {
     accountId: folder.substring(0,accountSplitIndex), // for MailFolder "constructor"
     path: folder.substring(accountSplitIndex), // for MailFolder "constructor"
   };
+}
+/**
+ * Return an eventual semi-expanded folder object
+ * from some object containing necessary folder info
+ **/
+export const getFolderFromInfo = async function(folderInfo, foldersettingAttributeName) {
+  let folderObject = await getFolderObjectFromSetting(folderInfo[foldersettingAttributeName]);
+  // add other info
+  for (let attributeName in folderInfo) {
+    folderObject[attributeName] = folderInfo[attributeName];
+  }
+  return folderObject;
 }
 /**
  * Return the "root" folder to display
@@ -203,7 +215,7 @@ const getRoot = async function(folderFullPath) {
 /**
  * Add additional attributes to the folder
  **/
-async function expandFolder(folder) {
+export const expandFolder = async function(folder) {
   //FIXME create a copy (?)
   let expandedFolder = {
     accountId: folder.accountId, // minimal folder object
@@ -240,18 +252,21 @@ async function expandFolder(folder) {
  *
  * Used settings: groupby_account & sortorder_accountname
  **/
-export const addExpandedToGroupedList = async function(folder, settings) {
+export const addExpandedToGroupedList = async function(folder, settings, alreadyExpanded) {
   let listType = "auto";
   if (folder_isPinned(folder.folderSettings)) {
     listType = "pinned";
   }
-  let expandedFolder = await expandFolder(folder, accountList);
+  let expandedFolder = folder;
+  if (!alreadyExpanded) {
+    expandedFolder = await expandFolder(folder, accountList);
+  }
   // Add the folder according to the settings, so we can sort if needed
   let accountSortValue;
   if (settings.groupby_account || settings.sortorder_accountname) {
-    accountSortValue = accountId;
+    accountSortValue = expandedFolder.accountId;
     if (settings.sortorder_accountname) {
-      accountSortValue = account.name;
+      accountSortValue = expandedFolder.accountName;
     }
   } else {
     accountSortValue = "folderList";
@@ -284,32 +299,40 @@ async function getSortFunction(sortby) {
     case "reversenamecasein":
       return(a,b) => collator.compare(b.name,a.name);
     case "fullpath":
-      return(a,b) => collator.compare(a.fullpath,b.fullpath);
+      return(a,b) => collator.compare(a.internalPath,b.internalPath);
     case "parentname":
       return(a,b) => collator.compare(a.parentName,b.parentName);
+    case "accountname":
+      return(a,b) => collator.compare(a.accountName,b.accountName);
   }
   return null;
 }
-async function folderSort(folderlist, sortby) {
-  folderlist.sort(await getSortFunction(sortby));
-}
-export const sortFoldersBySortorder = async function(folderList,settings,alreadySortedBy) {
-  //FIXME do all ordening
+/**
+ * Returns a sorted array of attributes to sort the folders
+ * Occasionally skipping initial sortorder if already done
+ **/
+export const getFullSortorder = async function(settings,alreadySortedBy) {
+  const order = [];
   if (alreadySortedBy === true) {
     // already fully sorted, not doing anything
-    return;
+    return order;
   }
   let changedOrder = false;
   if (settings.sortorder_initial !== "no" && settings.sortorder_initial !== alreadySortedBy) {
-    await folderSort(folderList, settings.sortorder_initial);
+    order.push(settings.sortorder_initial);
     changedOrder = true;
   }
-  if (settings.sortorder_fullpath && (changedOrder || alreadySortedBy != "fullpath")) {
-    await folderSort(folderList, "fullpath");
-    changedOrder = true;
+  const nextOrders = [ "namecasein", "fullpath", "parentname", "accountname" ];
+  for (const nextOrder of nextOrders) {
+    if (settings['sortorder_'+nextOrder] && (changedOrder || alreadySortedBy != nextOrder)) {
+      order.push(nextOrder);
+      changedOrder = true;
+    }
   }
-  if (settings.sortorder_parentname && (changedOrder || alreadySortedBy != "parentname")) {
-    await folderSort(folderList, "parentname");
-    changedOrder = true;
+  return order;
+}
+export const sortFoldersBySortorder = async function(folderList,sortorder) {
+  for (let sortby of sortorder) {
+    folderList.sort(await getSortFunction(sortby));
   }
 }

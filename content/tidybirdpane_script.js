@@ -571,7 +571,8 @@ async function addFolderListPinned(folderList, tmpParent) {
 async function addFolderListAuto(folderList, tmpParent) {
   let settings = await getSettings();
   if (!alreadySorted) {
-    common.sortFoldersBySortorder(folderList,settings);
+    const sortorder = await common.getFullSortorder(settings,alreadySorted);
+    await common.sortFoldersBySortorder(folderList,sortorder);
   }
   await addOrderedFolderList(folderList, tmpParent);
 }
@@ -641,6 +642,8 @@ async function showButtons() {
   recentFoldersSize = 0;
   oldestTime = common.getTimestamp(); // initialize, so we don't have to check for undefined every loop
 
+  common.resetLists();
+
   // First get folders, then loop over accounts, so we can honour nb of days and max nb of folders
   //TODO: button to purge old MRMs (for performance)
   // based on own implementation of getMostRecentFolders, probably more efficient in cpu (not in memory)
@@ -695,28 +698,46 @@ async function showButtons() {
   //TODO limit by folderselection setting
   //FIXME initial folder selection following folderselection setting
   alreadySorted = false;
+  let alreadyExpanded = false;
   if (nbFolders > 1 && recentFoldersSize > nbFolders) {
     let sortby = settings.folderselection;
+    let sortorder = [];
     if (sortby == "sortorder") {
-      await common.sortFoldersBySortorder(recentFolders,settings);
+      sortorder = await common.getFullSortorder(settings,false);
       alreadySorted = true;
     } else {
-      await common.folderSort(recentFolders, sortby);
+      sortorder = [ sortby ];
       alreadySorted = sortby;
     }
+    if (sortorder !== [ "mrmtime" ]) {
+      // need to expand to get information
+      let newList = [];
+      for (const folderInfo of recentFolders) {
+        //FIXME written for folders from mrmtime settings, ok for others?
+        const folder = await common.getFolderFromInfo(folderInfo,'folderAttributeSetting');
+        newList.push(await common.expandFolder(folder));
+      }
+      recentFolders = newList;
+      alreadyExpanded = true;
+    }
+    await common.sortFoldersBySortorder(recentFolders,sortorder);
     // at index <first argument>, delete <second argument> elements
     recentFolders.splice(nbFolders, recentFoldersSize - nbFolders);
   }
 
   // - Group folders if needed
-  common.resetLists();
   // Should be done in order: may already be ordered
   for (let folderInfo of alwaysFolders) {
-    const folder = await common.getFolderFromSetting(folderInfo.folderAttributeSetting);
+    const folder = await common.getFolderFromInfo(folderInfo,'folderAttributeSetting');
     await common.addExpandedToGroupedList(folder, settings);
   }
   for (let folderInfo of recentFolders) {
-    const folder = await common.getFolderFromSetting(folderInfo.folderAttributeSetting);
+    let folder;
+    if (!alreadyExpanded) {
+      folder = await common.getFolderFromInfo(folderInfo,'folderAttributeSetting');
+    } else {
+      folder = folderInfo;
+    }
     await common.addExpandedToGroupedList(folder, settings);
   }
 

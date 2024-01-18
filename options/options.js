@@ -203,7 +203,8 @@ async function setCurrentChoice(result,setFolderOptions) {
     if(key.startsWith("sortorder_") && setFolderOptions) {
       const groupedFolderList = await common.getGroupedFolderList();
       const settings = await messenger.storage.local.get(common.option_defaults);
-      await common.sortFoldersBySortorder(groupedFolderList.folderList.auto, settings, false);
+      const sortorder = await common.getFullSortorder(settings,false);
+      await common.sortFoldersBySortorder(groupedFolderList.folderList.auto, sortorder);
       // no folders have been removed, so just move them in the corect order
       const childrenMap = new Map();
       Array.from(foldergetEl.children).forEach((child) => {
@@ -248,7 +249,8 @@ async function loadFolders(settings) {
   });
 
   const groupedFolderList = await common.getGroupedFolderList();
-  await common.sortFoldersBySortorder(groupedFolderList.folderList.auto, settings, false);
+  const sortorder = await common.getFullSortorder(settings,false);
+  await common.sortFoldersBySortorder(groupedFolderList.folderList.auto, sortorder);
   for (let expandedFolder of groupedFolderList.folderList.auto) {
     await addFolder(expandedFolder);
   }
