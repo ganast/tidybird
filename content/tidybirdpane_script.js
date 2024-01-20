@@ -252,7 +252,6 @@ function updateSetting(setting, value) {
       return true;
       //changeOrder(); //FIXME implement: change order without recreating nodes, also used when updating order on move when sorted by date
       //and if cut off is sorted order, then remove also some buttons
-      break;
   }
   return true;
 }
@@ -710,7 +709,7 @@ async function showButtons() {
       sortorder = [ sortby ];
       alreadySorted = sortby;
     }
-    if (sortorder !== [ "mrmtime" ]) {
+    if (sortorder != [ "mrmtime" ]) {
       // need to expand to get information
       let newList = [];
       for (const folderInfo of recentFolders) {
@@ -749,7 +748,7 @@ async function showButtons() {
   for ( let accountSortValue of Object.keys(groupedFolderList).sort() ) {
     if (settings.groupby_account) {
       let takeAccountFrom = groupedFolderList[accountSortValue].auto;
-      if (takeAccountFrom === []) {
+      if (!takeAccountFrom.length) {
         takeAccountFrom = groupedFolderList[accountSortValue].pinned;
       }
       await addAccount(takeAccountFrom[0].accountName,tmpListParent);

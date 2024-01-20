@@ -262,7 +262,7 @@ async function loadFolders(settings) {
   for ( let accountSortValue of Object.keys(groupedFolderList).sort() ) {
     if (settings.groupby_account) {
       let takeAccountFrom = groupedFolderList[accountSortValue].auto;
-      if (takeAccountFrom === []) {
+      if (!takeAccountFrom.length) {
         takeAccountFrom = groupedFolderList[accountSortValue].pinned;
       }
       await addAccount(takeAccountFrom[0].accountName);
