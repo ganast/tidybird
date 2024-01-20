@@ -9,6 +9,9 @@
   border-collapse: separate; /* do not collapse for sticky header to work */
   border-spacing: 0;
 }
+.folderviewaccount {
+  text-align: left;
+}
 .folderviewheader {
     position: sticky;
     top: 0;

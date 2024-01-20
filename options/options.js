@@ -34,6 +34,15 @@ async function getFolderinput(folderOptionsAttribute, settingname, inputValue) {
 }
 let folderElTemplate;
 let unpinnedOrder = [];
+const addAccount = function (accountName) {
+  let accountRow = document.createElement("tr");
+  let accountCell = document.createElement("th");
+  accountCell.setAttribute("colspan",2);
+  accountCell.classList.add("folderviewaccount")
+  accountCell.textContent = accountName;
+  accountRow.append(accountCell);
+  foldergetEl.append(accountRow);
+}
 async function addFolder(folder) {
   let folderEl;
   if (folderElTemplate === undefined) {
@@ -250,9 +259,18 @@ async function loadFolders(settings) {
 
   const groupedFolderList = await common.getGroupedFolderList();
   const sortorder = await common.getFullSortorder(settings,false);
-  await common.sortFoldersBySortorder(groupedFolderList.folderList.auto, sortorder);
-  for (let expandedFolder of groupedFolderList.folderList.auto) {
-    await addFolder(expandedFolder);
+  for ( let accountSortValue of Object.keys(groupedFolderList).sort() ) {
+    if (settings.groupby_account) {
+      let takeAccountFrom = groupedFolderList[accountSortValue].auto;
+      if (takeAccountFrom === []) {
+        takeAccountFrom = groupedFolderList[accountSortValue].pinned;
+      }
+      await addAccount(takeAccountFrom[0].accountName);
+    }
+    await common.sortFoldersBySortorder(groupedFolderList[accountSortValue].auto, sortorder);
+    for (let expandedFolder of groupedFolderList[accountSortValue].auto) {
+      await addFolder(expandedFolder);
+    }
   }
 
   let manualorder = (await messenger.storage.local.get({"manualorder":[]})).manualorder;

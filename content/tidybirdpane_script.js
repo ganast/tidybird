@@ -249,7 +249,7 @@ function updateSetting(setting, value) {
       }
       return false;
     case setting.startsWith("sortorder"):
-      updateButtonList();
+      return true;
       //changeOrder(); //FIXME implement: change order without recreating nodes, also used when updating order on move when sorted by date
       //and if cut off is sorted order, then remove also some buttons
       break;
@@ -490,6 +490,7 @@ const showOptionsPage = async function() {
 }
 
 const updateButtonList = async function () {
+  //FIXME do not recreate buttons
   console.debug("tidybird: updating button list");
   while (listParent.hasChildNodes()) {
     foldersInList.pop();
@@ -747,11 +748,11 @@ async function showButtons() {
   const groupedFolderList = await common.getGroupedFolderList();
   for ( let accountSortValue of Object.keys(groupedFolderList).sort() ) {
     if (settings.groupby_account) {
-      let takeAccountFrom = groupedFolderList.auto;
-      if (groupedFolderList[accountSortValue] !== undefined) {
-        takeAccountFrom = groupedFolderList.pinned;
+      let takeAccountFrom = groupedFolderList[accountSortValue].auto;
+      if (takeAccountFrom === []) {
+        takeAccountFrom = groupedFolderList[accountSortValue].pinned;
       }
-      await addAccount(takeAccountFrom[accountSortValue][0].accountName,tmpListParent);
+      await addAccount(takeAccountFrom[0].accountName,tmpListParent);
     }
     await addFolderList(groupedFolderList[accountSortValue],tmpListParent);
   }
