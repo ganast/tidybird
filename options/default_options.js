@@ -3,17 +3,21 @@ export const option_defaults = {
   buttonheight: -1,
   buttonmargin: 3,
   showoptionsbutton: true,
+  isShowing: true,
+  width: 224,
+
   sortorder_initial: "mostrecent",
-  sortorder_fullpath: false,
   sortorder_parentname: false,
   sortorder_accountname: false,
   groupby_account: false,
+
   nbfolders: 30,
   folderselection: "mostrecent",
   maxage: 30,
+  showneverused: false,
+  folderstoshow_default: false,
+
   Fdefault: 0,
-  width: 224,
-  isShowing: true,
   manualorder: [],
 };
 export const folderSettingValues = {
@@ -108,7 +112,7 @@ export const parseNumber = function(string) {
  * Encode an integer to put it in settings
  * as an integer is stored as a string, this takes less 
  **/
-const encodeNumber = function(date) {
+export const encodeNumber = function(date) {
   return date.toString(36);
 }
 /**
@@ -183,16 +187,41 @@ const getFolderObjectFromSetting = async function(folderSetting) {
   };
 }
 /**
+ * Get a folder object with tidybird settings, not usable by webextensions API
+ **/
+export const getTidybirdFolder = function(folderAttributeSetting, MRMTimeSetting, folderSettings) {
+  //let time = common.parseNumber(MRMTimeSetting);
+  return {
+    tidybird_attributename: folderAttributeSetting,
+    tidybird_time: MRMTimeSetting,
+    tidybird_foldersettings: folderSettings,
+  };
+}
+/**
+ * Add tidybird settings to webextensions folder
+ **/
+export const makeTidybirdFolder = async function(folder) {
+  const MRMSettingsKey = getFolderMRMSettingsKey(folder);
+  const settings = await messenger.storage.local.get(MRMSettingsKey);
+  folder.tidybird_time = settings[MRMSettingsKey];
+  return folder;
+}
+/**
  * Return an eventual semi-expanded folder object
  * from some object containing necessary folder info
  **/
-export const getFolderFromInfo = async function(folderInfo, foldersettingAttributeName) {
-  let folderObject = await getFolderObjectFromSetting(folderInfo[foldersettingAttributeName]);
+export const getFolderFromInfo = async function(folderInfo) {
+  let folder = folderInfo;
+  let folderObject = await getFolderObjectFromSetting(folderInfo.tidybird_attributename);
+  folder.path = folderObject.path;
+  folder.accountId = folderObject.accountId;
   // add other info
+  /*
   for (let attributeName in folderInfo) {
     folderObject[attributeName] = folderInfo[attributeName];
   }
-  return folderObject;
+  */
+  return folder;
 }
 /**
  * Return the "root" folder to display
@@ -216,17 +245,26 @@ const getRoot = async function(folderFullPath) {
  * Add additional attributes to the folder
  **/
 export const expandFolder = async function(folder) {
-  //FIXME create a copy (?)
+  /*
+   * either: copy
+  for (let attributeName in folderInfo) {
+    folderObject[attributeName] = folderInfo[attributeName];
+  }
+   * or: create object with known attributes
   let expandedFolder = {
     accountId: folder.accountId, // minimal folder object
     path: folder.path, // minimal folder object
     time: folder.time, // for ordening and rearranging when moved to if sorted on MRMTime
+    settings: folder.folderSettings,
   };
+   * or: change original and create object usable for API where/when necessary
+   */
+  let expandedFolder = folder;
+  let path = expandedFolder.path;
   // We assume here (and in getRoot) the folder names are also path members
   //  as otherwise it would cost too much to get the folder object
   //  to get the folder name and the folder parent name
   //  TODO check this statement when testing a LOT of folders
-  let path = expandedFolder.path;
   let splittedPath = path.split("/");
   expandedFolder.name = splittedPath[splittedPath.length-1];
   expandedFolder.parentName = splittedPath[splittedPath.length-2];
@@ -241,7 +279,6 @@ export const expandFolder = async function(folder) {
   expandedFolder.rootName = await getRoot(displayPath);
   expandedFolder.displayPath = displayPath;
   expandedFolder.internalPath = encodeURI(accountId + path);
-  expandedFolder.settings = folder.folderSettings;
   return expandedFolder;
 }
 
@@ -252,14 +289,10 @@ export const expandFolder = async function(folder) {
  *
  * Used settings: groupby_account & sortorder_accountname
  **/
-export const addExpandedToGroupedList = async function(folder, settings, alreadyExpanded) {
+export const addToGroupedList = async function(expandedFolder, settings, alreadyExpanded) {
   let listType = "auto";
-  if (folder_isPinned(folder.folderSettings)) {
+  if (folder_isPinned(expandedFolder.folderSettings)) {
     listType = "pinned";
-  }
-  let expandedFolder = folder;
-  if (!alreadyExpanded) {
-    expandedFolder = await expandFolder(folder, accountList);
   }
   // Add the folder according to the settings, so we can sort if needed
   let accountSortValue;
@@ -284,26 +317,65 @@ export const addExpandedToGroupedList = async function(folder, settings, already
   }
 }
 
+export const isExpansionNeeded = function(sortorder, alreadyExpanded) {
+  if (alreadyExpanded) {
+    return false;
+  }
+  for (const sortby of sortorder) {
+    if (!getAttributeSortFunctionNeeds(sortby).startsWith("tidybird_")) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /*
  * Folder sorting
  */
+export const getAttributeSortFunctionNeeds = function(sortby) {
+  switch(sortby) {
+    case "mostrecent":
+      return "tidybird_time";
+    case "namecasein":
+    case "reversenamecasein":
+      return "name";
+    case "fullpath":
+      // is an encoded fullpath, TODO just make sure all prefixes are the same
+      // we use this so an expand is not needed before cutoff
+      return "tidybird_attributename";
+    case "parentname":
+      return "parentName";
+    case "accountname":
+      return "accountName";
+  }
+  return null;
+}
 let collator = new Intl.Collator();
-async function getSortFunction(sortby) {
+export const getSortFunction = async function(sortby) {
+  const attribute = getAttributeSortFunctionNeeds(sortby);
   switch(sortby) {
     case "mostrecent":
       return (a,b) => {
-        return ( a.time === undefined && b.time !== undefined ) || a.time < b.time
+        if  ( a[attribute] === b[attribute] ) {
+          return 0;
+        }
+        // reverse sort
+        if (
+          ( a[attribute] === undefined && b[attribute] !== undefined )
+          ||
+          a[attribute] < b[attribute]
+        ) {
+          return 1;
+        }
+        return -1;
       };
     case "namecasein":
-      return(a,b) => collator.compare(a.name,b.name);
-    case "reversenamecasein":
-      return(a,b) => collator.compare(b.name,a.name);
     case "fullpath":
-      return(a,b) => collator.compare(a.internalPath,b.internalPath);
     case "parentname":
-      return(a,b) => collator.compare(a.parentName,b.parentName);
     case "accountname":
-      return(a,b) => collator.compare(a.accountName,b.accountName);
+      return(a,b) => collator.compare(a[attribute],b[attribute]);
+    case "reversenamecasein":
+      return(a,b) => collator.compare(b[attribute],a[attribute]);
   }
   return null;
 }

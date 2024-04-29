@@ -62,7 +62,7 @@
                         <label for="sortorder_namecasein">name</label>
                     </li>
                     <li>
-                        <input id="sortorder_fullpath" name="sortorder_fullpath" type="checkbox" value="fullpath"/>
+                        <input id="sortorder_fullpath" name="sortorder_initial" type="radio" value="fullpath"/>
                         <label for="sortorder_fullpath">full path (as shown in tooltip)</label>
                     </li>
                     <li>
@@ -76,7 +76,7 @@
                 </ol>
                 <ul>
                     <li>TODO: change initial description based on real initial order by cutoff</li>
-                    <li>TODO: update order on move when sorted by date</li>
+                    <li>TODO: update order on move when sorted by date, but not while hovering the list</li>
                 </ul>
                 <div class="browser-style">
                     <label for="groupby_account">Group by account:</label>
@@ -86,6 +86,7 @@
 
             <h2>Folders to show</h2>
             <div>
+                <h3>Folders to show: general settings</h3>
                 <div class="browser-style">
                     <label for="nbfolders">Number of folders to automatically show (-1: all):</label>
                     <input id="nbfolders" name="nbfolders" type="number" size=3 min="-1"/>
@@ -101,6 +102,10 @@
                         <label for="folderselection_mostrecent">recently moved to date (show most recently used folders)</label>
                     </div>
                     <div class="browser-style">
+                        <input id="folderselection_fullpath" name="folderselection" type="radio" value="fullpath"/>
+                        <label for="folderselection_fullpath">full path (as shown in tooltip)</label>
+                    </div>
+                    <div class="browser-style">
                         <input id="folderselection_namecasein" name="folderselection" type="radio" value="namecasein"/>
                         <label for="folderselection_namecasein">name in alphabetical order, case insensitive (show 0folder, afolder, Afolderfolder, anotherfolder, ...)</label>
                     </div>
@@ -113,34 +118,26 @@
                     <label for="maxage">Number of days since last use to auto show (-1: any):</label>
                     <input id="maxage" name="maxage" type="number" size=4 min="-1"/>
                 </div>
-                <div>
-                    <label for="allread">Mark messages as read while moving them. This will change the selection of the "Mark as read" column for all folders</label/>
-                    <input id="allread" name="allread" type="checkbox"/>
+                <div class="browser-style">
+                    <label for="showneverused">Also show folders that are never used to moved to</label>
+                    <input id="showneverused" name="showneverused" type="checkbox"/>
                 </div>
                 <div>
-                    Default automatically shown folders:
-                    <div>
-                        <input id="folderselection_default" name="folderselection" type="radio" value="default"/>
-                        <label for="folderselection_default">"Show Never" folders with existing shortcuts (Archive[a], Junk[j] and Trash[del]) - default, previous behavior</label>
-                    </div>
-                    <div>
-                        <input id="folderselection_all" name="folderselection" type="radio" value="all"/>
-                        <label for="folderselection_all">"Show Auto" for all folders</label>
-                    </div>
+                    <label for="folderstoshow_default">Never show folders with existing shortcuts (Archive[a], Junk[j] and Trash[del]) - previous Tidybird and default Thunderbird behavior</label>
+                    <input id="folderstoshow_default" name="folderstoshow_default" type="checkbox" value="default"/>
                 </div>
             </div>
         </div>
         <div id="expertsettings">
             <ul>
-                <li>FIXME: number of days -1, sortorder: defaults</li>
-                <li>FIXME: more than 30 folders?</li>
-                <li>FIXME: cutoff by name</li>
+                <li>somewhere a FIXME: resort after moving only after losing focus, so order does not change while using the buttons</li>
                 <li>TODO: implement effects of additional folder controls
                     <ol>
                         <li>simple settings (hint folder.type)</li>
                         <li>keep last status of expert settings: expand or not</li>
                         <li>expert settings: implement immediate effect</li>
                         <li>expert settings: (return to) automatic ordered folders in correct order</li>
+                        <li>checkbox to also apply on subfolders?</li>
                     </ol>
                 </li>
                 <li>once we have our own MRM: shorcut for our own undo (#74)</li>

@@ -334,23 +334,6 @@ const moveSelectedMessageToFolder = async function (expandedFolder, markAsRead) 
   }
 };
 
-/**
- * Get the MailFolder object defined by the account and the path (splitted in an array)
- **/
-const getFolder = function (account, pathArray) {
-  let subFolders = account.folders;
-  let constructedPath = "";
-  let nextFolder = null;
-  for (let pathPart of pathArray) {
-    constructedPath = `${constructedPath}/${pathPart}`;
-    nextFolder = subFolders.find(function (obj) {
-      return obj.path === constructedPath;
-    });
-    subFolders = nextFolder.subFolders;
-  }
-  return nextFolder;
-};
-
 let foldersInList = [];
 const getFolderFromExpanded = async function(expandedFolder) {
   return {
@@ -570,7 +553,7 @@ async function addFolderListPinned(folderList, tmpParent) {
 }
 async function addFolderListAuto(folderList, tmpParent) {
   let settings = await getSettings();
-  if (!alreadySorted) {
+  if (alreadySorted !== true) {
     const sortorder = await common.getFullSortorder(settings,alreadySorted);
     await common.sortFoldersBySortorder(folderList,sortorder);
   }
@@ -587,24 +570,41 @@ async function addFolderList(folderList, tmpParent) {
 }
 let recentFolders, alwaysFolders;
 let recentFoldersSize; // so we don't have to get the length every time
-let oldestTime;
+let firstFolder = undefined;
 let earliestBirth, nbFolders;
-async function addFolderToAutoList(folderAttributeSetting, MRMTimeSetting, folderSettings) {
-  let time = common.parseNumber(MRMTimeSetting);
+/**
+ * needsExpansion is given, as this is the same for all auto folders
+ **/
+async function addFolderToAutoList(folder,cutoffFunction,needsExpansion) {
+  let time = folder.tidybird_time;
+  console.log(time);
+  if(time === undefined) {
+    console.log(folder);
+  }
+  if ( time < earliestBirth ) { // && earliestBirth != -1, but this is always true if condition is true
+    return;
+  }
+
+  if (needsExpansion) {
+    await common.expandFolder(await common.getFolderFromInfo(folder));
+  }
+  let folderComesBeforeCurrentFirst = true;
+  if ( firstFolder !== undefined ) {
+    const cutoffResult = cutoffFunction(folder,firstFolder);
+    folderComesBeforeCurrentFirst = (cutoffResult === 1)
+  } // else this is the first folder
   if (
-    // time == 0 should not happen, this folder should not have an MRMTime in settings
-    ( earliestBirth != -1 && time < earliestBirth )
-    ||
-    ( time <= oldestTime && recentFoldersSize >= nbFolders && nbFolders > -1 )
+    folderComesBeforeCurrentFirst
+    && recentFoldersSize >= nbFolders && nbFolders > -1
   ) {
     // no need to add this folder, it is older than the oldest and we already have enough
     return;
   }
   // update oldestTime
-  if (time < oldestTime) {
-    oldestTime = time;
+  if (folderComesBeforeCurrentFirst) {
+    firstFolder = folder;
   }
-  recentFolders.push({ folderAttributeSetting, time, folderSettings }); // do not expand yet (costly operation and we may throw away this folder)
+  recentFolders.push(folder); // do not expand yet (costly operation and we may throw away this folder)
   recentFoldersSize++;
 }
 /**
@@ -613,17 +613,23 @@ async function addFolderToAutoList(folderAttributeSetting, MRMTimeSetting, folde
  *  so it should do as less as possible
  *  and filter out as much folders as possible
  **/
-async function addFolderToList(folderAttributeSetting, folderSettings, allSettings) {
+async function addFolderToList(folderAttributeSetting, folderSettings, allSettings, showneverused, cutoffFunction, needsExpansion) {
   if (common.folder_doAlwaysShow(folderSettings)) {
-    alwaysFolders.push({folderAttributeSetting, folderSettings}); //without MRM, we will add it when/if needed
+    alwaysFolders.push(common.getTidybirdFolder(folderAttributeSetting, undefined, folderSettings)); //without MRM, we will add it when/if needed
   } else if(common.folder_doAutoShow(folderSettings)) {
+    // always get MRM for these, as either they will be expanded or MRM is needed
     const folderMRMAttribute = "M"+common.getFolderFromSettingsKey(folderAttributeSetting);
     const MRMTimeSetting = allSettings[folderMRMAttribute];
-    if (MRMTimeSetting !== undefined) {
-      addFolderToAutoList(folderAttributeSetting, MRMTimeSetting, folderSettings);
-    } // no auto show, folder never used to move to
+    if (MRMTimeSetting !== undefined || showneverused) {
+      await addFolderToAutoList(
+        common.getTidybirdFolder(folderAttributeSetting, MRMTimeSetting, folderSettings),
+        cutoffFunction,
+        needsExpansion,
+      );
+    } // else: no auto show, folder never used to move to and we don't want to show it
   } //else: never show, do nothing
 }
+
 /**
  * Get the most recently changed folders
  **/
@@ -634,15 +640,26 @@ async function showButtons() {
   //TODO: keep settings synchronized, so we don't have to get them here
   //FIXME: these are old cached settings, so statement above must be done!
   let settings = await getSettings();
-  earliestBirth = settings.maxage;
+  earliestBirth = common.encodeNumber(settings.maxage);
   nbFolders = settings.nbfolders;
 
   recentFolders = [];
   alwaysFolders = [];
   recentFoldersSize = 0;
-  oldestTime = common.getTimestamp(); // initialize, so we don't have to check for undefined every loop
 
   common.resetLists();
+  let cutoffby = settings.folderselection;
+  let cutoffFunction;
+  if ( cutoffby == "sortorder" ) {
+    //TODO get sortorder and check if single attribute; if so, do normal cutoff
+    cutoffFunction = (a,b) => 0; // cutoff can only be done in later stage
+    cutoffby = await common.getFullSortorder(settings, false);
+  } else {
+    cutoffFunction = await common.getSortFunction(cutoffby);
+    cutoffby = [cutoffby];
+  }
+  // If folders in auto list will already be expanded before creating the button
+  let alreadyExpanded = common.isExpansionNeeded(cutoffby, false);
 
   // First get folders, then loop over accounts, so we can honour nb of days and max nb of folders
   //TODO: button to purge old MRMs (for performance)
@@ -650,55 +667,58 @@ async function showButtons() {
   // also handle delete queue of MRM manager here as we run over all settings in most cases
   let allSettings = await messenger.storage.local.get(); // get ALL SET settings
   let defaultSettings = allSettings.Fdefault;
-  if (common.folder_doAlwaysShow(defaultSettings)) {
-    //TODO test
+  if (common.folder_doAlwaysShow(defaultSettings) || settings.showneverused) {
+    console.log("Tidybird using least efficient method, you may experience slowliness and you may want to change settings");
+    //TODO change with neverused if default alwaysshow follow neverused, if per folder also show those that are never used
+    //TODO test for alwaysshow
     // least efficient, but may be desired to always show new folders
-    common.foreachAllFolders(async (folder,account) => {
+    await common.foreachAllFolders(async (folder,account) => {
       let setting = await common.getFolderSettingsKey(folder);
       let folderSettings = allSettings[setting];
       if (folderSettings === undefined) {
         folderSettings = defaultSettings;
       }
-      addFolderToList(setting, folderSettings, allSettings);
+      addFolderToList(setting, folderSettings, allSettings, settings.showneverused, cutoffFunction, alreadyExpanded);
     });
   } else if (common.folder_doNeverShow(defaultSettings)) {
+    //TODO test for nevershow
     // Run only over folders that have settings
     // most efficient, run only over folders with specific settings
     for (let setting in allSettings) {
       if (setting.startsWith("F")) {
-        addFolderToList(setting, allSettings[setting], allSettings);
+        addFolderToList(setting, allSettings[setting], allSettings, settings.showneverused, cutoffFunction, alreadyExpanded);
       }
     }
   } else { // folder_doAutoShow(defaultSettings))
     // First run over folders that have settings
-    // Then run over folder that have timestamps
+    // Then run over folders that have timestamps
     for (const setting in allSettings) {
       if (setting.startsWith("F")) {
         // minority should be handled here
         // these are always handled first
-        addFolderToList(setting, allSettings[setting], allSettings);
+        addFolderToList(setting, allSettings[setting], allSettings, settings.showneverused, cutoffFunction, alreadyExpanded);
       } else if (setting.startsWith("M")) {
         //TODO only if there is still space, set total nb of folders, not auto
         //TODO show number of auto folders where we select total nb of folders
         let folderAttributeSetting = "F"+common.getFolderFromSettingsKey(setting);
         if (allSettings[folderAttributeSetting] === undefined) {
-          addFolderToAutoList(setting, allSettings[setting], allSettings.Fdefault);
-        } //else: already handled above
+          let folder = common.getTidybirdFolder(setting, allSettings[setting], allSettings.Fdefault);
+          // this folder is autoshow and is used, so we don't have to check setting nor showneverused
+          // also, for showneverused, the do_alwaysShow case is used
+          await addFolderToAutoList(folder, cutoffFunction, alreadyExpanded);
+        } //else: already handled by running over the folder settings first
       }
     }
   }
 
   //TODO and no settings and/or always folders
   if (recentFoldersSize == 0 && ( nbFolders == -1 || nbFolders > 0) ) {
-    listParent.innerHTML = "<p>Buttons to move mails will appear (and this message will disappear) once you move a message to a plain mail folder.</p><p>You can also select the folders you want in the Options.<br/>Options can be opened using the \"Options\" button or using the Add-ons Manager</p>";
+    listParent.innerHTML = "<p>Buttons to move mails will appear once you move a message to a simple mail folder.</p><p>You can also select the buttons you want to see in the Options.<br/>Options can be opened using the \"Options\" button or using the Add-ons Manager</p>";
     return;
   }
 
   // now limit to the number we asked for
-  //TODO limit by folderselection setting
-  //FIXME initial folder selection following folderselection setting
   alreadySorted = false;
-  let alreadyExpanded = false;
   if (nbFolders > 1 && recentFoldersSize > nbFolders) {
     let sortby = settings.folderselection;
     let sortorder = [];
@@ -709,36 +729,30 @@ async function showButtons() {
       sortorder = [ sortby ];
       alreadySorted = sortby;
     }
-    if (sortorder != [ "mrmtime" ]) {
-      // need to expand to get information
-      let newList = [];
-      for (const folderInfo of recentFolders) {
-        //FIXME written for folders from mrmtime settings, ok for others?
-        const folder = await common.getFolderFromInfo(folderInfo,'folderAttributeSetting');
-        newList.push(await common.expandFolder(folder));
-      }
-      recentFolders = newList;
-      alreadyExpanded = true;
-    }
+    // expand if needed for cutoff: is already done as we check the cutoff when adding folders
+    //alreadyExpanded = await expandRecentFoldersIfNeeded(sortorder, alreadyExpanded);
+    // sort for cutoff
     await common.sortFoldersBySortorder(recentFolders,sortorder);
-    // at index <first argument>, delete <second argument> elements
+    // cutoff: at index <first argument>, delete <second argument> elements
     recentFolders.splice(nbFolders, recentFoldersSize - nbFolders);
   }
 
   // - Group folders if needed
   // Should be done in order: may already be ordered
   for (let folderInfo of alwaysFolders) {
-    const folder = await common.getFolderFromInfo(folderInfo,'folderAttributeSetting');
-    await common.addExpandedToGroupedList(folder, settings);
+    const folder = await common.getFolderFromInfo(folderInfo);
+    const expandedFolder = await common.expandFolder(folder);
+    await common.addToGroupedList(expandedFolder, settings);
   }
   for (let folderInfo of recentFolders) {
-    let folder;
+    let expandedFolder;
     if (!alreadyExpanded) {
-      folder = await common.getFolderFromInfo(folderInfo,'folderAttributeSetting');
+      const folder = await common.getFolderFromInfo(folderInfo);
+      expandedFolder = await common.expandFolder(folder);
     } else {
-      folder = folderInfo;
+      expandedFolder = folderInfo;
     }
-    await common.addExpandedToGroupedList(folder, settings);
+    await common.addToGroupedList(expandedFolder, settings);
   }
 
   let tmpListParent = document.createDocumentFragment();

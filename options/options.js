@@ -93,114 +93,122 @@ async function addFolder(folder) {
   }
   for (let span of folderEl.getElementsByTagName("span")) {
     if (span.getAttribute("data-name") == "MRM") {
-      if (folder.time) {
-        span.textContent = common.parseDate(folder.time);
+      if (folder.tidybird_time) {
+        span.textContent = common.parseDate(folder.tidybird_time);
       }
     }
   }
   unpinnedOrder.push(folderAttribute); // order if they would all not be pinned, so if they are inpinned, they are put in the right order
   parentEl.appendChild(folderEl);
 }
+
+async function setCurrentChoiceFoldersetting(key, value, doSetFolderOptions) {
+  if(!doSetFolderOptions && !key == "Fdefault") {
+    return;
+  }
+  let folderEl;
+  const folderAttribute = common.getFolderFromSettingsKey(key);
+  const folderEls = document.querySelectorAll(`[data-folder='${folderAttribute}']`);
+  if (!folderEls.length) {
+    console.error(`Did not find the textfield to set ${key}`);
+  } else {
+    for (const thisFolderEl of folderEls) {
+      // there should only be 1
+      folderEl = thisFolderEl;
+    }
+  }
+  if(key == "Fdefault") {
+    // change the inputs of folders with default settings
+    //FIXME
+  } else if(value === undefined) {
+    // settings has been removed => mark as default
+    setDefault(folderEl);
+  } else {
+    // mark as non default, to add "reset" button
+    // remark: when setting with same value as default, we do not remove the "default" status
+    //  as it may be wanted that the folder's settings to not change with default settings
+    setNonDefault(folderEl);
+  }
+  for (const folderSettingName in common.folderSettingValues) {
+    // calculate for every setting value if it is set
+    // can also be done without running over al possible values, but then we need to lookup the value anyway
+    if(common.folderSettingValues[folderSettingName].values === undefined) { // checkbox
+      const inputField = await getFolderinput(key, folderSettingName, folderSettingName);
+      const isChecked = common.folder_hasSetting(folderSettingName, folderSettingName, value);
+      inputField.checked = isChecked;
+      if(folderSettingName == "pin") {
+        let folderParent;
+        //TODO also default folders can be given a place: put new pinned folders above this
+        if(isChecked) {
+          folderEl.classList.add("movable");
+          folderEl.classList.remove("notmovable");
+          folderParent = foldersortEl;
+        } else {
+          folderEl.classList.remove("movable");
+          folderEl.classList.add("notmovable");
+          if(key != "Fdefault") {
+            folderParent = foldergetEl;
+          }
+        }
+        if(folderParent && folderParent != folderEl.parentNode) {
+          folderParent.appendChild(folderEl);
+          //TODO append after default settings (if default pinned)
+          //TODO put in original place if unpinned
+          //FIXME signal order change to tidybird
+        }
+        if(foldersortElSortable !== undefined) {
+          //FIXME sort according to manual sorted folder list
+          //FIXME foldersortElSortable.sort(unpinnedOrder);
+        }
+        if(foldergetElSortable !== undefined) {
+          foldergetElSortable.sort(unpinnedOrder);
+        }
+      }
+    } else {
+      for (const folderSettingsValue in common.folderSettingValues[folderSettingName].values) {
+        const hasSetting = common.folder_hasSetting(folderSettingName, folderSettingsValue, value);
+        if (hasSetting) {
+          const inputField = await getFolderinput(key, folderSettingName, folderSettingsValue);
+          inputField.checked = true;
+        } // else: not checked, uncheck not needed: radio
+      }
+    }
+  }
+}
+
+async function setCurrentChoiceFolderdate(key, value, doSetFolderOptions) {
+  if(!doSetFolderOptions) {
+    return;
+  }
+  let folderAttribute = common.getFolderFromSettingsKey(key);
+  let textFields = document.querySelectorAll(`[data-folder='${folderAttribute}'] [data-name='MRM']`);
+  if (!textFields.length) {
+    console.error(`Did not find the textfield to set ${key}`);
+  } else {
+    for (let textField of textFields) {
+      // there should only be 1
+      textField.textContent = common.parseDate(value);
+    }
+  }
+}
+
 /**
  * Set the current options
  * This may be when opening options page or when changing an options
  * When opening the page, the folder options should not be set as they are added and set
  **/
-async function setCurrentChoice(result,setFolderOptions) {
+async function setCurrentChoice(result,doSetFolderOptions) {
   for (let [key, value] of Object.entries(result)) {
     console.log(`${key}: ${value}`);
     if(key[0] === "F") {
-      if(!setFolderOptions && !key == "Fdefault") {
-        continue;
-      }
-      let folderEl;
-      const folderAttribute = common.getFolderFromSettingsKey(key);
-      const folderEls = document.querySelectorAll(`[data-folder='${folderAttribute}']`);
-      if (!folderEls.length) {
-        console.error(`Did not find the textfield to set ${key}`);
-      } else {
-        for (const thisFolderEl of folderEls) {
-          // there should only be 1
-          folderEl = thisFolderEl;
-        }
-      }
-      if(key == "Fdefault") {
-        // change the inputs of folders with default settings
-        //FIXME
-      } else if(value === undefined) {
-        // settings has been removed => mark as default
-        setDefault(folderEl);
-      } else {
-        // mark as non default, to add "reset" button
-        // remark: when setting with same value as default, we do not remove the "default" status
-        //  as it may be wanted that the folder's settings to not change with default settings
-        setNonDefault(folderEl);
-      }
-      for (const folderSettingName in common.folderSettingValues) {
-        // calculate for every setting value if it is set
-        // can also be done without running over al possible values, but then we need to lookup the value anyway
-        if(common.folderSettingValues[folderSettingName].values === undefined) { // checkbox
-          const inputField = await getFolderinput(key, folderSettingName, folderSettingName);
-          const isChecked = common.folder_hasSetting(folderSettingName, folderSettingName, value);
-          inputField.checked = isChecked;
-          if(folderSettingName == "pin") {
-            let folderParent;
-            //TODO also default folders can be given a place: put new pinned folders above this
-            if(isChecked) {
-              folderEl.classList.add("movable");
-              folderEl.classList.remove("notmovable");
-              folderParent = foldersortEl;
-            } else {
-              folderEl.classList.remove("movable");
-              folderEl.classList.add("notmovable");
-              if(key != "Fdefault") {
-                folderParent = foldergetEl;
-              }
-            }
-            if(folderParent && folderParent != folderEl.parentNode) {
-              folderParent.appendChild(folderEl);
-              //TODO append after default settings (if default pinned)
-              //TODO put in original place if unpinned
-              //FIXME signal order change to tidybird
-            }
-            if(foldersortElSortable !== undefined) {
-              //FIXME sort according to manual sorted folder list
-              //FIXME foldersortElSortable.sort(unpinnedOrder);
-            }
-            if(foldergetElSortable !== undefined) {
-              foldergetElSortable.sort(unpinnedOrder);
-            }
-          }
-        } else {
-          for (const folderSettingsValue in common.folderSettingValues[folderSettingName].values) {
-            const hasSetting = common.folder_hasSetting(folderSettingName, folderSettingsValue, value);
-            if (hasSetting) {
-              const inputField = await getFolderinput(key, folderSettingName, folderSettingsValue);
-              inputField.checked = true;
-            } // else: not checked, uncheck not needed: radio
-          }
-        }
-      }
+      setCurrentChoiceFoldersetting(key, value, doSetFolderOptions);
       continue;
     }
     if(key[0] === "M") {
-      if(!setFolderOptions) {
-        continue;
-      }
-      let folderAttribute = common.getFolderFromSettingsKey(key);
-      let textFields = document.querySelectorAll(`[data-folder='${folderAttribute}'] [data-name='MRM']`);
-      if (!textFields.length) {
-        console.error(`Did not find the textfield to set ${key}`);
-      } else {
-        for (let textField of textFields) {
-          // there should only be 1
-          textField.textContent = common.parseDate(value);
-        }
-      }
+      setCurrentChoiceFolderdate(key, value, doSetFolderOptions);
       continue;
-    }
-    if(key === "manualorder") {
-      if(!setFolderOptions) {
+    } else if(key === "manualorder") {
+      if(!doSetFolderOptions) {
         // no inputs to select
         continue;
       }
@@ -209,7 +217,7 @@ async function setCurrentChoice(result,setFolderOptions) {
       }
       continue;
     }
-    if(key.startsWith("sortorder_") && setFolderOptions) {
+    if(key.startsWith("sortorder_") && doSetFolderOptions) {
       const groupedFolderList = await common.getGroupedFolderList();
       const settings = await messenger.storage.local.get(common.option_defaults);
       const sortorder = await common.getFullSortorder(settings,false);
@@ -252,9 +260,9 @@ async function loadFolders(settings) {
 
   common.resetLists();
   await common.foreachAllFolders(async (folder,account) => {
-    let MRMSettingsKey = common.getFolderMRMSettingsKey(folder);
-    folder.time = (await messenger.storage.local.get(MRMSettingsKey))[MRMSettingsKey];
-    await common.addExpandedToGroupedList(folder, settings);
+    await common.makeTidybirdFolder(folder); // add MRMTime
+    const expandedFolder = await common.expandFolder(folder);
+    await common.addToGroupedList(expandedFolder, settings);
   });
 
   const groupedFolderList = await common.getGroupedFolderList();
