@@ -3,14 +3,14 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "tidybird@ganast.com",
-      "strict_min_version": "102.0",
-      "strict_max_version": "118.*"
+      "strict_min_version": "128.0",
+      "strict_max_version": "128.*"
     }
   },
   "name": "Tidybird",
   "description": "Organize email into folders quickly and easily.",
   "author": "George Anastassakis",
-  "version": "4.6",
+  "version": "4.7",
   "browser_action": {
     "default_icon": "skin/icon.png",
     "default_title": "Tidybird"
@@ -27,14 +27,6 @@
     "theme"
   ],
   "experiment_apis": {
-    "tidybird_api": {
-      "schema": "api/tidybird/schema.json",
-      "parent": {
-        "scopes": ["addon_parent"],
-        "paths": [["tidybird_api"]],
-        "script": "api/tidybird/parent.js"
-      }
-    },
     "ex_customui": {
       "schema": "api/customui/api.json",
       "parent": {

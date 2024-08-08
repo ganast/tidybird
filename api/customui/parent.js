@@ -1,8 +1,6 @@
 var ex_customui = class extends ExtensionCommon.ExtensionAPI {
   getAPI(context) {
     const Cc = Components.classes;
-    const Services = globalThis.Services || 
-      ChromeUtils.import("resource://gre/modules/Services.jsm").Services;
     const { ExtensionParent } = ChromeUtils.import(
         "resource://gre/modules/ExtensionParent.jsm");
     const { setTimeout } = ChromeUtils.import(
@@ -330,7 +328,11 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
     const getGridTemplate = function(container,document) {
       // getComputedStyle replaces variables by pixels
       // they should stay variables, if not, interface is not resizable
-      //return window.getComputedStyle(container).gridTemplate;
+      return document.defaultView.getComputedStyle(container).gridTemplate;
+      
+      // Does not seem to work in 128, using getComputedStyle instead (which does
+      // seem to work as expected).
+      /*
       for (let sheet of document.styleSheets) {
         for (let rule of sheet.rules) {
           if (container.matches(rule.selectorText) && rule.style.gridTemplate) {
@@ -339,6 +341,7 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
         }
       }
       return null;
+      */
     }
 
     // Split grid area/row/column templates into "cells"

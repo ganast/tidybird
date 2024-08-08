@@ -325,7 +325,10 @@ const updateButtonList = async function () {
     foldersInList.pop();
     buttonList.firstChild.remove();
   }
-  browser.tidybird_api.getMRMFolders.addListener(gotMRMFolders, 30);
+  let mostRecentlyModifiedFolders = await browser.folders.query({recent: true});
+  for (let folder of mostRecentlyModifiedFolders) {
+    addButton(folder);
+  }
 };
 
 const updateButtonListIfNeeded = async function (folder, neededIfNotPresent) {
@@ -385,17 +388,6 @@ messenger.folders.onDeleted.addListener(async (deletedFolder) => {
   onFolderEvent(deletedFolder, null, "onDeleted");
 });
 
-/**
- * Get the most recently changed folders
- **/
-async function gotMRMFolders(mostRecentlyModifiedFolders) {
-  for (let folder of mostRecentlyModifiedFolders) {
-    addButton(folder);
-  }
-  browser.tidybird_api.getMRMFolders.removeListener(gotMRMFolders, 30);
-}
-// do with events, as direct return raises an exception
-browser.tidybird_api.getMRMFolders.addListener(gotMRMFolders, 30);
-//TODO: idea: keep our own list of MRM folders, so we can include or exclude any folder. Before of subfolders of removed/renamed folders (with MRM they are no longer in the list)
 
+updateButtonList();
 /* vi: set tabstop=2 shiftwidth=2 softtabstop=2 expandtab: */
