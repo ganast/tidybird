@@ -607,6 +607,11 @@ async function addFolderToAutoList(folder,cutoffFunction,needsExpansion) {
   recentFolders.push(folder); // do not expand yet (costly operation and we may throw away this folder)
   recentFoldersSize++;
 }
+
+async function addMRMandType(folderAttributeSetting) {
+  //FIXME implement and use in addFolderToList
+  mljqdf
+}
 /**
  * Add the folder given in the settings to the appropriate list
  * This is done for, in worst case, all folders
@@ -615,7 +620,11 @@ async function addFolderToAutoList(folder,cutoffFunction,needsExpansion) {
  **/
 async function addFolderToList(folderAttributeSetting, folderSettings, allSettings, showneverused, cutoffFunction, needsExpansion) {
   if (common.folder_doAlwaysShow(folderSettings)) {
-    alwaysFolders.push(common.getTidybirdFolder(folderAttributeSetting, undefined, folderSettings)); //without MRM, we will add it when/if needed
+    //FIXME if has normal MRMtime or (special type MRMtime and showspecials) or showneverused
+    //FIXME also change it this way in the per folder settings if the global settings are like this
+    if(showneverused || true) {
+      alwaysFolders.push(common.getTidybirdFolder(folderAttributeSetting, undefined, folderSettings)); //without MRM, we will add it when/if needed
+    }
   } else if(common.folder_doAutoShow(folderSettings)) {
     // always get MRM for these, as either they will be expanded or MRM is needed
     const folderMRMAttribute = "M"+common.getFolderFromSettingsKey(folderAttributeSetting);

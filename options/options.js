@@ -43,7 +43,40 @@ const addAccount = function (accountName) {
   accountRow.append(accountCell);
   foldergetEl.append(accountRow);
 }
-async function addFolder(folder) {
+/**
+ * Calculate default folder settings
+ * @param {TidybirdFolder} folder folder to calculate settings for
+ * @param {boolean} folderstoshow_default if true, use thunderbird setting whether to show special folders or not
+ * @param {number} Fdefault default settings value
+ * @returns 
+ */
+function calculate_simpleSetting(folder, Fdefault) {
+  const folderstoshow_default = settings.folderstoshow_default;
+  // follow default and simple settings: folders with shortcuts
+  if(common.isSpecialFolder(folder) && folderstoshow_default) {
+    // internally, special folder detection is done by saving the MRM of these folders elsewhere (as Thunderbird does)
+    // folderOptions is undefined here, so we must take Fdefault options
+    // folderstoshow_default is true, so we follow Thunderbird defaults: never show special folders
+    return common.setFolderSetting("show","never",Fdefault);
+  } //else: default behaviour
+}
+/**
+ * Get the settings of a folder
+ * @param {Folder} folder
+ */
+async function getFolderOptions(folder) {
+  const folderOptionsAttribute = common.getFolderSettingsKey(folder);
+  const folderSettings = (await messenger.storage.local.get([folderOptionsAttribute]));
+  return folderSettings[folderOptionsAttribute];
+}
+/**
+ * Add a folder's html settings view to the corresponding html element
+ * 
+ * @param {TidybirdFolder} folder 
+ * @param {number} Fdefault Default settings for all folders without settings
+ * @param {boolean} folderstoshow_default "Simple" folder setting: whether to show special folders or not
+ */
+async function addFolder(folder,Fdefault,folderstoshow_default) {
   let folderEl;
   if (folderElTemplate === undefined) {
     folderElTemplate = document.getElementById("defaultfolder");
@@ -51,9 +84,7 @@ async function addFolder(folder) {
   folderEl = folderElTemplate.cloneNode(true);
   folderEl.removeAttribute('id');
 
-  let folderAttribute = folder.internalPath;
-  let folderOptionsAttribute = "F"+folderAttribute;
-
+  let folderAttribute = common.getFolderAttributename(folder);
   folderEl.setAttribute("data-folder",folderAttribute);
   let col_next = folderEl.firstElementChild; // col_handle
   col_next = col_next.nextElementSibling; // col_name
@@ -61,17 +92,24 @@ async function addFolder(folder) {
 
   let parentEl = foldergetEl;
 
-  let settings = (await messenger.storage.local.get([folderOptionsAttribute]));
-  let folderOptions = settings[folderOptionsAttribute];
+  let folderOptions = await getFolderOptions(folder);
   if (folderOptions !== undefined) {
     setNonDefault(folderEl);
+  } else {
+    // if default options, follow default and simple settings: folders with shortcuts
+    // default settings are already taken by copying html
+    // so there is only the simple setting to take care of
+    folderOptions = calculate_simpleSetting(folder, Fdefault);
   }
   // we are out of DOM, so no querySelectorAll here
+  // Things done in this loop:
+  // * set input names
+  // * apply non default folder options
   for (let input of folderEl.getElementsByTagName("input")) {
     if (input.name) {
       let settingname = common.getSettingFromInput(input);
       // the name must be unique per folder for the radio buttons, so we set one here
-      input.name = await getFolderinputName(folderOptionsAttribute, settingname);
+      input.name = await getFolderinputName(folderAttribute, settingname);
       if (folderOptions !== undefined) {
         if (common.folder_hasSetting(settingname, input.value, folderOptions)) {
           input.checked = true;
@@ -106,7 +144,33 @@ async function setCurrentChoiceFoldersetting(key, value, doSetFolderOptions) {
   if(!doSetFolderOptions && !key == "Fdefault") {
     return;
   }
-  let folderEl;
+  const folderEl = findFolderElement(key);
+  if(key == "Fdefault") {
+    // change the inputs of folders with default settings
+    await common.foreachAllFolders(async (folder,account) => {
+      const folderAttribute = common.getFolderAttributename(folder);
+      let folderOptions = await getFolderOptions(folder);
+      if(folderOptions === undefined) {
+        folderOptions = calculate_simpleSetting(folder, value);
+      } //else: specific folder settings set, no need to change with default
+      //FIXME copy default options & set input names? => probably better to run over all inputs
+      //setCurrentChoiceFoldersettingByAttribute(folderAttribute, ..., true, false);
+      //FIXME if default, then set new default value, but don't mark as non default
+    });
+  } else if(value === undefined) {
+    // settings has been removed => mark as default
+    // FIXME take value from default
+    setDefault(folderEl);
+  } else {
+    // mark as non default, to add "reset" button
+    // remark: when setting with same value as default, we do not remove the "default" status
+    //  as it may be desired that the folder's settings to not change with default settings
+    setNonDefault(folderEl);
+  }
+  await displayFolderSettings(key, value, folderEl);
+}
+
+function findFolderElement(key) {
   const folderAttribute = common.getFolderFromSettingsKey(key);
   const folderEls = document.querySelectorAll(`[data-folder='${folderAttribute}']`);
   if (!folderEls.length) {
@@ -114,53 +178,44 @@ async function setCurrentChoiceFoldersetting(key, value, doSetFolderOptions) {
   } else {
     for (const thisFolderEl of folderEls) {
       // there should only be 1
-      folderEl = thisFolderEl;
+      return thisFolderEl;
     }
   }
-  if(key == "Fdefault") {
-    // change the inputs of folders with default settings
-    //FIXME
-  } else if(value === undefined) {
-    // settings has been removed => mark as default
-    setDefault(folderEl);
-  } else {
-    // mark as non default, to add "reset" button
-    // remark: when setting with same value as default, we do not remove the "default" status
-    //  as it may be wanted that the folder's settings to not change with default settings
-    setNonDefault(folderEl);
-  }
+}
+
+async function displayFolderSettings(key, value, folderEl) {
   for (const folderSettingName in common.folderSettingValues) {
     // calculate for every setting value if it is set
     // can also be done without running over al possible values, but then we need to lookup the value anyway
-    if(common.folderSettingValues[folderSettingName].values === undefined) { // checkbox
+    if (common.folderSettingValues[folderSettingName].values === undefined) { // checkbox
       const inputField = await getFolderinput(key, folderSettingName, folderSettingName);
       const isChecked = common.folder_hasSetting(folderSettingName, folderSettingName, value);
       inputField.checked = isChecked;
-      if(folderSettingName == "pin") {
+      if (folderSettingName == "pin") {
         let folderParent;
         //TODO also default folders can be given a place: put new pinned folders above this
-        if(isChecked) {
+        if (isChecked) {
           folderEl.classList.add("movable");
           folderEl.classList.remove("notmovable");
           folderParent = foldersortEl;
         } else {
           folderEl.classList.remove("movable");
           folderEl.classList.add("notmovable");
-          if(key != "Fdefault") {
+          if (key != "Fdefault") {
             folderParent = foldergetEl;
           }
         }
-        if(folderParent && folderParent != folderEl.parentNode) {
+        if (folderParent && folderParent != folderEl.parentNode) {
           folderParent.appendChild(folderEl);
           //TODO append after default settings (if default pinned)
           //TODO put in original place if unpinned
           //FIXME signal order change to tidybird
         }
-        if(foldersortElSortable !== undefined) {
+        if (foldersortElSortable !== undefined) {
           //FIXME sort according to manual sorted folder list
           //FIXME foldersortElSortable.sort(unpinnedOrder);
         }
-        if(foldergetElSortable !== undefined) {
+        if (foldergetElSortable !== undefined) {
           foldergetElSortable.sort(unpinnedOrder);
         }
       }
@@ -170,7 +225,7 @@ async function setCurrentChoiceFoldersetting(key, value, doSetFolderOptions) {
         if (hasSetting) {
           const inputField = await getFolderinput(key, folderSettingName, folderSettingsValue);
           inputField.checked = true;
-        } // else: not checked, uncheck not needed: radio
+        }
       }
     }
   }
@@ -200,6 +255,7 @@ async function setCurrentChoiceFolderdate(key, value, doSetFolderOptions) {
 async function setCurrentChoice(result,doSetFolderOptions) {
   for (let [key, value] of Object.entries(result)) {
     console.log(`${key}: ${value}`);
+    settings[key] = value; // set value in cache
     if(key[0] === "F") {
       setCurrentChoiceFoldersetting(key, value, doSetFolderOptions);
       continue;
@@ -219,7 +275,6 @@ async function setCurrentChoice(result,doSetFolderOptions) {
     }
     if(key.startsWith("sortorder_") && doSetFolderOptions) {
       const groupedFolderList = await common.getGroupedFolderList();
-      const settings = await messenger.storage.local.get(common.option_defaults);
       const sortorder = await common.getFullSortorder(settings,false);
       await common.sortFoldersBySortorder(groupedFolderList.folderList.auto, sortorder);
       // no folders have been removed, so just move them in the corect order
@@ -277,7 +332,7 @@ async function loadFolders(settings) {
     }
     await common.sortFoldersBySortorder(groupedFolderList[accountSortValue].auto, sortorder);
     for (let expandedFolder of groupedFolderList[accountSortValue].auto) {
-      await addFolder(expandedFolder);
+      await addFolder(expandedFolder, settings.Fdefault, settings.folderstoshow_default);
     }
   }
 
@@ -354,7 +409,8 @@ function calculateFolderSetting(theRow) {
   for (let checkedInput of checkedInputs) {
     const inputname = common.getSettingFromInput(checkedInput);
     console.log(`Getting values for ${inputname}`);
-    folderSettings += common.calculateFolderSingleSettingValue(inputname,checkedInput.value);
+    //TODO OR together, so we are safe and do not count same twice?
+    folderSettings |= common.calculateFolderSingleSettingValue(inputname,checkedInput.value);
   }
   return folderSettings;
 }
@@ -382,9 +438,6 @@ async function folderClick(theEvent) {
   }
 }
 async function folderInput(theEvent) {
-  console.log(this);
-  console.log(theEvent);
-
   let theInput = theEvent.target;
   if(theInput.name === undefined) {
     // input without a name, event not thrown by an input of ours (probably sortable)
@@ -399,6 +452,12 @@ async function folderInput(theEvent) {
   setFolderSettings(foldername, folderSettings);
 }
 
+let settings;
+async function setCache(newSettings) {
+  settings = newSettings;
+  return settings;
+}
+
 let foldersortEl, foldergetEl, foldersortElSortable, foldergetElSortable;
 document.addEventListener("DOMContentLoaded", domReady);
 function domReady() {
@@ -411,9 +470,11 @@ function domReady() {
     input.addEventListener("input", save);
   }
 
-  let settingsPromise = messenger.storage.local.get(common.option_defaults);
-  settingsPromise.then((settings) => setCurrentChoice(settings,false));
-  settingsPromise.then((settings) => loadFolders(settings))
+  const settingsPromise = messenger.storage.local.get(common.option_defaults);
+  // save whole cache at once, to immediatly have all settings available
+  const settingsCachePromise = settingsPromise.then((settings) => setCache(settings));
+  settingsCachePromise.then((settings) => setCurrentChoice(settings,false));
+  settingsCachePromise.then((settings) => loadFolders(settings))
   .then(() => {
     // update the settings shown in this window as:
     // * they may have been changed in another window

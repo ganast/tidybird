@@ -15,7 +15,7 @@ export const option_defaults = {
   folderselection: "mostrecent",
   maxage: 30,
   showneverused: false,
-  folderstoshow_default: false,
+  folderstoshow_default: true,
 
   Fdefault: 0,
   manualorder: [],
@@ -44,22 +44,76 @@ export const folderSettingValues = {
     }
   }
 };
+/**
+ * Get a setting's value at the correct index
+ * @param {string} settingName Name of the setting
+ * @param {number} settingValue Number value of the setting
+ * @returns  {number} setting's value at the correct index
+ */
+export const getSettingIndexedValue = function(settingName, settingValue) {
+  return settingValue << folderSettingValues[settingName].bitindex;
+}
+/**
+ * Get a setting's bitmask at the correct index: full set of 1s at the right place
+ * @param {string} settingName Name of the setting to verify
+ * @returns  {number} setting's bitmask at correct index
+ */
+export const getSettingBitmask = function(settingName) {
+  return getSettingIndexedValue(settingName,folderSettingValues[settingName].bitmask);
+}
+/**
+ * Calculate the setting value of a single setting
+ * 
+ * @param {string} name Name of the setting
+ * @param {number} value Numerical value of this single setting
+ * @returns {number}
+ */
+const calculateFolderSingleSetttingValueBySingleValue = function(name, value) {
+  if (value > 0) {
+    value = getSettingIndexedValue(name, value);
+  }
+  return value;
+}
+/**
+ * Calculate the number representation of a certain setting value
+ * @param {string} name Name of the setting
+ * @param {string} textvalue Value of the setting
+ * @returns {number} Bit number representing the setting value
+ */
 export const calculateFolderSingleSettingValue = function(name, textvalue) {
   let value = 1; // if no "values" in the settingValues, then 1 (checkbox is checked)
   let settingValues = folderSettingValues[name];
   if (settingValues.values !== undefined) {
     value = settingValues.values[textvalue];
   }
-  if (value > 0) {
-    value = value << settingValues.bitindex
-  }
-  return value;
+  return calculateFolderSingleSetttingValueBySingleValue(name, value);
 }
+/**
+ * Verify if a folder's settings has a certain setting value set
+ * @param {string} settingName Name of the setting to verify
+ * @param {string} valueName Value of the setting to verify
+ * @param {number} folderSettingValue The settings in which we want to verify if the setting value is set
+ * @returns  {boolean} Whether the setting value is set in the folderSettingValue
+ */
 export const folder_hasSetting = function(settingName, valueName, folderSettingValue) {
-  const settingConfiguration = folderSettingValues[settingName];
   const calculatedFolderSettingValue = calculateFolderSingleSettingValue(settingName,valueName);
-  const maskedSetting = (folderSettingValue & (settingConfiguration.bitmask << settingConfiguration.bitindex));
+  const maskedSetting = (folderSettingValue & getSettingBitmask(settingName));
   return maskedSetting === calculatedFolderSettingValue;
+}
+/**
+ * Set a setting in a settings value
+ */
+export const setFolderSetting = function(settingName, valueName, folderSettingValue) {
+  let updatedFolderSettingValue = folderSettingValue;
+  let andMask = 0; // mask to get the unchanged values
+  for (let name in folderSettingValues) {
+    if(name !== settingName) {
+      andMask |= getSettingBitmask(name); // and with full bitmask, so this setting does not change value
+    }
+  }
+  updatedFolderSettingValue &= andMask; // the unchanged values
+  updatedFolderSettingValue |= calculateFolderSingleSettingValue(settingName, valueName); // set the changed value
+  return updatedFolderSettingValue;
 }
 export const folder_doAutoShow = function(settings) {
   return folder_hasSetting("show","auto",settings);
@@ -407,4 +461,9 @@ export const sortFoldersBySortorder = async function(folderList,sortorder) {
   for (let sortby of sortorder) {
     folderList.sort(await getSortFunction(sortby));
   }
+}
+
+export const isSpecialFolder = function(folder) {
+  const foldertype = folder.type;
+  return foldertype == "trash" || foldertype == "archives" || foldertype == "junk";
 }
