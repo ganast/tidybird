@@ -153,7 +153,7 @@ applyThemeColors();
  * Keep track of the width
  *  must be run in this context: access to window
  **/
-async function windowRemovedListener(anEvent) {
+async function windowRemovedListener() {
   let innerWidth = window.innerWidth;
   if (innerWidth != 0) {
     // as the context is removed in TB78, the width is 0
