@@ -326,22 +326,25 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
 
     // get the grid-template css rule of a container
     const getGridTemplate = function(container,document) {
-      // getComputedStyle replaces variables by pixels
-      // they should stay variables, if not, interface is not resizable
-      return document.defaultView.getComputedStyle(container).gridTemplate;
-      
-      // Does not seem to work in 128, using getComputedStyle instead (which does
-      // seem to work as expected).
-      /*
+      // getComputedStyle returns current style which is not reset since 128
+      //return document.defaultView.getComputedStyle(container).gridTemplate;
+
       for (let sheet of document.styleSheets) {
         for (let rule of sheet.rules) {
-          if (container.matches(rule.selectorText) && rule.style.gridTemplate) {
-            return rule.style.gridTemplate;
+          if (container.matches(rule.selectorText)) {
+            if (rule.style.gridTemplate) {
+              return rule.style.gridTemplate;
+            }
+            // needed since 128: selector with class name according to layout
+            for (let cssRule of rule.cssRules) {
+              if (container.matches(cssRule.selectorText)) {
+                return cssRule.style.gridTemplate;
+              }
+            }
           }
         }
       }
       return null;
-      */
     }
 
     // Split grid area/row/column templates into "cells"
