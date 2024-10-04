@@ -1,0 +1,37 @@
+[
+  {
+    "namespace": "tidybird_api",
+    "functions": [
+    ],
+    "events": [
+      {
+        "name": "getMRMFolders",
+        "type": "function",
+        "description": "ask to return the MRM folders",
+        "parameters": [
+          {
+            "name": "parentItem",
+            "$ref": "folders.MailFolder"
+          },
+          {
+            "name": "item",
+            "$ref": "messages.MessageHeader"
+          },
+          {
+            "name": "eventName",
+            "type": "string"
+          }
+        ],
+        "extraParameters": [
+          {
+            "name": "number",
+            "description": "number of MRM folders to return",
+            "type": "integer",
+            "required": true
+          }
+        ]
+
+      }
+    ]
+  }
+]
