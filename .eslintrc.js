@@ -16,6 +16,7 @@ module.exports = {
   },
   rules: {
     "spaced-comment": "off",
+    "no-console": "off",
   },
   globals: {
     messenger: true,

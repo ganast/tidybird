@@ -1,11 +1,11 @@
 // Import some things we need.
-var { ExtensionCommon } = ChromeUtils.import(
-  "resource://gre/modules/ExtensionCommon.jsm"
+var { ExtensionCommon } = ChromeUtils.importESModule(
+  "resource://gre/modules/ExtensionCommon.sys.mjs"
 );
 
 // get MRMFolders
-var { MailServices } = ChromeUtils.import(
-  "resource:///modules/MailServices.jsm"
+var { MailServices } = ChromeUtils.importESModule(
+  "resource:///modules/MailServices.sys.mjs"
 );
 
 // var tidybird_api is used by TB: defined in manifest.json
@@ -47,7 +47,7 @@ var tidybird_api = class extends ExtensionCommon.ExtensionAPI {
       callback(folderArray); //immediately call callback
     };
 
-    this.removeCallback = function (callback, listenerEvent, ...args) {
+    this.removeCallback = function () {
       // do nothing
     };
 

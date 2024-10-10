@@ -1,14 +1,12 @@
 var ex_customui = class extends ExtensionCommon.ExtensionAPI {
   getAPI(context) {
     const Cc = Components.classes;
-    const Services = globalThis.Services || 
-      ChromeUtils.import("resource://gre/modules/Services.jsm").Services;
-    const { ExtensionParent } = ChromeUtils.import(
-        "resource://gre/modules/ExtensionParent.jsm");
-    const { setTimeout } = ChromeUtils.import(
-        "resource://gre/modules/Timer.jsm");
-    const { E10SUtils } = ChromeUtils.import(
-        "resource://gre/modules/E10SUtils.jsm");
+    const { ExtensionParent } = ChromeUtils.importESModule(
+        "resource://gre/modules/ExtensionParent.sys.mjs");
+    const { setTimeout } = ChromeUtils.importESModule(
+        "resource://gre/modules/Timer.sys.mjs");
+    const { E10SUtils } = ChromeUtils.importESModule(
+        "resource://gre/modules/E10SUtils.sys.mjs");
 
     const XULNS =
         "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
@@ -328,13 +326,21 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
 
     // get the grid-template css rule of a container
     const getGridTemplate = function(container,document) {
-      // getComputedStyle replaces variables by pixels
-      // they should stay variables, if not, interface is not resizable
-      //return window.getComputedStyle(container).gridTemplate;
+      // getComputedStyle returns current style which is not reset since 128
+      //return document.defaultView.getComputedStyle(container).gridTemplate;
+
       for (let sheet of document.styleSheets) {
         for (let rule of sheet.rules) {
-          if (container.matches(rule.selectorText) && rule.style.gridTemplate) {
-            return rule.style.gridTemplate;
+          if (container.matches(rule.selectorText)) {
+            if (rule.style.gridTemplate) {
+              return rule.style.gridTemplate;
+            }
+            // needed since 128: selector with class name according to layout
+            for (let cssRule of rule.cssRules) {
+              if (container.matches(cssRule.selectorText)) {
+                return cssRule.style.gridTemplate;
+              }
+            }
           }
         }
       }
