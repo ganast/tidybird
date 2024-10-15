@@ -717,7 +717,7 @@ async function showButtons() {
         //TODO show number of auto folders where we select total nb of folders
         let folderAttributeSetting = "F"+common.getFolderFromSettingsKey(setting);
         if (allSettings[folderAttributeSetting] === undefined) {
-          let folder = common.getTidybirdFolder(setting, allSettings[setting], allSettings.Fdefault);
+          let folder = common.getTidybirdFolder(folderAttributeSetting, allSettings[setting], allSettings.Fdefault);
           // this folder is autoshow and is used, so we don't have to check setting nor showneverused
           // also, for showneverused, the do_alwaysShow case is used
           await addFolderToAutoList(folder, cutoffFunction, alreadyExpanded);

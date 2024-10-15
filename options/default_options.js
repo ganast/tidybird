@@ -257,7 +257,10 @@ export const getTidybirdFolder = function(folderAttributeSetting, MRMTimeSetting
 export const makeTidybirdFolder = async function(folder) {
   const MRMSettingsKey = getFolderMRMSettingsKey(folder);
   const settings = await messenger.storage.local.get(MRMSettingsKey);
-  folder.tidybird_time = settings[MRMSettingsKey];
+  const tidybirdFolderAttributes = getTidybirdFolder(getFolderSettingsKey(folder),settings[MRMSettingsKey],undefined);
+  for (const tidybirdFolderAttribute in tidybirdFolderAttributes) {
+    folder[tidybirdFolderAttribute] = tidybirdFolderAttributes[tidybirdFolderAttribute];
+  }
   return folder;
 }
 /**
@@ -394,8 +397,7 @@ export const getAttributeSortFunctionNeeds = function(sortby) {
     case "reversenamecasein":
       return "name";
     case "fullpath":
-      // is an encoded fullpath, TODO just make sure all prefixes are the same
-      // we use this so an expand is not needed before cutoff
+      // is an encoded fullpath, we use this so an expand is not needed before cutoff
       return "tidybird_attributename";
     case "parentname":
       return "parentName";
