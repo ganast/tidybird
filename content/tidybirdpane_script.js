@@ -1,5 +1,7 @@
 import * as common from '../options/default_options.js';
 
+const hasExpertSettings = false;
+
 // settings cache, kept up to date using updateSetting
 let settingsCache;
 
@@ -728,7 +730,11 @@ async function showButtons() {
 
   //TODO and no settings and/or always folders
   if (recentFoldersSize == 0 && ( nbFolders == -1 || nbFolders > 0) ) {
-    listParent.innerHTML = "<p>Buttons to move mails will appear once you move a message to a simple mail folder.</p><p>You can also select the buttons you want to see in the Options.<br/>Options can be opened using the \"Options\" button or using the Add-ons Manager</p>";
+    let text = "<p>Buttons to move mails will appear once you move a message to a simple mail folder.</p>";
+    if(hasExpertSettings) {
+      text += "<p>You can also select the buttons you want to see in the Options.<br/>Options can be opened using the \"Options\" button or using the Add-ons Manager</p>";
+    }
+    listParent.innerHTML = text;
     return;
   }
 

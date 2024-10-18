@@ -133,6 +133,7 @@ async function addFolder(folder,Fdefault,folderstoshow_default) {
     if (span.getAttribute("data-name") == "MRM") {
       if (folder.tidybird_time) {
         span.textContent = common.parseDate(folder.tidybird_time);
+        // folderInfo.lastUsed can't be used, this is (or also includes) last time folder was opened
       }
     }
   }

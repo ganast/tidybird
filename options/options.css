@@ -39,3 +39,6 @@
 .default button.resetbutton {
     display: none;
 }
+.hidden {
+  display: none;
+}
