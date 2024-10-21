@@ -844,17 +844,17 @@ eslint-plugin-json@^3.1.0:
     lodash "^4.17.21"
     vscode-json-languageservice "^4.1.6"
 
-eslint-plugin-mozilla@^3.7.5:
-  version "3.7.5"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-mozilla/-/eslint-plugin-mozilla-3.7.5.tgz#2c33ca631bbbbd0f6c9a81e6774927a845f1d64d"
-  integrity sha512-ydf31HfL4SqnL2gSEA4yEBJM3TCG47u/I2xChGVoxKOBDlGZVhLKexo56rFGSibGUwXZIXdZqtbhuAAYm7j4Wg==
+eslint-plugin-mozilla@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-mozilla/-/eslint-plugin-mozilla-4.0.0.tgz#7bf023a4b3eba3e9efce95faacb2eb38cf5dfc80"
+  integrity sha512-iFrCuOmmyQ8FjKDkj9y6C2ecUVHBcDrsVqRxKYptLkTqiagrHBLuhJZK+WcXimTkjjE5+A2GvlJmQu2BEblrYw==
   dependencies:
     eslint-scope "^7.2.2"
     eslint-visitor-keys "^3.4.3"
     espree "^9.6.1"
     estraverse "^5.3.0"
     htmlparser2 "^9.1.0"
-    toml-eslint-parser "0.9.3"
+    toml-eslint-parser "0.10.0"
 
 eslint-plugin-no-unsanitized@4.0.2:
   version "4.0.2"
@@ -2429,10 +2429,10 @@ tmp@0.2.3:
   resolved "https://registry.yarnpkg.com/tmp/-/tmp-0.2.3.tgz#eb783cc22bc1e8bebd0671476d46ea4eb32a79ae"
   integrity sha512-nZD7m9iCPC5g0pYmcaxogYKggSfLsdxl8of3Q/oIbqCqLLIO9IAF0GWjX1z9NZRHPiXv8Wex4yDCaZsgEw0Y8w==
 
-toml-eslint-parser@0.9.3:
-  version "0.9.3"
-  resolved "https://registry.yarnpkg.com/toml-eslint-parser/-/toml-eslint-parser-0.9.3.tgz#fc02498ba76e935f888c4b68b00e75b59789d272"
-  integrity sha512-moYoCvkNUAPCxSW9jmHmRElhm4tVJpHL8ItC/+uYD0EpPSFXbck7yREz9tNdJVTSpHVod8+HoipcpbQ0oE6gsw==
+toml-eslint-parser@0.10.0:
+  version "0.10.0"
+  resolved "https://registry.yarnpkg.com/toml-eslint-parser/-/toml-eslint-parser-0.10.0.tgz#52000b150a8b298feefeea701c29cca8b4730a38"
+  integrity sha512-khrZo4buq4qVmsGzS5yQjKe/WsFvV8fGfOjDQN0q4iy9FjRfPWRgTFrU8u1R2iu/SfWLhY9WnCi4Jhdrcbtg+g==
   dependencies:
     eslint-visitor-keys "^3.0.0"
 

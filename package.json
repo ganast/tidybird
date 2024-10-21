@@ -29,7 +29,7 @@
     "eslint-plugin-fetch-options": "^0.0.5",
     "eslint-plugin-html": "^8.1.2",
     "eslint-plugin-json": "^3.1.0",
-    "eslint-plugin-mozilla": "^3.7.5",
+    "eslint-plugin-mozilla": "^4.0.0",
     "eslint-plugin-prettier": "^5.2.1",
     "prettier": "^3.3.3",
     "web-ext": "^8.3.0",
