@@ -23,6 +23,7 @@ list-style-image: url("chrome://tidybird/skin/icon.png");
   flex-wrap: wrap;
   word-break: break-word; /* at least for tooltips! TODO should this be a toggle setting for the button text? */
   height: auto;
+  align-content: center;
 }
 
 .hidden {
