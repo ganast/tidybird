@@ -6,7 +6,7 @@ import Sortable from './sortablejs/modular/sortable.core.esm.js';
 // general options can't start with "F" or "M"
 // those are reserved for folder Options and MRMTime
 // yes, it is cryptic, but it takes the least space
-import * as common from './default_options.js';
+import * as common from '../tidybird_common.js';
 
 async function save() {
   let value;

@@ -1,4 +1,4 @@
-import * as common from '../options/default_options.js';
+import * as common from '../tidybird_common.js';
 
 const hasExpertSettings = false;
 

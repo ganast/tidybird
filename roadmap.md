@@ -1,6 +1,5 @@
 
 1. 5.0 Test thoroughly if everything works and release (without expert settings)
-    1. move default_options.js to elsewhere with different name
     1. change "initial sorting" description based on real initial order by cutoff
     1. simple settings: use in tidybird folderlist (without changing per folder settings)
     1. resort after moving only after losing focus, so order does not change while using the buttons
