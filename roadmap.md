@@ -1,9 +1,10 @@
 
 1. 5.0 Test thoroughly if everything works and release (without expert settings)
-    1. change "initial sorting" description based on real initial order by cutoff
+    1. sorting:
+        1. Test in buttonlist
+        1. resort after moving only after losing focus, so order does not change while using the buttons
     1. simple settings: use in tidybird folderlist (without changing per folder settings)
     1. add mark as read to simple settings (default for all buttons)
-    1. resort after moving only after losing focus, so order does not change while using the buttons
     1. Check if we handled remarks in ATN reviews & github issues
     1. Moved folders not removed from MRM => remove folders in buttons that do not longer exist if we don't run over the folders but over the settings
     1. add debug messages including timing & export (see tbsync)
@@ -55,3 +56,15 @@
     1. right click on button to persist|pinontop button in tidybird list
     1. separator yes/no between fixed & auto buttons
     1. update options folder list on creation/deletion
+1. Additional options
+    1. sort by folder pane order (folder capabilities!). Order (+ subdirectories):
+        1. Inbox
+        1. Drafts
+        1. Templates
+        1. Sent
+        1. Archive
+        1. Spam
+        1. Trash
+        1. Outbox
+        1. others (case insentitive)
+    1. more user-friendly "-1" alternative: checkbox disabling number selection(?)

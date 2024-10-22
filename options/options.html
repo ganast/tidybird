@@ -47,11 +47,10 @@
             <h2>Sorting</h2>
             <div>
                 Sort automatic sorted folders by:
-                <!-- TODO: by default, folders should be ordered as listed in the folder pane, not by most recent -->
                 <ol start="0">
                     <li>
                         <input id="sortorder_no" name="sortorder_initial" type="radio" value="no"/>
-                        <label for="sortorder_no">no initial sorting: <span>most recently used because cutoff; otherwise</span> order is as received from setting list, for efficiency.</label>
+                        <label for="sortorder_no">no initial sorting: as received from settings<!--same as "most recently used" when cutoff is this--></label>
                     </li>
                     <li>
                         <input id="sortorder_mostrecent" name="sortorder_initial" type="radio" value="mostrecent"/>
