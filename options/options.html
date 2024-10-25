@@ -66,7 +66,7 @@
                     </li>
                     <li>
                         <input id="sortorder_parentname" name="sortorder_parentname" type="checkbox" value="parentname"/>
-                        <label for="sortorder_parentname">shown parent name</label>
+                        <label for="sortorder_parentname">parent folder name</label>
                     </li>
                     <li>
                         <input id="sortorder_accountname" name="sortorder_accountname" type="checkbox" value="accountname"/>
@@ -81,24 +81,23 @@
 
             <h2>Folders to show</h2>
             <div>
-                <h3>Folders to show: general settings</h3>
                 <div class="browser-style">
                     <label for="nbfolders">Number of folders to automatically show (-1: all):</label>
                     <input id="nbfolders" name="nbfolders" type="number" size=3 min="-1"/>
                 </div>
                 <div class="browser-style">
-                    Cut off the abundant folders by:
+                    Select the first folders from the all folders when sorted by:
                     <div class="browser-style">
                         <input id="folderselection_sortorder" name="folderselection" type="radio" value="sortorder"/>
-                        <label for="folderselection_sortorder">sorted order (cut off last folders)</label>
+                        <label for="folderselection_sortorder">sorted order in list (Show the first folders in the list)</label>
                     </div>
                     <div class="browser-style">
                         <input id="folderselection_mostrecent" name="folderselection" type="radio" value="mostrecent"/>
-                        <label for="folderselection_mostrecent">recently moved to date (show most recently used folders)</label>
+                        <label for="folderselection_mostrecent">recently moved to date (Show most recently used folders)</label>
                     </div>
                     <div class="browser-style">
                         <input id="folderselection_fullpath" name="folderselection" type="radio" value="fullpath"/>
-                        <label for="folderselection_fullpath">full path (as shown in tooltip)</label>
+                        <label for="folderselection_fullpath">full path</label>
                     </div>
                     <div class="browser-style">
                         <input id="folderselection_namecasein" name="folderselection" type="radio" value="namecasein"/>
