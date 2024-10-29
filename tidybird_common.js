@@ -6,7 +6,7 @@ export const option_defaults = {
   isShowing: true,
   width: 224,
 
-  sortorder_initial: "mostrecent",
+  sortorder_initial: "namecasein",
   sortorder_parentname: false,
   sortorder_accountname: false,
   groupby_account: false,

@@ -1,13 +1,15 @@
 
 1. 5.0 Test thoroughly if everything works and release (without expert settings)
-    1. sorting:
-        1. Test in buttonlist
-        1. resort after moving only after losing focus, so order does not change while using the buttons
+    1. resort after moving only after losing focus, so order does not change while using the buttons
     1. simple settings: use in tidybird folderlist (without changing per folder settings)
-    1. add mark as read to simple settings (default for all buttons)
     1. Check if we handled remarks in ATN reviews & github issues
     1. Moved folders not removed from MRM => remove folders in buttons that do not longer exist if we don't run over the folders but over the settings
-    1. add debug messages including timing & export (see tbsync)
+    1. Check number of redrawals => do not redraw when nothing changes!
+    1. Maybe for quick successor 5.1 (and move 5.1 to 5.2)
+        1. reset own MRM list with TB list: button in options
+        1. easier debugging of issues:
+            1. add debug messages including timing & export (see tbsync)
+            1. create export/copy of anonymized settings + full folder structure & account types to include in bug report
     1. TODOs & FIXMEs
     1. Create 5.0 release & test following procedure
     1. Store release procedure (once tested)
@@ -41,7 +43,8 @@
     1. deprecated: folder.type
     1. test other folder types (search, ...)
     1. deprecated: getSubFolders(folder) -> uses now folderId => no folder object needed anymore, check functions using it and supporting functions to get folder object
-1. 5.2 Other optimisations
+1. 5.2+ Other optimisations
+    1. add mark as read to simple settings (default for all buttons)
     1. once we have our own MRM: shorcut for our own undo (#74)
     1. once we have our own MRM: check for reset, show info in iterface (#40)
     1. themed options: check other addons
