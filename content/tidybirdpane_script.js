@@ -579,11 +579,11 @@ async function addFolderList(folderList, tmpParent) {
 let recentFolders, alwaysFolders;
 let recentFoldersSize; // so we don't have to get the length every time
 let firstFolder = undefined;
-let earliestBirth, nbFolders;
+let earliestBirth;
 /**
  * needsExpansion is given, as this is the same for all auto folders
  **/
-async function addFolderToAutoList(folder,cutoffFunction,needsExpansion) {
+async function addFolderToAutoList(folder,cutoffFunction,needsExpansion,nbFolders) {
   let time = folder.tidybird_time;
   console.log(time);
   if(time === undefined) {
@@ -626,7 +626,7 @@ async function addMRMandType(folderAttributeSetting) {
  *  so it should do as less as possible
  *  and filter out as much folders as possible
  **/
-async function addFolderToList(folderAttributeSetting, folderSettings, allSettings, showneverused, cutoffFunction, needsExpansion) {
+async function addFolderToList(folderAttributeSetting, folderSettings, allSettings, showneverused, cutoffFunction, needsExpansion, nbFolders) {
   if (common.folder_doAlwaysShow(folderSettings)) {
     //FIXME if has normal MRMtime or (special type MRMtime and showspecials) or showneverused
     //FIXME also change it this way in the per folder settings if the global settings are like this
@@ -642,6 +642,7 @@ async function addFolderToList(folderAttributeSetting, folderSettings, allSettin
         common.getTidybirdFolder(folderAttributeSetting, MRMTimeSetting, folderSettings),
         cutoffFunction,
         needsExpansion,
+        nbFolders,
       );
     } // else: no auto show, folder never used to move to and we don't want to show it
   } //else: never show, do nothing
@@ -654,11 +655,9 @@ let othersParent = document.getElementById("otherButtonList");
 let alreadySorted;
 //let start = true;
 async function showButtons() {
-  //TODO: keep settings synchronized, so we don't have to get them here
-  //FIXME: these are old cached settings, so statement above must be done!
   let settings = await getSettings();
   earliestBirth = common.encodeNumber(settings.maxage);
-  nbFolders = settings.nbfolders;
+  let nbFolders = settings.nbfolders;
 
   recentFolders = [];
   alwaysFolders = [];
@@ -695,7 +694,7 @@ async function showButtons() {
       if (folderSettings === undefined) {
         folderSettings = defaultSettings;
       }
-      addFolderToList(setting, folderSettings, allSettings, settings.showneverused, cutoffFunction, alreadyExpanded);
+      addFolderToList(setting, folderSettings, allSettings, settings.showneverused, cutoffFunction, alreadyExpanded, nbFolders);
     });
   } else if (common.folder_doNeverShow(defaultSettings)) {
     //TODO test for nevershow
@@ -703,7 +702,7 @@ async function showButtons() {
     // most efficient, run only over folders with specific settings
     for (let setting in allSettings) {
       if (setting.startsWith("F")) {
-        addFolderToList(setting, allSettings[setting], allSettings, settings.showneverused, cutoffFunction, alreadyExpanded);
+        addFolderToList(setting, allSettings[setting], allSettings, settings.showneverused, cutoffFunction, alreadyExpanded, nbFolders);
       }
     }
   } else { // folder_doAutoShow(defaultSettings))
@@ -713,7 +712,7 @@ async function showButtons() {
       if (setting.startsWith("F")) {
         // minority should be handled here
         // these are always handled first
-        addFolderToList(setting, allSettings[setting], allSettings, settings.showneverused, cutoffFunction, alreadyExpanded);
+        addFolderToList(setting, allSettings[setting], allSettings, settings.showneverused, cutoffFunction, alreadyExpanded, nbFolders);
       } else if (setting.startsWith("M")) {
         //TODO only if there is still space, set total nb of folders, not auto
         //TODO show number of auto folders where we select total nb of folders
@@ -722,7 +721,7 @@ async function showButtons() {
           let folder = common.getTidybirdFolder(folderAttributeSetting, allSettings[setting], allSettings.Fdefault);
           // this folder is autoshow and is used, so we don't have to check setting nor showneverused
           // also, for showneverused, the do_alwaysShow case is used
-          await addFolderToAutoList(folder, cutoffFunction, alreadyExpanded);
+          await addFolderToAutoList(folder, cutoffFunction, alreadyExpanded, nbFolders);
         } //else: already handled by running over the folder settings first
       }
     }
@@ -740,7 +739,7 @@ async function showButtons() {
 
   // now limit to the number we asked for
   alreadySorted = false;
-  if (nbFolders > 1 && recentFoldersSize > nbFolders) {
+  if (nbFolders >= 0 && recentFoldersSize > nbFolders) {
     let sortby = settings.folderselection;
     let sortorder = [];
     if (sortby == "sortorder") {
@@ -756,7 +755,7 @@ async function showButtons() {
     await common.sortFoldersBySortorder(recentFolders,sortorder);
     // cutoff: at index <first argument>, delete <second argument> elements
     recentFolders.splice(nbFolders, recentFoldersSize - nbFolders);
-  }
+  } // else no cutoff needed
 
   // - Group folders if needed
   // Should be done in order: may already be ordered
