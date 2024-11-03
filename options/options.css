@@ -42,3 +42,9 @@
 .hidden {
   display: none;
 }
+
+input:where([type="number"]) {
+  min-height: unset;
+  margin: unset;
+  padding-left: 0.5em;
+}

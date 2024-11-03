@@ -389,7 +389,7 @@ const addFolderButtons = async function (expandedFolder,buttonParent) {
   let newTemplate = false;
   if (buttonReadTemplate == null) {
     button = document.createElement("button");
-    button.className = "tidybird-folder-move-button tidybird-button";
+    button.className = "tidybird-folder-move-button tidybird-layout-button tidybird-button";
 
     label1 = document.createElement("div");
     label1.className = "tidybird-folder-move-button-label-1";
@@ -457,7 +457,7 @@ const addFolderButtons = async function (expandedFolder,buttonParent) {
 let optionsButton;
 const addSettingsButton = async function(optionsButtonParent) {
   optionsButton = document.createElement("button");
-  optionsButton.className = "tidybird-button hidden";
+  optionsButton.className = "tidybird-layout-button hidden tidybird-button";
   optionsButton.textContent = "Options";
   optionsButton.addEventListener("click", function () {
     showOptionsPage();
@@ -685,8 +685,8 @@ async function showButtons() {
   let defaultSettings = allSettings.Fdefault;
   if (common.folder_doAlwaysShow(defaultSettings) || settings.showneverused) {
     console.log("Tidybird using least efficient method, you may experience slowliness and you may want to change settings");
-    //TODO change with neverused if default alwaysshow follow neverused, if per folder also show those that are never used
-    //TODO test for alwaysshow
+    //TODO6 change with neverused if default alwaysshow follow neverused, if per folder also show those that are never used
+    //TODO6 test for alwaysshow
     // least efficient, but may be desired to always show new folders
     await common.foreachAllFolders(async (folder,account) => {
       let setting = await common.getFolderSettingsKey(folder);
@@ -697,7 +697,7 @@ async function showButtons() {
       addFolderToList(setting, folderSettings, allSettings, settings.showneverused, cutoffFunction, alreadyExpanded, nbFolders);
     });
   } else if (common.folder_doNeverShow(defaultSettings)) {
-    //TODO test for nevershow
+    //TODO6 test for nevershow
     // Run only over folders that have settings
     // most efficient, run only over folders with specific settings
     for (let setting in allSettings) {
@@ -714,8 +714,8 @@ async function showButtons() {
         // these are always handled first
         addFolderToList(setting, allSettings[setting], allSettings, settings.showneverused, cutoffFunction, alreadyExpanded, nbFolders);
       } else if (setting.startsWith("M")) {
-        //TODO only if there is still space, set total nb of folders, not auto
-        //TODO show number of auto folders where we select total nb of folders
+        //TODO6 only if there is still space, set total nb of folders, not auto
+        //TODO6 show number of auto folders where we select total nb of folders
         let folderAttributeSetting = "F"+common.getFolderFromSettingsKey(setting);
         if (allSettings[folderAttributeSetting] === undefined) {
           let folder = common.getTidybirdFolder(folderAttributeSetting, allSettings[setting], allSettings.Fdefault);

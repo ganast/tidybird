@@ -1,11 +1,12 @@
 
 1. 5.0 Test thoroughly if everything works and release (without expert settings)
     1. resort after moving only after losing focus, so order does not change while using the buttons
-    1. simple settings: use in tidybird folderlist (without changing per folder settings)
+    1. do not store MRMTime for special folders (& do not redraw on removal/archiving!)
     1. Check if we handled remarks in ATN reviews & github issues
     1. Moved folders not removed from MRM => remove folders in buttons that do not longer exist if we don't run over the folders but over the settings
     1. Check number of redrawals => do not redraw when nothing changes!
     1. Maybe for quick successor 5.1 (and move 5.1 to 5.2)
+        1. remove need for themelistener (except maybe for tooltip), using browser css
         1. reset own MRM list with TB list: button in options
         1. easier debugging of issues:
             1. add debug messages including timing & export (see tbsync)
@@ -44,6 +45,9 @@
     1. test other folder types (search, ...)
     1. deprecated: getSubFolders(folder) -> uses now folderId => no folder object needed anymore, check functions using it and supporting functions to get folder object
 1. 5.2+ Other optimisations
+    1. handle special folders (with toggle setting)
+        1. on setting toggle: set setting of special folders found to "never" or default
+        1. on folder type change (possible?): change setting
     1. add mark as read to simple settings (default for all buttons)
     1. once we have our own MRM: shorcut for our own undo (#74)
     1. once we have our own MRM: check for reset, show info in iterface (#40)

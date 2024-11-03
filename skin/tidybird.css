@@ -35,7 +35,7 @@ list-style-image: url("chrome://tidybird/skin/icon.png");
  *  and we have to change the background-color when a dark theme is used (as it is left default and may render the text unreadable
  * we try to re-set all necessary properties when a theme is used
  */
-.tidybird-folder-move-button {
+.tidybird-layout-button {
   /* toolbarbutton.css */
   text-shadow: inherit;
   /* messenger.css */
@@ -45,17 +45,17 @@ list-style-image: url("chrome://tidybird/skin/icon.png");
   transition: background-color .15s, border-color .15s;
 }
 
-.tidybird-folder-move-button {
+.tidybird-layout-button {
   border-color: var(--tidybird-button-bordercolor);
   background-color: var(--tidybird-button-bgcolor);
 }
 
-.tidybird-folder-move-button:hover {
+.tidybird-layout-button:hover {
   border-color: var(--tidybird-button-hover-bordercolor);
   background-color: var(--tidybird-button-hover-bgcolor);
 }
 
-.tidybird-folder-move-button:active {
+.tidybird-layout-button:active {
   border-color: var(--tidybird-button-active-bordercolor);
   background-color: var(--tidybird-button-active-bgcolor);
 }
