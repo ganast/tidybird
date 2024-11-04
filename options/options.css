@@ -46,5 +46,9 @@
 input:where([type="number"]) {
   min-height: unset;
   margin: unset;
-  padding-left: 0.5em;
+  padding: 0 0 0 0.5em;
+}
+
+body {
+  margin: 8px; /* default firefox margin, do not paste text to window border */
 }
