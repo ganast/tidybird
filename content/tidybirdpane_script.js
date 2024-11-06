@@ -105,9 +105,10 @@ function calculate_colorcomponent(color_upper, color_under, alpha_upper) {
 
 /**
  * Update the tooltip color, if not yet done, because it may be transparent (from the theme) otherwise
- *  this fires when the theme changes or when the first button is added
- *  (before, we fired everytime a button was mouse entered)
- *  because this way, we are sure a button exists to take the _computed_ color from
+ *  this fires when the mouse hovers over the button
+ *  if firing when the theme changes or when the first button is added, the info may seem correct, but is not in all cases
+ *   for example when changing back to light from dark
+ *   even when we are sure a button exists to take the computed color from
  **/
 let tooltipColorUpdated = false;
 async function update_tooltipcolor(aButton) {
@@ -167,10 +168,10 @@ async function update_tooltipcolor(aButton) {
 }
 
 async function themeChangedListener(themeUpdateInfo) {
-  await applyThemeColors(themeUpdateInfo.theme);
   tooltipColorUpdated = false;
+  /*await */applyThemeColors(themeUpdateInfo.theme);
   // theme colors should be fully applied before we can calculate the hover bg color
-  update_tooltipcolor();
+  //update_tooltipcolor();
 }
 messenger.theme.onUpdated.addListener(themeChangedListener);
 applyThemeColors();
@@ -446,6 +447,9 @@ const addFolderButtons = async function (expandedFolder,buttonParent) {
     button.addEventListener("click", function () {
       moveSelectedMessageToFolder(expandedFolder, markAsRead == "yes");
     });
+    button.addEventListener("mouseenter", function (theEvent) {
+      update_tooltipcolor(theEvent.target);
+    });
     console.debug("Appending button to parent");
     buttonParent.appendChild(button);
     // the parent may not be part of the document, so we can't calculate the tooltip color yet
@@ -463,7 +467,6 @@ const addSettingsButton = async function(optionsButtonParent) {
     showOptionsPage();
   });
   optionsButtonParent.appendChild(optionsButton);
-  update_tooltipcolor(optionsButton);
   let settings = await getSettings();
   if (settings.showoptionsbutton) {
     showOptionsButton();
@@ -792,7 +795,7 @@ async function showButtons() {
 
   // folderlists should be added before the tmp parent is added to the real parent
   listParent.appendChild(tmpListParent);
-  update_tooltipcolor();
+  //update_tooltipcolor();
 }
 showButtons();
 addSettingsButton(othersParent);
