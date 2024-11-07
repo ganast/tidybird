@@ -669,7 +669,8 @@ async function addFolderToList(folderAttributeSetting, folderSettings, allSettin
 /**
  * Get the most recently changed folders
  **/
-let othersParent = document.getElementById("otherButtonList");
+const othersParent = document.getElementById("otherButtonList");
+const buttonList = document.getElementById('tidybirdMessage');
 let alreadySorted;
 //let start = true;
 async function showButtons() {
@@ -747,13 +748,10 @@ async function showButtons() {
 
   //TODO and no settings and/or always folders
   if (recentFoldersSize == 0 && ( nbFolders == -1 || nbFolders > 0) ) {
-    let text = "<p>Buttons to move mails will appear once you move a message to a simple mail folder.</p>";
-    if(hasExpertSettings) {
-      text += "<p>You can also select the buttons you want to see in the Options.<br/>Options can be opened using the \"Options\" button or using the Add-ons Manager</p>";
-    }
-    listParent.innerHTML = text;
+    buttonList.classList.remove('hidden');
     return;
   }
+  buttonList.classList.add("hidden");
 
   // now limit to the number we asked for
   alreadySorted = false;
