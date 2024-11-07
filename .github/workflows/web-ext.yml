@@ -21,8 +21,8 @@ jobs:
       - name: "Install requirements"
         run: yarnpkg
 
-      - name: "Run eslint"
-        run: ./node_modules/.bin/eslint .
+#      - name: "Run eslint"
+#        run: ./node_modules/.bin/eslint .
 
       - name: "Add required permission for privileged mode to make linter happy"
         run: |

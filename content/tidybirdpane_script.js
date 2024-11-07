@@ -1,7 +1,5 @@
 import * as common from '../tidybird_common.js';
 
-const hasExpertSettings = false;
-
 // settings cache, kept up to date using updateSetting
 let settingsCache;
 
@@ -833,10 +831,10 @@ messenger.storage.local.onChanged.addListener(settingsChangedListener);
 document.addEventListener("DOMContentLoaded", domReady);
 function domReady() {
   const buttonList = document.getElementById('tidybirdFolderButtonList');
-  buttonList.addEventListener("pointerleave", function (theEvent) {
+  buttonList.addEventListener("pointerleave", function () {
     resumeRedrawal();
   });
-  buttonList.addEventListener("pointerenter", function (theEvent) {
+  buttonList.addEventListener("pointerenter", function () {
     pauseRedrawal();
   });
 }
