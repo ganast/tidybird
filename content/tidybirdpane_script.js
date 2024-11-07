@@ -482,7 +482,26 @@ const showOptionsPage = async function() {
   browser.runtime.openOptionsPage();
 }
 
+let redrawalPaused = false;
+let redrawalAsked = false;
+const pauseRedrawal = function() {
+  console.log("Redrawal paused");
+  redrawalPaused = true;
+}
+const resumeRedrawal = function() {
+  console.log("Redrawal resumed");
+  redrawalPaused = false;
+  if(redrawalAsked) {
+    updateButtonList();
+  }
+}
+
 const updateButtonList = async function () {
+  redrawalAsked = true; // as soon as possible to avoid race conditions
+  if(redrawalPaused) {
+    return;
+  }
+  redrawalAsked = false;
   //FIXME do not recreate buttons
   console.debug("tidybird: updating button list");
   while (listParent.hasChildNodes()) {
@@ -588,10 +607,6 @@ let earliestBirth;
  **/
 async function addFolderToAutoList(folder,cutoffFunction,needsExpansion,nbFolders) {
   let time = folder.tidybird_time;
-  console.log(time);
-  if(time === undefined) {
-    console.log(folder);
-  }
   if ( time < earliestBirth ) { // && earliestBirth != -1, but this is always true if condition is true
     return;
   }
@@ -816,5 +831,17 @@ async function settingsChangedListener(settingsUpdateInfo) {
   }
 }
 messenger.storage.local.onChanged.addListener(settingsChangedListener);
+
+document.addEventListener("DOMContentLoaded", domReady);
+function domReady() {
+  const buttonList = document.getElementById('tidybirdFolderButtonList');
+  buttonList.addEventListener("pointerleave", function (theEvent) {
+    resumeRedrawal();
+  });
+  buttonList.addEventListener("pointerenter", function (theEvent) {
+    pauseRedrawal();
+  });
+}
+
 
 /* vi: set tabstop=2 shiftwidth=2 softtabstop=2 expandtab: */
