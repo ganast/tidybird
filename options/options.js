@@ -12,6 +12,9 @@ async function save() {
   let value;
   if (this.type == "checkbox") {
     value = this.checked;
+  } else if (this.type == "number" && this.value == "") {
+    // busy editing and/or an invalid number is given
+    return;
   } else {
     value = this.value;
   }
