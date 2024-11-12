@@ -217,6 +217,7 @@ function install() {
   console.debug("Initialization of Tidybird MRMFolders");
   // Get MRMFolders only first time the extension is run, afterwards we rely on our own implementation
   //  which also registers MRM for special folders and does not rely on an experiment
+  // TODO do not do this if we already have MRM settings, as this is also run on update (of TB and of Tidybird)
   // TODO add buttons to settings to
   // 1) reset MRMTime to none
   // 2) reset MRMTime to TB settings
@@ -229,14 +230,13 @@ function install() {
         foldersMRMSettings[common.getFolderMRMSettingsKey(folder)] = common.encodeDate(Number(folder.MRMTime));
       }
     }
+    // this also triggers redrawal of buttons
     messenger.storage.local.set(foldersMRMSettings);
   }
   messenger.tidybird_api.getMRMFolders.addListener(gotMRMFolders);
-
-  run();
 }
 
-messenger.runtime.onStartup.addListener(run);
 messenger.runtime.onInstalled.addListener(install);
+run(); // this is always run when extension in started
 
 /* vi: set tabstop=2 shiftwidth=2 softtabstop=2 expandtab: */

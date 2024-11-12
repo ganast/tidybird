@@ -218,12 +218,23 @@ async function windowRemovedListener() {
   if (innerWidth != 0) {
     // as the context is removed in TB78, the width is 0
     //  we don't save this so we don't reset the saved with (from shutdown) when button is clicked
-    browser.storage.local.set({ width: innerWidth });
+    // this raises "Promise resolved after context unloaded", but it still works
+    //  tried: sync/async and list of events see below
+    await browser.storage.local.set({ width: innerWidth });
   }
 }
-// onbeforeunload does not work (at least not in TB78)
+/*
+for(let eventname of ["beforeunload","suspend","pagehide","unload","cancel","abort","change","close","contextlost","emptied","ended","invalid","storage"]) {
+  window.addEventListener(eventname, function() {
+    // none of them print something, not even pagehide & unload ("load" does, so the code works)
+    console.log(eventname);
+  });
+}
+*/
+// onbeforeunload does not work (at least not in TB78-132)
 // onunload is executed after the context is removed in TB78 when button is clicked
-window.addEventListener("unload", windowRemovedListener);
+window.addEventListener("pagehide", windowRemovedListener);
+//window.addEventListener("unload", windowRemovedListener);
 
 /*
  * Read settings
