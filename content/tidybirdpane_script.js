@@ -2,6 +2,7 @@ import * as common from '../tidybird_common.js';
 
 // settings cache, kept up to date using updateSetting
 let settingsCache;
+await getSettings();
 
 /*
  * Themed TB support: apply theme colors
@@ -192,8 +193,8 @@ async function applyButtonSize(changedSizes) {
   let margin = changedSizes.buttonmargin;
   let stylesheetRules = document.styleSheets[0].rules;
   for (let rule of stylesheetRules) {
-    if (rule.selectorText == ".tidybird-folder-move-button") {
-      if (height !== undefined) {
+    if (rule.selectorText == ".tidybird-folder-move-button" || rule.selectorText == ".tidybird-header") {
+      if (height !== undefined && rule.style.height != "") {
         if (height == -1) {
           height = "auto";
         } else {
@@ -201,7 +202,7 @@ async function applyButtonSize(changedSizes) {
         }
         rule.style.height = height;
       }
-      if (margin !== undefined) {
+      if (margin !== undefined && rule.style['margin-bottom'] != "") {
         rule.style['margin-bottom'] = `${margin}px`;
       }
     }
@@ -254,6 +255,10 @@ function updateSetting(setting, value) {
   }
   settingsCache[setting] = value;
   switch(true) {
+    case setting.startsWith("M"):
+      // folder timestamp updated, we handle this with onMoved event
+      //  this won't break when we change something to the settings
+      return false;
     case setting == "startup":
       return false;
     case setting.startsWith("button"):
@@ -371,7 +376,8 @@ let listAccountTitle = null;
 const addAccount = async function (accountName,tmpParent) {
   let title;
   if (listAccountTitle == null) {
-    title = document.createElement("h3");
+    title = document.createElement("div");
+    title.className = "tidybird-header";
     listAccountTitle = title;
   } else {
     title = listAccountTitle.cloneNode(true);

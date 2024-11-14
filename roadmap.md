@@ -1,7 +1,9 @@
 
 1. 5.0 Test thoroughly if everything works and release (without expert settings)
-    1. Check number of redrawals => do not redraw when nothing changes!
-    1. do not store MRMTime for special folders (& do not redraw on removal/archiving!)
+    1. popup color with system theme
+    1. move collapsed message threads -> test with older TB
+    1. Check number of redrawals => do not redraw when nothing changes, but change order if needed
+    1. do not add/(store MRMTime for) special folders
     1. Check if we handled remarks in ATN reviews & github issues
     1. Moved folders not removed from MRM => remove folders in buttons that do not longer exist if we don't run over the folders but over the settings
     1. Maybe for quick successor 5.1 (and move 5.1 to 5.2)
@@ -50,7 +52,9 @@
     1. add mark as read to simple settings (default for all buttons)
     1. once we have our own MRM: shorcut for our own undo (#74)
     1. once we have our own MRM: check for reset, show info in iterface (#40)
-    1. themed options: check other addons
+    1. themed options: do the same as for options; header: h2.list-header-title (threadpane.css)
+    1. onAccountNameChange
+    1. option to not show parent
 1. 6 Expert settings
     1. keep last status of expert settings: expand or not
     1. combine with simple settings (keep in mind reset to "default")
@@ -74,3 +78,5 @@
         1. Outbox
         1. others (case insentitive)
     1. more user-friendly "-1" alternative: checkbox disabling number selection(?)
+    1. options per account (for example: show parent or not per account)
+    1. only show buttons for "active" account
