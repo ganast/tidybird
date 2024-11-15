@@ -1,6 +1,5 @@
 
 1. 5.0 Test thoroughly if everything works and release (without expert settings)
-    1. popup color with system theme
     1. move collapsed message threads -> test with older TB
     1. Check number of redrawals => do not redraw when nothing changes, but change order if needed
     1. do not add/(store MRMTime for) special folders

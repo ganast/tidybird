@@ -15,25 +15,22 @@ async function applyThemeColors(theme) {
     theme = await messenger.theme.getCurrent();
   }
 
-  // when using the system theme all css properties are ok only if the system theme is light
+  // when using the system theme all css properties are ok except if the system theme is dark
   // so we do always our thing, this makes it also more predictable
-  // ...we don't change colors when system theme changes, but probably this is not possible
-
-  let tidybird_backgroundcolor;
-  /* broken since 128
+  //FIXME TB if the system theme is dark, the light-dark css function is somehow not correctly applied, showing the light color
   let tidybird_backgroundcolor = await messenger.ex_customui.getInterfaceColor("--layout-background-1");
+  // folderPane background: var(--sidebar-background) = var(--sidebar-background-color, var(--foldertree-background))
+  // messagepanebox (messageHeader) background: var(--layout-background-1);
   setCssVariable("--tidybird-backgroundcolor", tidybird_backgroundcolor);
   let tidybird_textcolor = await messenger.ex_customui.getInterfaceColor("--layout-color-1");
   setCssVariable("--tidybird-textcolor", tidybird_textcolor);
   let tidybird_button_bordercolor = await messenger.ex_customui.getInterfaceColor("--toolbarbutton-header-bordercolor");
   setCssVariable("--tidybird-button-bordercolor", tidybird_button_bordercolor);
-  */
   /*
    * Buttons are transparent, --toolbarbutton-background is not defined
   let tidybird_button_bgcolor = await messenger.ex_customui.getInterfaceColor("--toolbarbutton-background");
   setCssVariable("--tidybird-button-bgcolor", tidybird_button_bgcolor);
   */
-  /* broken since 128
   let tidybird_button_hover_bgcolor = await messenger.ex_customui.getInterfaceColor("--toolbarbutton-hover-background");
   setCssVariable("--tidybird-button-hover-bgcolor", tidybird_button_hover_bgcolor);
   let tidybird_button_active_bgcolor = await messenger.ex_customui.getInterfaceColor("--toolbarbutton-active-background");
@@ -42,7 +39,6 @@ async function applyThemeColors(theme) {
   setCssVariable("--tidybird-button-hover-bordercolor", tidybird_button_hover_bordercolor);
   let tidybird_button_active_bordercolor = await messenger.ex_customui.getInterfaceColor("--toolbarbutton-header-bordercolor");
   setCssVariable("--tidybird-button-active-bordercolor", tidybird_button_active_bordercolor);
-  */
   //FIXME: broken since 128
   // unread button colors, not available in any theme
   let tidybird_thread_pane_unread_stroke = await messenger.ex_customui.getInterfaceColor("--thread-pane-unread-stroke");
@@ -50,8 +46,10 @@ async function applyThemeColors(theme) {
   let tidybird_thread_pane_unread_fill = await messenger.ex_customui.getInterfaceColor("--thread-pane-unread-fill");
   setCssVariable("--tidybird-thread-pane-unread-fill", tidybird_thread_pane_unread_fill);
 
-  // above broken since 128, but (default?) themes are better defined now
-  if(theme.colors && !tidybird_backgroundcolor) {
+  // Themes are better defined now (except for system theme)
+  // getInterfaceColor slightly broken on some themes/128, maybe comparable cause as issue we had to get flex rules
+  //  but resulting in popup color (by getting a background color) with system theme & better button colors for dark theme
+  if(theme.colors/* && !tidybird_backgroundcolor*/) {
     if(theme.colors.sidebar) {
       // sidebar background color is used in message header
       setCssVariable("--tidybird-backgroundcolor", theme.colors.sidebar);
