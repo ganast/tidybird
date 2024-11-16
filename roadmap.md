@@ -5,12 +5,6 @@
     1. do not add/(store MRMTime for) special folders
     1. Check if we handled remarks in ATN reviews & github issues
     1. Moved folders not removed from MRM => remove folders in buttons that do not longer exist if we don't run over the folders but over the settings
-    1. Maybe for quick successor 5.1 (and move 5.1 to 5.2)
-        1. remove need for themelistener (except maybe for tooltip), using browser css
-        1. reset own MRM list with TB list: button in options
-        1. easier debugging of issues:
-            1. add debug messages including timing & export (see tbsync)
-            1. create export/copy of anonymized settings + full folder structure & account types to include in bug report
     1. TODOs & FIXMEs
     1. Create 5.0 release & test following procedure
     1. Store release procedure (once tested)
@@ -38,13 +32,19 @@
             1. Publish release as pre-release
             1. upload .xpi to add-ons site
             1. Once accepted, finalize release on github & set as latest
-1. 5.1: Use new api: do when merged to master, so changes can be done only once. But those will simplify life!
+1. optional quick successor 5.1
+    1. remove need for themelistener (except maybe for tooltip), using browser css
+    1. reset own MRM list with TB list: button in options
+    1. easier debugging of issues:
+        1. add debug messages including timing & export (see tbsync)
+        1. create export/copy of anonymized settings + full folder structure & account types to include in bug report
+1. 5.x: Use new api: do when merged to master, so changes can be done only once. But those will simplify life!
     1. last used date -> not the same as last moved to date, it's the time folder is last opened
     1. get folders using query (even only folders that can hold messages?)
     1. deprecated: folder.type
     1. test other folder types (search, ...)
     1. deprecated: getSubFolders(folder) -> uses now folderId => no folder object needed anymore, check functions using it and supporting functions to get folder object
-1. 5.2+ Other optimisations
+1. 5.x+ Other optimisations
     1. handle special folders (with toggle setting)
         1. on setting toggle: set setting of special folders found to "never" or default
         1. on folder type change (possible?): change setting

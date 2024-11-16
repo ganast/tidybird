@@ -1,3 +1,8 @@
+/* enable light-dark for system theme */
+:root {
+  color-scheme: light dark;
+}
+
 #tidybirdButton,
 [place="palette"] > #tidybirdButton {
 list-style-image: url("chrome://tidybird/skin/icon.png");

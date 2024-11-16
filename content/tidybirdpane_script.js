@@ -2,7 +2,7 @@ import * as common from '../tidybird_common.js';
 
 // settings cache, kept up to date using updateSetting
 let settingsCache;
-await getSettings();
+getSettings();
 
 /*
  * Themed TB support: apply theme colors
@@ -15,9 +15,8 @@ async function applyThemeColors(theme) {
     theme = await messenger.theme.getCurrent();
   }
 
-  // when using the system theme all css properties are ok except if the system theme is dark
-  // so we do always our thing, this makes it also more predictable
-  //FIXME TB if the system theme is dark, the light-dark css function is somehow not correctly applied, showing the light color
+  // when using the system theme all css, there are no theme colors
+  //  so we have to take colors from the interface
   let tidybird_backgroundcolor = await messenger.ex_customui.getInterfaceColor("--layout-background-1");
   // folderPane background: var(--sidebar-background) = var(--sidebar-background-color, var(--foldertree-background))
   // messagepanebox (messageHeader) background: var(--layout-background-1);
@@ -48,7 +47,7 @@ async function applyThemeColors(theme) {
 
   // Themes are better defined now (except for system theme)
   // getInterfaceColor slightly broken on some themes/128, maybe comparable cause as issue we had to get flex rules
-  //  but resulting in popup color (by getting a background color) with system theme & better button colors for dark theme
+  //  but using it, results in a popup color (by getting a background color) & switching colors with system theme & better button colors for dark theme
   if(theme.colors/* && !tidybird_backgroundcolor*/) {
     if(theme.colors.sidebar) {
       // sidebar background color is used in message header
