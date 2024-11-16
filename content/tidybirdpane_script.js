@@ -395,7 +395,7 @@ const addFolderButtons = async function (expandedFolder,buttonParent) {
     return;
   }
 
-  console.log(`adding button for folder ${expandedFolder.name}`);
+  common.debug(`adding button for folder ${expandedFolder.name}`);
 
   let button;
   let label1;
@@ -524,7 +524,7 @@ const updateButtonList = async function () {
 };
 
 const updateButtonListIfNeeded = async function (folder, neededIfNotPresent) {
-  const internalPath = folder.accountId + folder.path;
+  const internalPath = common.getInternalPath(folder);
   const folderIsInList = isFolderInList(internalPath);
   if (
     (neededIfNotPresent && !folderIsInList) || // folder should be added
@@ -820,7 +820,8 @@ async function showButtons() {
 
   // folderlists should be added before the tmp parent is added to the real parent
   listParent.appendChild(tmpListParent);
-  //update_tooltipcolor();
+
+  //update_tooltipcolor(); // we do this when we are sure the button is added and the whole document and css is loaded => on hover
 }
 showButtons();
 addSettingsButton(othersParent);
@@ -842,6 +843,9 @@ async function settingsChangedListener(settingsUpdateInfo) {
 }
 messenger.storage.local.onChanged.addListener(settingsChangedListener);
 
+/*
+ * Do not change button list while it is "in use"
+ */
 document.addEventListener("DOMContentLoaded", domReady);
 function domReady() {
   const buttonList = document.getElementById('tidybirdFolderButtonList');

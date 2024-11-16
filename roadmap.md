@@ -1,10 +1,10 @@
 
 1. 5.0 Test thoroughly if everything works and release (without expert settings)
-    1. move collapsed message threads -> test with older TB
     1. Check number of redrawals => do not redraw when nothing changes, but change order if needed
     1. do not add/(store MRMTime for) special folders
-    1. Check if we handled remarks in ATN reviews & github issues
     1. Moved folders not removed from MRM => remove folders in buttons that do not longer exist if we don't run over the folders but over the settings
+    1. Maybe try to make it compatible with 115
+    1. Check if we handled remarks in ATN reviews & github issues
     1. TODOs & FIXMEs
     1. Create 5.0 release & test following procedure
     1. Store release procedure (once tested)

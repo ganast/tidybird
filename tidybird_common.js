@@ -335,8 +335,12 @@ export const expandFolder = async function(folder) {
   let displayPath = account.name + path;
   expandedFolder.rootName = await getRoot(displayPath);
   expandedFolder.displayPath = displayPath;
-  expandedFolder.internalPath = encodeURI(accountId + path);
+  expandedFolder.internalPath = getInternalPath(expandedFolder);
   return expandedFolder;
+}
+
+export const getInternalPath = function(folder) {
+  return encodeURI(folder.accountId + folder.path);
 }
 
 /**
@@ -468,4 +472,15 @@ export const sortFoldersBySortorder = async function(folderList,sortorder) {
 export const isSpecialFolder = function(folder) {
   const foldertype = folder.type;
   return foldertype == "trash" || foldertype == "archives" || foldertype == "junk";
+}
+
+/**
+ * Log debug messages with stack trace
+ * Implementation based on SMR's debug function
+ * @param {string} message The message to log
+ */
+export const debug = function(message) {
+  console.log('[tidybird debug] '+message);
+  let e = new Error();
+  console.log(e.stack);
 }
