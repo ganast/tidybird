@@ -454,6 +454,7 @@ const addFolderButtons = async function (expandedFolder,buttonParent) {
       button.firstElementChild.textContent = expandedFolder.name;
       button.lastElementChild.textContent = expandedFolder.rootName;
     }
+    button.setAttribute("data-folder", expandedFolder.internalPath);
     button.setAttribute("tooltiptext", expandedFolder.displayPath);
 
     button.addEventListener("click", function () {
@@ -518,6 +519,7 @@ const updateButtonList = async function () {
   console.debug("tidybird: updating button list");
   while (listParent.hasChildNodes()) {
     foldersInList.pop();
+    //FIXME6 only remove and update automatic buttons (manual buttons: add them directly in correct place)
     listParent.firstChild.remove();
   }
   showButtons();
@@ -530,10 +532,33 @@ const updateButtonListIfNeeded = async function (folder, neededIfNotPresent) {
     (neededIfNotPresent && !folderIsInList) || // folder should be added
     (!neededIfNotPresent && folderIsInList) // folder should be removed
   ) {
-    //FIXME: more efficient: just add button; if never: do nothing, ...
+    //TODO5.+ more efficient: just add button; if never: do nothing, ...
     updateButtonList();
+  } else {
+    // buttonlist already complete, but may need to be reordered
+    const settings = await getSettings();
+    // only need to reorder if list is ordered by most recently used date
+    const sortOrder = await common.getFullSortorder(settings);
+    if(sortOrder.includes("mostrecent")) {
+      /*
+      if(common.arrayEquals(sortOrder,["mostrecent"])) {
+        //TODO5.+ too complex and too small use case for now, just update the list
+        //TODO6? check if the folder is auto-ordered and put on top of correct list
+        const folderButtons = document.querySelectorAll(`[data-folder='${internalPath}']`); // this should always return something
+        const firstButton = listParent.firstElementChild; //FIXME may return account header if grouped by account!
+        if(folderButtons[0] != firstButton) {
+          // loop over buttons: mark as read and non mark as read
+          //TODO6 order by button usage, not by folder usage, so these 2 buttons are not always together (events!)
+          for(const folderButton in folderButtons) {
+            listParent.insertBefore(folderButton,firstButton);
+          }
+        } //else: this is already the first button
+      } else {
+      }
+      */
+      updateButtonList();
+    } //else: nothing needed
   }
-  //TODO: else if sorted by most recently used: move folder to the top
 };
 
 /**
@@ -805,7 +830,7 @@ async function showButtons() {
 
   let tmpListParent = document.createDocumentFragment();
   // sorted by account id, account name or just a single value, depending on the settings
-  // FIXME CREATE LIST OF ACCOUNTS to loop over
+  // FIXME6 CREATE LIST OF ACCOUNTS to loop over (for special cases where it may be necessary)
   const groupedFolderList = await common.getGroupedFolderList();
   for ( let accountSortValue of Object.keys(groupedFolderList).sort() ) {
     if (settings.groupby_account) {
@@ -836,10 +861,9 @@ async function settingsChangedListener(settingsUpdateInfo) {
     needUpdateList = needUpdateList || updateSetting(setting, changedSettings[setting]);
   }
   if (needUpdateList) {
+    common.debug("Updating list by setting change");
     updateButtonList();
-  } else {
-    console.log("no update needed");
-  }
+  } //else: no update needed
 }
 messenger.storage.local.onChanged.addListener(settingsChangedListener);
 

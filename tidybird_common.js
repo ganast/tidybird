@@ -468,6 +468,12 @@ export const sortFoldersBySortorder = async function(folderList,sortorder) {
     folderList.sort(await getSortFunction(sortby));
   }
 }
+export const arrayEquals = function(array1,array2) {
+  if(array1.length != array2.length) {
+    return false;
+  }
+  return array1.every((v,k) => v === array2[k])
+}
 
 export const isSpecialFolder = function(folder) {
   const foldertype = folder.type;

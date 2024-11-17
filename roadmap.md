@@ -1,6 +1,6 @@
 
 1. 5.0 Test thoroughly if everything works and release (without expert settings)
-    1. Check number of redrawals => do not redraw when nothing changes, but change order if needed
+    1. multiple sort orders combined (recently & parent folder)
     1. do not add/(store MRMTime for) special folders
     1. Moved folders not removed from MRM => remove folders in buttons that do not longer exist if we don't run over the folders but over the settings
     1. Maybe try to make it compatible with 115
