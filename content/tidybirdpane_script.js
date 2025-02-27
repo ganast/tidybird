@@ -770,7 +770,8 @@ async function showButtons() {
         // these are always handled first
         addFolderToList(setting, allSettings[setting], allSettings, settings.showneverused, cutoffFunction, alreadyExpanded, nbFolders);
       } else if (setting.startsWith("M")) {
-        //TODO6 only if there is still space, set total nb of folders, not auto
+        //TODO6 only if there is still space
+        //TODO6 set total nb of folders, not just total nb of automatically shown folders
         //TODO6 show number of auto folders where we select total nb of folders
         let folderAttributeSetting = "F"+common.getFolderFromSettingsKey(setting);
         if (allSettings[folderAttributeSetting] === undefined) {
@@ -783,7 +784,7 @@ async function showButtons() {
     }
   }
 
-  //TODO and no settings and/or always folders
+  //TODO and only if no settings and/or always folders
   if (recentFoldersSize == 0 && ( nbFolders == -1 || nbFolders > 0) ) {
     buttonList.classList.remove('hidden');
     return;

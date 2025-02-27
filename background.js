@@ -117,8 +117,13 @@ async function run() {
     let folder = firstMessage.folder; // move and copy always to 1 folder
     // To save settings space, this can be the same as the options
     // although first getting the current value before doing an update is unwanted
-    //  we should then load and keep track of the other folder options to make changes atomiccy
+    //  we should then load and keep track of the other folder options to make changes atomically
     let folderMRMAttribute = common.getFolderMRMSettingsKey(folder);
+    //TODO6 change with setting
+    //TODO6 verify performance of expanding and check type when deciding whether or not to show buttons
+    if(common.isSpecialFolder(folder)) {
+      return;
+    }
     setAttribute(folderMRMAttribute, common.encodeDate(common.getTimestamp()));
   }
   messenger.messages.onMoved.addListener(
@@ -211,6 +216,16 @@ async function run() {
       actOnFolderMove(originalFolder, newFolder);
     }
   );
+  messenger.folders.onUpdated.addListener(
+    //TODO6: do not do this if we want to use these folders
+    async (originalFolder, updatedFolder) => {
+      // removed stored MRMTime if this folder is a special use folder (default TB behavior)
+      if(common.isSpecialFolder(updatedFolder)) {
+        let attributeName = common.getFolderMRMSettingsKey(originalFolder);
+        deleteAttribute(attributeName); // now we can remove the old folder setting
+      }
+    }
+  );
 }
 
 function install() {
@@ -237,6 +252,6 @@ function install() {
 }
 
 messenger.runtime.onInstalled.addListener(install);
-run(); // this is always run when extension in started
+run(); // this is always run when extension is started
 
 /* vi: set tabstop=2 shiftwidth=2 softtabstop=2 expandtab: */

@@ -476,8 +476,12 @@ export const arrayEquals = function(array1,array2) {
 }
 
 export const isSpecialFolder = function(folder) {
+  /* deprecated
   const foldertype = folder.type;
   return foldertype == "trash" || foldertype == "archives" || foldertype == "junk";
+  */
+  const folderSpecialUse = folder.specialUse; // since TB121
+  return folderSpecialUse.includes("trash") || folderSpecialUse.includes("archives") || folderSpecialUse.includes("junk");
 }
 
 /**

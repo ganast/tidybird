@@ -1,7 +1,5 @@
 
 1. 5.0 Test thoroughly if everything works and release (without expert settings)
-    1. multiple sort orders combined (recently & parent folder)
-    1. do not add/(store MRMTime for) special folders
     1. Moved folders not removed from MRM => remove folders in buttons that do not longer exist if we don't run over the folders but over the settings
     1. Maybe try to make it compatible with 115
     1. Check if we handled remarks in ATN reviews & github issues
@@ -49,8 +47,8 @@
         1. on setting toggle: set setting of special folders found to "never" or default
         1. on folder type change (possible?): change setting
     1. add mark as read to simple settings (default for all buttons)
-    1. once we have our own MRM: shorcut for our own undo (#74)
-    1. once we have our own MRM: check for reset, show info in iterface (#40)
+    1. once we have our own MRM: shorcut for our own undo (#74); TB issue is fixed in version X
+    1. once we have our own MRM: check for reset, show info in interface (#40)
     1. themed options: do the same as for options; header: h2.list-header-title (threadpane.css)
     1. onAccountNameChange
     1. option to not show parent
