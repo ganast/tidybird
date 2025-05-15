@@ -4,7 +4,7 @@
     "gecko": {
       "id": "tidybird@ganast.com",
       "strict_min_version": "128.0",
-      "strict_max_version": "137.*"
+      "strict_max_version": "138.*"
     }
   },
   "name": "Tidybird",
