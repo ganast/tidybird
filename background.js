@@ -151,7 +151,7 @@ async function run() {
     removeFromDeleteQueue(newFolder);
     // move MRM time to the new folder setting
     let oldAttributeName = common.getFolderMRMSettingsKey(originalFolder);
-    let originalMRMTime = (await getAttribute(oldAttributeName)).oldAttributeName;
+    let originalMRMTime = (await getAttribute(oldAttributeName))[oldAttributeName];
     if (originalMRMTime !== undefined) {
       setAttribute(common.getFolderMRMSettingsKey(newFolder), originalMRMTime);
       deleteAttribute(oldAttributeName); // now we can remove the old folder setting

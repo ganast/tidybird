@@ -3,8 +3,8 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "tidybird@ganast.com",
-      "strict_min_version": "128.0",
-      "strict_max_version": "138.*"
+      "strict_min_version": "136.0",
+      "strict_max_version": "140.*"
     }
   },
   "name": "Tidybird",
