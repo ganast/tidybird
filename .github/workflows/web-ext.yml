@@ -45,7 +45,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         id: get_webext_config
         run: |
-          echo ::set-output name=ignoreFiles::$(jq -c .webExt.ignoreFiles package.json)
+          echo ignoreFiles=$(jq -c .webExt.ignoreFiles package.json) >> $GITHUB_OUTPUT
         shell: bash
 
       - name: "web-ext build"
@@ -79,7 +79,7 @@ jobs:
         id: get_version
         if: ${{ steps.web-ext-build.outputs.target }}
         run: |
-          echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\/v/}
+          echo VERSION=${GITHUB_REF/refs\/tags\/v/} >> $GITHUB_OUTPUT
         shell: bash
 
       - name: "Get tag annotation"
@@ -87,7 +87,7 @@ jobs:
         if: ${{ steps.web-ext-build.outputs.target }}
         run: |
           git fetch --tags --force
-          echo ::set-output name=subject::$(git for-each-ref $GITHUB_REF --format='%(contents:subject)')
+          echo subject=$(git for-each-ref $GITHUB_REF --format='%(contents:subject)') >> $GITHUB_OUTPUT
         shell: bash
 
       - name: "Create release"
@@ -108,8 +108,8 @@ jobs:
         id: get_basename
         if: ${{ steps.create_release.outputs.upload_url }}
         run: |
-          echo ::set-output name=xpi::$(basename ${{ steps.get_xpi_filename.outputs.replaced }})
-          echo ::set-output name=zip::$(basename ${{ steps.web-ext-build.outputs.target }})
+          echo xpi=$(basename ${{ steps.get_xpi_filename.outputs.replaced }}) >> $GITHUB_OUTPUT
+          echo zip=$(basename ${{ steps.web-ext-build.outputs.target }}) >> $GITHUB_OUTPUT
         shell: bash
 
       - name: "Upload release assets .xpi"
