@@ -148,14 +148,7 @@ export const getSettingFromInput= function(input) {
   let varParts = input.name.split("_",1);
   return varParts[0];
 }
-/**
- * Calculate the timestamp like Thunderbird does
- **/
-export const getTimestamp = function() {
-  // Bitwise Or ) with ZERO converts value to integer by discarding any value after decimal point
-  // https://stackoverflow.com/a/75235699
-  return Date.now()/1000 | 0;
-}
+
 /**
  * Parse a number that was encoded for settings
  **/
@@ -184,10 +177,15 @@ export const parseDate = function(encodedDate) {
  * Encode a unix timestamp to put it in settings
  **/
 export const encodeDate = function(date) {
+  // Calculate the timestamp like Thunderbird does
+  // Bitwise Or ) with ZERO converts value to integer by discarding any value after decimal point
+  // https://stackoverflow.com/a/75235699
+  const timestmap =  date/1000 | 0;
+
   // we encode the unix timestamp with base 36
   // this is more efficient as the integer is stored as an ascii string
   // the timestamp is reduced from 13 to 8 characters
-  return encodeNumber(date);
+  return encodeNumber(timestmap);
 }
 
 /**

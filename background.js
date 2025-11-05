@@ -124,7 +124,7 @@ async function run() {
     if(common.isSpecialFolder(folder)) {
       return;
     }
-    setAttribute(folderMRMAttribute, common.encodeDate(common.getTimestamp()));
+    setAttribute(folderMRMAttribute, common.encodeDate(Date.now()));
   }
   messenger.messages.onMoved.addListener(
     // also fires on deletion on the Trash folder, which is good (onDeleted is for permanent delete)
@@ -228,27 +228,41 @@ async function run() {
   );
 }
 
-function install() {
+async function install() {
+  let alreadyDone = (await messenger.storage.local.get({"TBloaded": false})).TBloaded;
+  if(alreadyDone) {
+    return;
+  }
+
+  loadThunderBirdMRMtimes();
+
+  // set flag to tell initial loading of Thunderbird MRM folders is already done
+  messenger.storage.local.set({["TBloaded"]: true});
+}
+
+async function loadThunderBirdMRMtimes() {
   console.debug("Initialization of Tidybird MRMFolders");
   // Get MRMFolders only first time the extension is run, afterwards we rely on our own implementation
   //  which also registers MRM for special folders and does not rely on an experiment
-  // TODO do not do this if we already have MRM settings, as this is also run on update (of TB and of Tidybird)
-  // TODO add buttons to settings to
-  // 1) reset MRMTime to none
-  // 2) reset MRMTime to TB settings
+  // TODO add buttons to (expert) settings to
+  // 1) reset (all) MRMTime to none
+  // 2) reset (all) MRMTime to TB settings
   // 3) set more recent TB settings
-  async function gotMRMFolders(mostRecentlyModifiedFolders) {
-    messenger.tidybird_api.getMRMFolders.removeListener(gotMRMFolders);
-    let foldersMRMSettings = {};
-    for (let folder of mostRecentlyModifiedFolders) {
-      if (folder.MRMTime > 0) {
-        foldersMRMSettings[common.getFolderMRMSettingsKey(folder)] = common.encodeDate(Number(folder.MRMTime));
-      }
+  let mostRecentlyModifiedFolders = await messenger.folders.query({
+    isRoot: false,
+    lastUsedAsDestination: { after: new Date(1970, 1, 1) }
+  });
+
+  let foldersMRMSettings = {};
+  for (let folder of mostRecentlyModifiedFolders) {
+    const folderInfo = await browser.folders.getFolderInfo(folder.id); // Does not work on root folders
+    const MRMTime = folderInfo.lastUsedAsDestination;
+    if (MRMTime) {
+      foldersMRMSettings[common.getFolderMRMSettingsKey(folder)] = common.encodeDate(MRMTime);
     }
-    // this also triggers redrawal of buttons
-    messenger.storage.local.set(foldersMRMSettings);
   }
-  messenger.tidybird_api.getMRMFolders.addListener(gotMRMFolders);
+  // this also triggers redrawal of buttons
+  messenger.storage.local.set(foldersMRMSettings);
 }
 
 messenger.runtime.onInstalled.addListener(install);
