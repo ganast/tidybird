@@ -3,8 +3,8 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "tidybird@ganast.com",
-      "strict_min_version": "136.0",
-      "strict_max_version": "142.*"
+      "strict_min_version": "137.0",
+      "strict_max_version": "145.*"
     }
   },
   "name": "Tidybird",
@@ -16,7 +16,7 @@
     "32": "skin/icon32.png",
     "64": "skin/icon64.png"
   },
-  "version": "5.0",
+  "version": "5.1",
   "browser_action": {
     "default_icon": "skin/icon64.png",
     "default_title": "Tidybird"
@@ -39,14 +39,6 @@
     "theme"
   ],
   "experiment_apis": {
-    "tidybird_api": {
-      "schema": "api/tidybird/schema.json",
-      "parent": {
-        "scopes": ["addon_parent"],
-        "paths": [["tidybird_api"]],
-        "script": "api/tidybird/parent.js"
-      }
-    },
     "ex_customui": {
       "schema": "api/customui/api.json",
       "parent": {
