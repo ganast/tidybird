@@ -189,31 +189,14 @@ export const encodeDate = function(date) {
 }
 
 /**
- * Execute callback on folder and its subfolders
- **/
-const doOnFolders = async function(account, folder, callback) {
-  // get subfolders before possibly changing something in the folder object
-  //  adding attribute for examples breaks getting subfolders
-  const subfolders = await messenger.folders.getSubFolders(folder,false);
-  // FIXME from TB >115: filter on canFileMessages
-  await callback(folder, account);
-  //TODO check code of getting the subfolders directly
-  for (let subfolder of subfolders) {
-    await doOnFolders(account, subfolder, callback);
-  }
-}
-
-/**
  * Execute callback function on all folders found
  **/
 export const foreachAllFolders = async function(callback) {
-  let accounts = await messenger.accounts.list(true);
-  for (let account of accounts) {
-    // FIXME from TB >115: filter on canFileMessages
-    for (let folder of account.folders) {
-      //TODO check code of getting the subfolders directly
-      await doOnFolders(account, folder, callback);
-    }
+  let folders = await messenger.folders.query({
+    canAddMessages: true,
+  });
+  for (let folder of folders) {
+    await callback(folder);
   }
 }
 
@@ -474,10 +457,6 @@ export const arrayEquals = function(array1,array2) {
 }
 
 export const isSpecialFolder = function(folder) {
-  /* deprecated
-  const foldertype = folder.type;
-  return foldertype == "trash" || foldertype == "archives" || foldertype == "junk";
-  */
   const folderSpecialUse = folder.specialUse; // since TB121
   return folderSpecialUse.includes("trash") || folderSpecialUse.includes("archives") || folderSpecialUse.includes("junk");
 }

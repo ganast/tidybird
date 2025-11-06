@@ -151,7 +151,7 @@ async function setCurrentChoiceFoldersetting(key, value, doSetFolderOptions) {
   const folderEl = findFolderElement(key);
   if(key == "Fdefault") {
     // change the inputs of folders with default settings
-    await common.foreachAllFolders(async (folder,account) => {
+    await common.foreachAllFolders(async (folder) => {
       const folderAttribute = common.getFolderAttributename(folder);
       let folderOptions = await getFolderOptions(folder);
       if(folderOptions === undefined) {
@@ -318,7 +318,7 @@ async function loadFolders(settings) {
   foldergetEl.textContent = "";
 
   common.resetLists();
-  await common.foreachAllFolders(async (folder,account) => {
+  await common.foreachAllFolders(async (folder) => {
     await common.makeTidybirdFolder(folder); // add MRMTime
     const expandedFolder = await common.expandFolder(folder);
     await common.addToGroupedList(expandedFolder, settings);

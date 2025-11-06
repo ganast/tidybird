@@ -744,7 +744,7 @@ async function showButtons() {
     //TODO6 change with neverused if default alwaysshow follow neverused, if per folder also show those that are never used
     //TODO6 test for alwaysshow
     // least efficient, but may be desired to always show new folders
-    await common.foreachAllFolders(async (folder,account) => {
+    await common.foreachAllFolders(async (folder) => {
       let setting = await common.getFolderSettingsKey(folder);
       let folderSettings = allSettings[setting];
       if (folderSettings === undefined) {
