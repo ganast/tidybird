@@ -161,7 +161,7 @@ async function run() {
     // also do above actions for the subfolders
     let newSubFolders = newFolder.subFolders;
     if (!newSubFolders) {
-      newSubFolders = await messenger.folders.getSubFolders(newFolder,true);
+      newSubFolders = await messenger.folders.getSubFolders(newFolder.id,true);
     }
     for (let newSubFolder of newSubFolders) {
       // we don't have access to originalFolder's subfolders here

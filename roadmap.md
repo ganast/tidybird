@@ -39,9 +39,8 @@
         1. add debug messages including timing & export (see tbsync)
         1. create export/copy of anonymized settings + full folder structure & account types to include in bug report
 1. 5.x: Use new api: do when merged to master, so changes can be done only once. But those will simplify life!
-    1. deprecated: folder.type
     1. test other folder types (search, ...)
-    1. deprecated: getSubFolders(folder) -> uses now folderId => no folder object needed anymore, check functions using it and supporting functions to get folder object
+    1. deprecated: move(folder) -> folderId => everything folderId instead of folder
 1. 5.x+ Other optimisations
     1. handle special folders (with toggle setting)
         1. on setting toggle: set setting of special folders found to "never" or default
