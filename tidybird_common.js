@@ -331,7 +331,7 @@ export const getInternalPath = function(folder) {
  *
  * Used settings: groupby_account & sortorder_accountname
  **/
-export const addToGroupedList = async function(expandedFolder, settings, alreadyExpanded) {
+export const addToGroupedList = async function(expandedFolder, settings) {
   let listType = "auto";
   if (folder_isPinned(expandedFolder.folderSettings)) {
     listType = "pinned";
