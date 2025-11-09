@@ -1,7 +1,7 @@
-Tidybird extension for Mozilla Thunderbird - Organize email into folders quickly
-and easily.
+# Tidybird extension for Mozilla Thunderbird
+Organize email into folders quickly and easily.
 
-# Introduction
+## Introduction
 
 Welcome to Tidybird, an extension for Mozilla Thunderbird that helps you
 maintain a tidy mailbox. You need Tidybird if you:
@@ -37,7 +37,7 @@ The rationale behind the last point is that a folder is, in most cases, easier
 to identify if it can be visually associated with a parent folder that is
 uniquely identifiable itself.
 
-# Usage
+## Usage
 
 First, add the Tidybird icon to the mail toolbar (right-click on the toolbar,
 select "Customize" and drag the Tidybird icon to the desired location on the
@@ -95,7 +95,7 @@ folders, etc.
 
 When this is not enough, a tooltip with the full folder path will do the trick.
 
-# Necessary permissions
+## Necessary permissions
 
 As Tidybird uses some Experimental API calls, it still needs full access permissions.
 Once the necessary API methods are implemented in Thunderbird, Tidybird will need these permissions (also added are some permissions needed as implemented now):
@@ -106,7 +106,7 @@ Once the necessary API methods are implemented in Thunderbird, Tidybird will nee
 - messagesMove: move messages to a folder
 - theme: read theme colors to apply to buttons
 
-# License
+## License
 
 Copyright (C) 2021 George Anastassakis (ganast@ganast.com)
 
@@ -122,6 +122,6 @@ PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 
-# Contact
+## Contact
 
 Please put comments, suggestions, feature requests, bug reports, etc., on the github issue tracker at https://github.com/ganast/tidybird/issues.

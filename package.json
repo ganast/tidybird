@@ -25,16 +25,16 @@
   },
   "homepage": "https://github.com/tatankat/tidybird#readme",
   "devDependencies": {
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-fetch-options": "^0.0.5",
-    "eslint-plugin-html": "^8.1.2",
-    "eslint-plugin-json": "^3.1.0",
-    "eslint-plugin-mozilla": "^3.7.5",
-    "eslint-plugin-prettier": "^5.2.1",
-    "prettier": "^3.3.3",
-    "web-ext": "^8.3.0",
-    "yarn": "^1.22.22",
-    "eslint": "^8.0.0"
+    "@eslint/css": "^0.14.1",
+    "@eslint/js": "^9.39.1",
+    "@eslint/json": "^0.14.0",
+    "@eslint/markdown": "^7.5.1",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "globals": "^16.5.0",
+    "prettier": "3.6.2",
+    "web-ext": "^9.1.0"
   },
   "webExt": {
     "ignoreFiles": [
