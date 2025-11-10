@@ -210,8 +210,28 @@ export const getGroupedFolderList = async function() {
 }
 
 /**
+ * Return a folder id usable by the folder webextensions API
+ * This can also be done using the folders.query function if folderId would become something more cryptic
+ **/
+export const constructFolderId = async function(accountId, path) {
+  return accountId+":/"+path; // path starts with "/"
+};
+/**
+ * Return a folder id usable by the folder webextensions API
+ * from the name used in the settings
+ * This can also be done using the folders.query function if folderId would become something more cryptic
+ **/
+const getFolderIdFromSetting = async function(folderSetting) {
+  const folder = decodeURI(getFolderFromSettingsKey(folderSetting));
+  const accountSplitIndex = folder.indexOf("/");
+  const accountId = folder.substring(0,accountSplitIndex);
+  const path = folder.substring(accountSplitIndex);
+  return constructFolderId(accountId,path);
+}
+/**
  * Return a folder object usable by the folder webextensions API
  * from the name used in the settings
+ * TODO replace instances of this with above as new API does not require folder object
  **/
 const getFolderObjectFromSetting = async function(folderSetting) {
   let folder = decodeURI(getFolderFromSettingsKey(folderSetting));
@@ -468,6 +488,8 @@ export const isSpecialFolder = function(folder) {
  */
 export const debug = function(message) {
   console.log('[tidybird debug] '+message);
-  let e = new Error();
-  console.log(e.stack);
+  if(false) { //TODO: setting for debug (with trace?)
+    let e = new Error();
+    console.log(e.stack);
+  }
 }

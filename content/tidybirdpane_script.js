@@ -289,7 +289,7 @@ async function getSettings() {
 /*
  * The move functionality
  */
-function moveMessages(messageArray, folder, markAsRead) {
+function moveMessages(messageArray, folderId, markAsRead) {
   // first mark as read, as messageIds are not retained after moving to another folder
   if (markAsRead) {
     for (const message of messageArray) {
@@ -298,12 +298,11 @@ function moveMessages(messageArray, folder, markAsRead) {
   }
   browser.messages.move(
     messageArray.map((message) => message.id),
-    folder
+    folderId
   );
 }
 
-const moveSelectedMessageToFolder = async function (expandedFolder, markAsRead) {
-  let folder = await getFolderFromExpanded(expandedFolder); //moveMessages does not work on expandedFolder
+const moveSelectedMessageToFolder = async function (folderId, markAsRead) {
   /*
   A message can be displayed in either a 3-pane tab, a tab of its own, or in a window of its own. All
   are referenced by tabId in this API. Display windows are considered to have exactly one tab,
@@ -331,10 +330,10 @@ const moveSelectedMessageToFolder = async function (expandedFolder, markAsRead) 
      *  so we first detect the type
      */
     let page = await browser.mailTabs.getSelectedMessages();
-    moveMessages(page.messages, folder, markAsRead);
+    moveMessages(page.messages, folderId, markAsRead);
     while (page.id) {
       page = await browser.messages.continueList(page.id);
-      moveMessages(page.messages, folder, markAsRead);
+      moveMessages(page.messages, folderId, markAsRead);
     }
   } else {
     // Use displayed messages if this tab is not a mailTab (we get a result if the tab is showing a message)
@@ -350,17 +349,11 @@ const moveSelectedMessageToFolder = async function (expandedFolder, markAsRead) 
       // in that tab, there are no at this very moment(!) displayed messages found
       return;
     }
-    moveMessages(messages, folder, markAsRead);
+    moveMessages(messages, folderId, markAsRead);
   }
 };
 
 let foldersInList = [];
-const getFolderFromExpanded = async function(expandedFolder) {
-  return {
-    accountId: expandedFolder.accountId,
-    path: expandedFolder.path,
-  };
-}
 const isFolderInList = function (internalPath) {
   return foldersInList.includes(internalPath);
 };
@@ -457,8 +450,9 @@ const addFolderButtons = async function (expandedFolder,buttonParent) {
     button.setAttribute("data-folder", expandedFolder.internalPath);
     button.setAttribute("tooltiptext", expandedFolder.displayPath);
 
+    const folderId = await common.constructFolderId(expandedFolder.accountId,expandedFolder.path);
     button.addEventListener("click", function () {
-      moveSelectedMessageToFolder(expandedFolder, markAsRead == "yes");
+      moveSelectedMessageToFolder(folderId, markAsRead == "yes");
     });
     button.addEventListener("mouseenter", function (theEvent) {
       update_tooltipcolor(theEvent.target);
