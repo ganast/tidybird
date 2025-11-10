@@ -16,7 +16,7 @@
     "32": "skin/icon32.png",
     "64": "skin/icon64.png"
   },
-  "version": "5.1",
+  "version": "5.2",
   "browser_action": {
     "default_icon": "skin/icon64.png",
     "default_title": "Tidybird"

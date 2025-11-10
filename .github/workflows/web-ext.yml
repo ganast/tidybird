@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout"
-        uses: actions/checkout@v1
+        uses: actions/checkout@v4
 
       - name: "Install node"
         uses: actions/setup-node@v4
@@ -19,7 +19,7 @@ jobs:
           node-version: "22"
 
       - name: "Install requirements"
-        run: yarnpkg
+        run: npm install
 
 #      - name: "Run eslint"
 #        run: ./node_modules/.bin/eslint .
@@ -51,7 +51,7 @@ jobs:
       - name: "web-ext build"
         id: web-ext-build
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: tatankat/action-web-ext@v2
+        uses: kewisch/action-web-ext@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -63,16 +63,14 @@ jobs:
       - name: "Get xpi filename"
         id: get_xpi_filename
         if: ${{ steps.web-ext-build.outputs.target }}
-        uses: frabert/replace-string-action@v1.2
-        with:
-          pattern: ".zip"
-          string: ${{ steps.web-ext-build.outputs.target }}
-          replace-with: ".xpi"
+        run: |
+          echo XPIFILENAME=$(echo ${{ steps.web-ext-build.outputs.target }} | sed "s/\.zip$/.xpi/") >> $GITHUB_OUTPUT
+        shell: bash
 
       - name: "Copy zip to xpi"
         if: ${{ steps.web-ext-build.outputs.target }}
         run: |
-          cp ${{ steps.web-ext-build.outputs.target }} ${{ steps.get_xpi_filename.outputs.replaced }}
+          cp ${{ steps.web-ext-build.outputs.target }} ${{ steps.get_xpi_filename.outputs.XPIFILENAME }}
         shell: bash
 
       - name: "Get version"
@@ -93,43 +91,13 @@ jobs:
       - name: "Create release"
         id: create_release
         if: ${{ steps.web-ext-build.outputs.target }}
-        uses: actions/create-release@v1
+        uses: ncipollo/release-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Tidybird ${{ steps.get_version.outputs.VERSION }}
+          name: Tidybird ${{ steps.get_version.outputs.VERSION }}
           body: |
             ${{ steps.get_tag.outputs.subject }}
           draft: true
           prerelease: true
-
-      - name: "Get release asset basenames"
-        id: get_basename
-        if: ${{ steps.create_release.outputs.upload_url }}
-        run: |
-          echo xpi=$(basename ${{ steps.get_xpi_filename.outputs.replaced }}) >> $GITHUB_OUTPUT
-          echo zip=$(basename ${{ steps.web-ext-build.outputs.target }}) >> $GITHUB_OUTPUT
-        shell: bash
-
-      - name: "Upload release assets .xpi"
-        if: ${{ steps.create_release.outputs.upload_url }}
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.get_xpi_filename.outputs.replaced }}
-          asset_name: ${{ steps.get_basename.outputs.xpi }}
-          asset_content_type: "application/zip"
-
-      - name: "Upload release assets .zip"
-        if: ${{ steps.create_release.outputs.upload_url }}
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.web-ext-build.outputs.target }}
-          asset_name: ${{ steps.get_basename.outputs.zip }}
-          asset_content_type: "application/zip"
+          artifacts: ${{ steps.get_xpi_filename.outputs.XPIFILENAME }}, ${{ steps.web-ext-build.outputs.target }}
