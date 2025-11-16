@@ -1,5 +1,5 @@
 //import Sortable from './sortablejs'; // does not work
-import Sortable from './sortablejs/modular/sortable.core.esm.js';
+import Sortable from '../node_modules/sortablejs/modular/sortable.core.esm.js';
 // remark: sortable needs "open_in_tab": true in the manifest for options_ui
 // TODO: find out why
 

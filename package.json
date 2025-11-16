@@ -40,9 +40,12 @@
     "ignoreFiles": [
       "eslint.config.mjs",
       "package-lock.json",
-      "package.json",
       "roadmap.md",
-      "yarn.lock"
+      "yarn.lock",
+      "!node_modules",
+      "!node_modules/sortablejs",
+      "!node_modules/sortablejs/modular",
+      "!node_modules/sortablejs/modular/sortable.core.esm.js"
     ]
   },
   "dependencies": {
