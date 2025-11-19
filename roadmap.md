@@ -32,7 +32,6 @@
             1. upload .xpi to add-ons site
             1. Once accepted, finalize release on github & set as latest
 1. optional quick successor 5.x
-    1. follow font size -> create issue
     1. reset own MRM list with TB list: button in options
     1. easier debugging of issues:
         1. create setting to enable debugging
