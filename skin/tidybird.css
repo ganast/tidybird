@@ -55,6 +55,7 @@
   flex-shrink: 1;
   flex-basis: auto;
   align-self: center;
+  font-weight: normal;
 }
 
 /*
