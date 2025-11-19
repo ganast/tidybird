@@ -1,7 +1,8 @@
 export const option_defaults = {
   startup: "latest",
+  fontsize: -1,
   buttonheight: -1,
-  buttonmargin: 3,
+  buttonmargin: 4,
   showoptionsbutton: true,
   isShowing: true,
   width: 224,

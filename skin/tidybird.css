@@ -10,7 +10,7 @@
 }
 
 .tidybird-header {
-  margin-bottom: 3px;
+  margin-bottom: 4px;
   font-weight: bold;
   font-size: larger;
 }
@@ -22,9 +22,9 @@
   margin-left: 0;
   height: auto;
   min-height: unset;
-  padding-top: 1px;
+  padding-top: 0;
   padding-right: .25em;
-  padding-bottom: 1px;
+  padding-bottom: 0;
   padding-left: .25em;
 }
 .tidybird-folder-move-button {
