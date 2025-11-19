@@ -44,6 +44,22 @@ async function applyButtonSize(changedSizes) {
   }
 }
 applyButtonSize();
+/*
+ * Set font size
+ */
+async function applyFontSize(size) {
+  if (size === undefined) {
+    // initial load size
+    let settings = await getSettings();
+    size = settings.fontsize;
+  }
+  let sizeText = "";
+  if (size != -1) {
+    sizeText = `${size}px`;
+  }
+  document.documentElement.style.fontSize = sizeText;
+}
+applyFontSize();
 
 /**
  * Keep track of the width
@@ -95,6 +111,9 @@ function updateSetting(setting, value) {
       //  this won't break when we change something to the settings
       return false;
     case setting == "startup":
+      return false;
+    case setting == "fontsize":
+      applyFontSize(value);
       return false;
     case setting.startsWith("button"):
       applyButtonSize({[setting]: value});
