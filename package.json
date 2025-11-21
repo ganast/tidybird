@@ -34,7 +34,7 @@
     "eslint-plugin-prettier": "^5.5.4",
     "globals": "^16.5.0",
     "prettier": "3.6.2",
-    "web-ext": "^9.1.0"
+    "web-ext": "^9.2.0"
   },
   "webExt": {
     "ignoreFiles": [
