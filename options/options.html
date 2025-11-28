@@ -129,6 +129,27 @@
                 </div>
                 -->
             </div>
+
+            <h2>Debug</h2>
+            <div>
+                <div>
+                    Reset all folders' "recently moved to" timestamps to:
+                    <button id="resetMRMsTB" name="resetMRMsTB">Thunderbird settings</button>
+                    <button id="resetMRMsNever" name="resetMRMsNever"">never (will remove Tidybird's timestamps)</button>
+                </div>
+                <div>
+                    <div>
+                        Debug level:
+                        <input id="debuglevel_off" name="debuglevel" type="radio" value="off"/>
+                        <label for="debuglevel_off">Off</label>
+                        <input id="debuglevel_anon" name="debuglevel" type="radio" value="anon"/>
+                        <label for="debuglevel_anon">Anonymized</label>
+                        <input id="debuglevel_real" name="debuglevel" type="radio" value="real"/>
+                        <label for="debuglevel_real">Real account and folder names - use with caution!</label>
+                    </div>
+                    <button>Create debug report</button>
+                </div>
+            </div>
         </div>
         <div id="expertsettings" class="hidden">
             <p>Folder order and selection. To move the folder, use the dots handle on the left side.</p>

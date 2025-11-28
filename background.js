@@ -64,18 +64,23 @@ async function run() {
    * debug log for MRM manager
    **/
   async function logEvent(eventname, ...toLog) {
-    //TODO add check if debug: expert settings for MRM debug & Tidybird debug
-    console.debug("[Tidybird MRM] "+eventname,...toLog)
+    common.debug("[MRM] "+eventname,...toLog)
   }
   /**
-   * Store a value in the settings
+   * Get an MRM attribute from the settings
    **/
   async function getAttribute(key) {
     return messenger.storage.local.get(key);
   }
+  /**
+   * Store an MRM attribute in the settings
+   **/
   async function setAttribute(key, value) {
     messenger.storage.local.set({[key]: value});
   }
+  /**
+   * Delete an MRM attribute in the settings
+   **/
   async function deleteAttribute(key) {
     messenger.storage.local.remove(key);
   }
@@ -234,35 +239,10 @@ async function install() {
     return;
   }
 
-  loadThunderBirdMRMtimes();
+  common.loadThunderBirdMRMtimes();
 
   // set flag to tell initial loading of Thunderbird MRM folders is already done
   messenger.storage.local.set({["TBloaded"]: true});
-}
-
-async function loadThunderBirdMRMtimes() {
-  console.debug("Initialization of Tidybird MRMFolders");
-  // Get MRMFolders only first time the extension is run, afterwards we rely on our own implementation
-  //  which also registers MRM for special folders and does not rely on an experiment
-  // TODO add buttons to (expert) settings to
-  // 1) reset (all) MRMTime to none
-  // 2) reset (all) MRMTime to TB settings
-  // 3) set more recent TB settings
-  let mostRecentlyModifiedFolders = await messenger.folders.query({
-    isRoot: false,
-    lastUsedAsDestination: { after: new Date(1970, 1, 1) }
-  });
-
-  let foldersMRMSettings = {};
-  for (let folder of mostRecentlyModifiedFolders) {
-    const folderInfo = await browser.folders.getFolderInfo(folder.id); // Does not work on root folders
-    const MRMTime = folderInfo.lastUsedAsDestination;
-    if (MRMTime) {
-      foldersMRMSettings[common.getFolderMRMSettingsKey(folder)] = common.encodeDate(MRMTime);
-    }
-  }
-  // this also triggers redrawal of buttons
-  messenger.storage.local.set(foldersMRMSettings);
 }
 
 messenger.runtime.onInstalled.addListener(install);

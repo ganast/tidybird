@@ -244,9 +244,12 @@ async function setCurrentChoiceFolderdate(key, value, doSetFolderOptions) {
   if (!textFields.length) {
     console.error(`Did not find the textfield to set ${key}`);
   } else {
-    for (let textField of textFields) {
-      // there should only be 1
-      textField.textContent = common.parseDate(value);
+    for (let textField of textFields) { // there should only be 1
+      let textValue = "";
+      if(value !== undefined) {
+        textValue = common.parseDate(value);
+      }
+      textField.textContent = textValue;
     }
   }
 }
@@ -260,11 +263,11 @@ async function setCurrentChoice(result,doSetFolderOptions) {
   for (let [key, value] of Object.entries(result)) {
     console.log(`${key}: ${value}`);
     settings[key] = value; // set value in cache
-    if(key[0] === "F") {
+    if(common.isFoldersettings(key)) {
       setCurrentChoiceFoldersetting(key, value, doSetFolderOptions);
       continue;
     }
-    if(key[0] === "M") {
+    if(common.isMRMtimeSetting(key)) {
       setCurrentChoiceFolderdate(key, value, doSetFolderOptions);
       continue;
     } else if(key === "manualorder") {
@@ -485,4 +488,31 @@ function domReady() {
     // * it may be needed to act upon, to show updated order for example
     messenger.storage.local.onChanged.addListener(settingsChangedListener);
   });
+
+  document.getElementById("resetMRMsTB").addEventListener("click", resetMRMsTB);
+  document.getElementById("resetMRMsNever").addEventListener("click", resetMRMsNever);
+}
+
+/**
+ * Reset all registered MRMs
+ */
+async function resetMRMsNever() {
+  await common.removeMRMtimes();
+  forceUpdate();
+}
+
+/**
+ * Reset all registered MRMs to current Thunderbird values
+ */
+async function resetMRMsTB() {
+  await common.removeMRMtimes();
+  await common.loadThunderBirdMRMtimes();
+  forceUpdate();
+}
+
+/**
+ * Force a full update of the button list
+ */
+async function forceUpdate() {
+  messenger.runtime.sendMessage("forceUpdate");
 }

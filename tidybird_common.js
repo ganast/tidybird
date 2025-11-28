@@ -18,6 +18,8 @@ export const option_defaults = {
   showneverused: false,
   folderstoshow_default: true,
 
+  debuglevel: "off",
+
   Fdefault: 0,
   manualorder: [],
 };
@@ -487,10 +489,68 @@ export const isSpecialFolder = function(folder) {
  * Implementation based on SMR's debug function
  * @param {string} message The message to log
  */
-export const debug = function(message) {
-  console.log('[tidybird debug] '+message);
+export const debug = function(message, ...toLog) {
+  console.debug('[tidybird] '+message, ...toLog);
   if(false) { //TODO: setting for debug (with trace?)
     let e = new Error();
-    console.log(e.stack);
+    console.debug(e.stack);
   }
+}
+
+/**
+ * Returns true if a key from settings holds a folder's MRM time
+ * @param {string} settingsKey
+ */
+export const isMRMtimeSetting = function(settingsKey) {
+  return settingsKey.startsWith("M");
+}
+/**
+ * Returns true if a key from settings holds a folder's settings
+ * @param {string} settingsKey
+ */
+export const isFoldersettings = function(settingsKey) {
+  return settingsKey.startsWith("F");
+}
+
+/**
+ * Remove all MRM times from Tidybird
+ */
+export const removeMRMtimes = async function() {
+  const allSettings = await messenger.storage.local.get();
+  const toRemoveKeys = [];
+  for (const setting in allSettings) {
+    if (isMRMtimeSetting(setting)) {
+      toRemoveKeys.push(setting);
+    }
+  }
+  await messenger.storage.local.remove(toRemoveKeys);
+}
+
+/**
+ * Set folder MRM times from Thunderbird in Tidybird settings
+ * Does not remove times that are not set in Thunderbird
+ */
+export const loadThunderBirdMRMtimes = async function() {
+  console.debug("Initialization of Tidybird MRMFolders");
+  // Get MRMFolders only first time the extension is run, afterwards we rely on our own implementation
+  //  which also registers MRM for special folders
+  // TODO add buttons to (expert) settings to
+  // 1) reset (all) MRMTime to none
+  // 2) reset (all) MRMTime to TB settings
+  // 3) set more recent TB settings
+  let mostRecentlyModifiedFolders = await messenger.folders.query({
+    isRoot: false,
+    lastUsedAsDestination: { after: new Date(1970, 1, 1) }
+  });
+
+  let foldersMRMSettings = {};
+  for (let folder of mostRecentlyModifiedFolders) {
+    const folderInfo = await browser.folders.getFolderInfo(folder.id); // Does not work on root folders
+    const MRMTime = folderInfo.lastUsedAsDestination;
+    if (MRMTime) {
+      foldersMRMSettings[getFolderMRMSettingsKey(folder)] = encodeDate(MRMTime);
+    }
+  }
+  // this also triggers redrawal of buttons
+  await messenger.storage.local.set(foldersMRMSettings);
 }

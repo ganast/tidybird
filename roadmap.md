@@ -32,14 +32,13 @@
             1. upload .xpi to add-ons site
             1. Once accepted, finalize release on github & set as latest
 1. optional quick successor 5.x
-    1. reset own MRM list with TB list: button in options
     1. easier debugging of issues:
         1. create setting to enable debugging
         1. add debug messages including timing (already in thunderbird) & export (see tbsync)
         1. create export/copy of anonymized settings + full folder structure & account types to include in bug report
 1. 5.x+ Other optimisations
-    1. [branch:undo] ctrl-Z only works after clicking away from tidybird
-    1. [branch:mv3] continue effort to move to mv3
+    1. (branch:undo) ctrl-Z only works after clicking away from tidybird
+    1. (branch:mv3) continue effort to move to mv3
         1. current version makes messages disappear
         1. disappears after some time
         1. test multiple movings after each other

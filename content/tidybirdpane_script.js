@@ -106,7 +106,7 @@ function updateSetting(setting, value) {
   }
   settingsCache[setting] = value;
   switch(true) {
-    case setting.startsWith("M"):
+    case common.isMRMtimeSetting(setting):
       // folder timestamp updated, we handle this with onMoved event
       //  this won't break when we change something to the settings
       return false;
@@ -592,7 +592,7 @@ async function showButtons() {
     // Run only over folders that have settings
     // most efficient, run only over folders with specific settings
     for (let setting in allSettings) {
-      if (setting.startsWith("F")) {
+      if (common.isFoldersettings(setting)) {
         addFolderToList(setting, allSettings[setting], allSettings, settings.showneverused, cutoffFunction, alreadyExpanded, nbFolders);
       }
     }
@@ -600,11 +600,11 @@ async function showButtons() {
     // First run over folders that have settings
     // Then run over folders that have timestamps
     for (const setting in allSettings) {
-      if (setting.startsWith("F")) {
+      if (common.isFoldersettings(setting)) {
         // minority should be handled here
         // these are always handled first
         addFolderToList(setting, allSettings[setting], allSettings, settings.showneverused, cutoffFunction, alreadyExpanded, nbFolders);
-      } else if (setting.startsWith("M")) {
+      } else if (common.isMRMtimeSetting(setting)) {
         //TODO6 only if there is still space
         //TODO6 set total nb of folders, not just total nb of automatically shown folders
         //TODO6 show number of auto folders where we select total nb of folders
@@ -700,6 +700,17 @@ async function settingsChangedListener(settingsUpdateInfo) {
   } //else: no update needed
 }
 messenger.storage.local.onChanged.addListener(settingsChangedListener);
+/**
+ * When updating settings, does not trigger a button list update, once can be triggered by sending a message
+ * This happens, for example, when only folder times have been changed. Which usually only happens when moving a message
+ * @param {any} message 
+ */
+async function messageListener(message) {
+  if(message == "forceUpdate") {
+    updateButtonList();
+  }
+}
+messenger.runtime.onMessage.addListener(messageListener);
 
 /*
  * Do not change button list while it is "in use"
