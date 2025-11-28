@@ -502,7 +502,6 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
     }
 
     const addColumnsToElementGridTemplate = function(container, window, columns) {
-      console.log("Adding columns to grid");
       let gridTemplate = getGridTemplate(container, window.document);
       let parsedGridTemplate = parseGridTemplate(gridTemplate);
       let newGridTemplate = parsedGridTemplate;
@@ -514,7 +513,6 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
     }
 
     const removeColumnsFromElementGridTemplate = function(container, window, columns) {
-      console.log("Removing columns from grid");
       let gridTemplate = container.style.gridTemplate; // our gridTemplate
       let parsedGridTemplate = parseGridTemplate(gridTemplate);
       let newGridTemplate = parsedGridTemplate;
