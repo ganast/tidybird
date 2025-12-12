@@ -48,6 +48,10 @@ input:where([type="number"]) {
   margin: unset;
   padding: 0 0 0 0.5em;
 }
+.horizontal input:where([type="radio"]) {
+  margin-right: 0;
+  margin-left: 1em;
+}
 
 body {
   margin: 8px; /* default firefox margin, do not paste text to window border */
