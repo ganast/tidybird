@@ -78,8 +78,7 @@ async function windowRemovedListener() {
 /*
 for(let eventname of ["beforeunload","suspend","pagehide","unload","cancel","abort","change","close","contextlost","emptied","ended","invalid","storage"]) {
   window.addEventListener(eventname, function() {
-    // none of them print something, not even pagehide & unload ("load" does, so the code works)
-    console.log(eventname);
+    // none of them fire, not even pagehide & unload ("load" does, so the code works)
   });
 }
 */
@@ -89,7 +88,7 @@ window.addEventListener("pagehide", windowRemovedListener);
 //window.addEventListener("unload", windowRemovedListener);
 
 /*
- * Read settings
+ * Use new setting value in the interface
  */
 function updateSetting(setting, value) {
   if (value === undefined) {
@@ -225,15 +224,15 @@ let buttonReadTemplate = null;
 let buttonTemplate = null;
 const addFolderButtons = async function (expandedFolder,buttonParent) {
   if (isFolderInList(expandedFolder.internalPath)) {
-    console.log(
-      `not adding ${expandedFolder.name}: already at ${getFolderIndexInList(
+    common.debug(
+      `not adding ${await common.anonymize("folderIPath",expandedFolder.internalPath)}: already at ${getFolderIndexInList(
         expandedFolder.internalPath
       )}`
     );
     return;
   }
 
-  common.debug(`adding button for folder ${expandedFolder.name}`);
+  common.debug(`adding button for folder ${await common.anonymize("folderIPath",expandedFolder.internalPath)}`);
 
   let button;
   let label1;
@@ -299,9 +298,7 @@ const addFolderButtons = async function (expandedFolder,buttonParent) {
     button.addEventListener("click", function () {
       moveSelectedMessageToFolder(folderId, markAsRead == "yes");
     });
-    console.debug("Appending button to parent");
     buttonParent.appendChild(button);
-    console.debug("Appended button to parent");
   }
   foldersInList.push(expandedFolder.internalPath);
 };
@@ -333,11 +330,11 @@ const showOptionsPage = async function() {
 let redrawalPaused = false;
 let redrawalAsked = false;
 const pauseRedrawal = function() {
-  console.log("Redrawal paused");
+  common.debug("Redrawal paused");
   redrawalPaused = true;
 }
 const resumeRedrawal = function() {
-  console.log("Redrawal resumed");
+  common.debug("Redrawal resumed");
   redrawalPaused = false;
   if(redrawalAsked) {
     updateButtonList();
@@ -351,7 +348,7 @@ const updateButtonList = async function () {
   }
   redrawalAsked = false;
   //FIXME do not recreate buttons
-  console.debug("tidybird: updating button list");
+  common.debug("updating button list");
   while (listParent.hasChildNodes()) {
     foldersInList.pop();
     //FIXME6 only remove and update automatic buttons (manual buttons: add them directly in correct place)
@@ -401,9 +398,7 @@ const updateButtonListIfNeeded = async function (folder, neededIfNotPresent) {
  **/
 async function onMessageEvent(originalMessages, newMessages, eventName) {
   let firstMessage = newMessages.messages[0];
-  console.log(
-    `tidybird: message ${eventName} event to ${firstMessage.folder.name}`
-  );
+  common.debug(`message ${eventName} event to ${await common.anonymize("folderid",firstMessage.folder.id)}`);
   // Event (copying/moving) is always done from 1 folder to 1 other folder, so it's enough to read the folder of the first message in the list
   updateButtonListIfNeeded(firstMessage.folder, true);
 }
@@ -419,9 +414,7 @@ messenger.messages.onCopied.addListener(
 );
 
 async function onFolderEvent(originalFolder, newFolder, eventName) {
-  console.log(
-    `tidybird: folder ${eventName} event: on "[${originalFolder.path}] ${originalFolder.name} (${originalFolder.accountId}})"`
-  );
+  common.debug(`folder ${eventName} event: on ${await common.anonymize("folderid",originalFolder.id)}`);
   updateButtonListIfNeeded(originalFolder, false);
 }
 // Rename also fires delete. For now we don't use the event information, so we can just act on delete

@@ -100,8 +100,9 @@ async function run() {
   for (let settingsKey in await getAttribute()) {
     if (settingsKey.startsWith("D")) {
       deleteAttribute(settingsKey);
-      deleteAttribute("F" + common.getFolderFromSettingsKey(settingsKey));
-      logEvent("removed from queue and deleted MRM time for: "+settingsKey);
+      const folderName = common.getFolderFromSettingsKey(settingsKey)
+      deleteAttribute("F" + folderName);
+      logEvent("removed from queue and deleted MRM time for: "+await common.anonymize("folderIPath",folderName));
     }
   }
   //FIXME cleanup registered MRM times for folders that no longer exist (remove with other client)
@@ -239,6 +240,7 @@ async function install() {
     return;
   }
 
+  common.debug("Initialization of Tidybird MRMFolders on install");
   common.loadThunderBirdMRMtimes();
 
   // set flag to tell initial loading of Thunderbird MRM folders is already done

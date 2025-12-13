@@ -172,7 +172,7 @@ export const parseDate = function(encodedDate) {
   try {
     return new Intl.DateTimeFormat(undefined,{dateStyle:'short',timeStyle:'short'}).format(new Date(parseNumber(encodedDate)*1000));
   } catch (e) {
-    console.log("Tidybird error in parseDate",e);
+    console.error("Tidybird error in parseDate",e);
   }
   return null;
 }
@@ -485,16 +485,57 @@ export const isSpecialFolder = function(folder) {
 }
 
 /**
- * Log debug messages with stack trace
+ * Convert array of bytes to hex string
+ * @param {Array} bytes 
+ * @returns hex string
+ */
+export const toHex = function(bytes) {
+  return bytes.map(b => b.toString(16).padStart(2, '0')).join(''); // convert hmac hash result to hex string
+}
+
+/**
+ * Depending in the settings, anonymize a string to put in the logs, so it can be safely shared online
+ * @param {string} toLog 
+ */
+const hashLength = 16;
+let salt;
+export const anonymize = async function(type,toLog) {
+  //FIXME: create once for this session, so same named things get the same hash
+  if(salt === undefined) {
+    let sessionSaltObject = await messenger.storage.session.get("salt");
+    if(sessionSaltObject.salt === undefined) {
+      salt = crypto.getRandomValues(new Uint8Array(16)); // generate random salt
+      // this may overwrite a value written in the meantime, but
+      // * as this is not function-critical, no semaphore is used
+      // * as we are notified of a change this is even more unlikely to happen
+      //TODO on change
+      messenger.storage.session.set({salt});
+    } else {
+      salt = sessionSaltObject.salt;
+    }
+  }
+  const key = await crypto.subtle.importKey('raw', salt, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+
+  const encoder = new TextEncoder();
+  const data = encoder.encode(toLog); // encode string to utf8 bytes
+  const signature = await crypto.subtle.sign('HMAC', key, data);
+
+  const hashArray = Array.from(new Uint8Array(signature));
+  return `${type}:${toHex(hashArray).substring(0, hashLength)}`; // truncate hash for better readability
+}
+
+/**
+ * Depending on the settings, log debug messages with stack trace
  * Implementation based on SMR's debug function
  * @param {string} message The message to log
  */
 export const debug = function(message, ...toLog) {
   console.debug('[tidybird] '+message, ...toLog);
-  if(false) { //TODO: setting for debug (with trace?)
-    let e = new Error();
-    console.debug(e.stack);
-  }
+  /*
+  // log with trace
+  let e = new Error();
+  console.debug(e.stack);
+  */
 }
 
 /**
@@ -531,7 +572,6 @@ export const removeMRMtimes = async function() {
  * Does not remove times that are not set in Thunderbird
  */
 export const loadThunderBirdMRMtimes = async function() {
-  console.debug("Initialization of Tidybird MRMFolders");
   // Get MRMFolders only first time the extension is run, afterwards we rely on our own implementation
   //  which also registers MRM for special folders
   // TODO add buttons to (expert) settings to
