@@ -98,11 +98,12 @@ async function run() {
   // delete the MRM times of the queued folders and empty the queue
   logEvent("emptying deletion queue")
   for (let settingsKey in await getAttribute()) {
-    if (settingsKey.startsWith("D")) {
+    if (common.isFolderDeleteFlag(settingsKey)) {
       deleteAttribute(settingsKey);
-      const folderName = common.getFolderFromSettingsKey(settingsKey)
-      deleteAttribute("F" + folderName);
-      logEvent("removed from queue and deleted MRM time for: "+await common.anonymize("folderIPath",folderName));
+      const folderAttributename = common.getFolderAttributenameFromSettingsKey(settingsKey)
+      deleteAttribute(common.getFolderSettingsKeyFromAttributename(folderAttributename));
+      deleteAttribute(common.getFolderMRMSettingsKeyFromAttributename(folderAttributename));
+      logEvent("removed from queue and deleted MRM time for: "+await common.anonymize("folderAttributename",folderAttributename));
     }
   }
   //FIXME cleanup registered MRM times for folders that no longer exist (remove with other client)
@@ -180,7 +181,7 @@ async function run() {
           // we don't know the name
         };
       } else {
-        console.error("Tidybird MRM error: don't know how to handle subfolders while moving", newFolder, newSubFolder);
+        common.error("MRM error: don't know how to handle subfolders while moving", await common.anonymize("folderId",newFolder.id), await common.anonymize("folderId",newSubFolder.id));
       }
       actOnFolderMove(originalSubFolder, newSubFolder);
     }

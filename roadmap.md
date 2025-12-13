@@ -1,6 +1,5 @@
 
 1. 5.0 Test thoroughly if everything works and release (without expert settings)
-    1. Moved folders not removed from MRM => remove folders in buttons that do not longer exist if we don't run over the folders but over the settings
     1. Check if we handled remarks in ATN reviews & github issues
     1. TODOs & FIXMEs
     1. Store release procedure
@@ -31,11 +30,6 @@
             1. Publish release as pre-release
             1. upload .xpi to add-ons site
             1. Once accepted, finalize release on github & set as latest
-1. optional quick successor 5.x
-    1. easier debugging of issues:
-        1. create setting to enable debugging
-        1. add debug messages including timing (already in thunderbird) & export (see tbsync)
-        1. create export/copy of anonymized settings + full folder structure & account types to include in bug report
 1. 5.x+ Other optimisations
     1. (branch:undo) ctrl-Z only works after clicking away from tidybird
     1. (branch:mv3) continue effort to move to mv3

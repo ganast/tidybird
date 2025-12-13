@@ -3,7 +3,7 @@ import Sortable from '../node_modules/sortablejs/modular/sortable.core.esm.js';
 // remark: sortable needs "open_in_tab": true in the manifest for options_ui
 // TODO: find out why
 
-// general options can't start with "F" or "M"
+// general options can't start with "F", "M" or "D"
 // those are reserved for folder Options and MRMTime
 // yes, it is cryptic, but it takes the least space
 import * as common from '../tidybird_common.js';
@@ -175,10 +175,10 @@ async function setCurrentChoiceFoldersetting(key, value, doSetFolderOptions) {
 }
 
 function findFolderElement(key) {
-  const folderAttribute = common.getFolderFromSettingsKey(key);
+  const folderAttribute = common.getFolderAttributenameFromSettingsKey(key);
   const folderEls = document.querySelectorAll(`[data-folder='${folderAttribute}']`);
   if (!folderEls.length) {
-    console.error(`Did not find the textfield to set ${key}`);
+    common.anonymize("folderSettingsKey",key).then((anon_key) => common.error(`Did not find the textfield to set ${anon_key}`));
   } else {
     for (const thisFolderEl of folderEls) {
       // there should only be 1
@@ -239,10 +239,10 @@ async function setCurrentChoiceFolderdate(key, value, doSetFolderOptions) {
   if(!doSetFolderOptions) {
     return;
   }
-  let folderAttribute = common.getFolderFromSettingsKey(key);
+  let folderAttribute = common.getFolderAttributenameFromSettingsKey(key);
   let textFields = document.querySelectorAll(`[data-folder='${folderAttribute}'] [data-name='MRM']`);
   if (!textFields.length) {
-    console.error(`Did not find the textfield to set ${key}`);
+    common.anonymize("folderSettingskey",key).then((anon_key) => common.error(`Did not find the textfield to set ${anon_key}`));
   } else {
     for (let textField of textFields) { // there should only be 1
       let textValue = "";
@@ -261,7 +261,7 @@ async function setCurrentChoiceFolderdate(key, value, doSetFolderOptions) {
  **/
 async function setCurrentChoice(result,doSetFolderOptions) {
   for (let [key, value] of Object.entries(result)) {
-    console.log(`${key}: ${value}`);
+    common.anonymize("setting",key).then((anon_key) => common.debug(`Setting "${anon_key}" changed to "${value}"`));
     if(doSetFolderOptions) {
       // only set in the cache when not in initial opening phase
       common.updateSetting(key, value); // set value in cache
@@ -302,7 +302,7 @@ async function setCurrentChoice(result,doSetFolderOptions) {
     }
     let inputNodes = document.querySelectorAll(`[name='${encodeURI(key)}']`);
     if (!inputNodes.length) {
-      console.error(`Did not find an input for setting ${key}`);
+      common.anonymize("setting",key).then((anon_key) => common.error(`Did not find an input for setting ${anon_key}`));
     } else if (inputNodes.length > 1) { // radio or checkbox group
       for (let inputNode of inputNodes) {
         if (inputNode.value == value) {
@@ -418,13 +418,13 @@ function calculateFolderSetting(theRow) {
   let folderSettings = 0;
   for (let checkedInput of checkedInputs) {
     const inputname = common.getSettingFromInput(checkedInput);
-    console.log(`Getting values for ${inputname}`);
+    common.anonymize("input",inputname).then((anon_input) => common.debug(`Getting values for ${anon_input}`));
     //TODO OR together, so we are safe and do not count same twice?
     folderSettings |= common.calculateFolderSingleSettingValue(inputname,checkedInput.value);
   }
   return folderSettings;
 }
-async function setFolderSettings(foldername, folderSettings) {
+async function setFolderSettings(folderAttributename, folderSettings) {
   // Limits for sync storage:
   // - max 512 items => we can't store folders in separate items
   // - max item size: 8192 byte => on 2000 folders, only about 4 byte per folder...
@@ -432,19 +432,19 @@ async function setFolderSettings(foldername, folderSettings) {
   // so we don't use sync storage for tidybird, because mixing may lead to confusion
   //TODO we should however throw an error when we can't save a setting
   messenger.storage.local.set({
-    ["F"+foldername]: folderSettings,
+    [common.getFolderSettingsKeyFromAttributename(folderAttributename)]: folderSettings,
   });
-  console.log(`folderSave on ${foldername}: ${folderSettings}`);
+  common.anonymize("folderAttributename",folderAttributename).then((anon_folderAttributename) => common.debug(`folderSave on ${anon_folderAttributename}: ${folderSettings}`));
 }
-async function resetFolderSettings(foldername) {
-  messenger.storage.local.remove("F"+foldername);
+async function resetFolderSettings(folderAttributename) {
+  messenger.storage.local.remove(common.getFolderSettingsKeyFromAttributename(folderAttributename));
 }
 async function folderClick(theEvent) {
   let theInput = theEvent.target;
   if(theInput.className == "resetbutton") {
     const theRow = theInput.parentNode.parentNode;
-    const foldername = theRow.getAttribute("data-folder");
-    resetFolderSettings(foldername);
+    const folderAttributename = theRow.getAttribute("data-folder");
+    resetFolderSettings(folderAttributename);
   }
 }
 async function folderInput(theEvent) {
@@ -454,12 +454,12 @@ async function folderInput(theEvent) {
     return;
   }
   let theRow = theInput.parentNode.parentNode;
-  let foldername = theRow.getAttribute("data-folder"); // or theInput.name.substring(splitterIndex+1)
+  let folderAttributename = theRow.getAttribute("data-folder"); // or theInput.name.substring(splitterIndex+1)
   // a number, as it takes less place and we want to support many folders
   // note: numbers are probably stored in ascii (according to the byte usage: 1 byte per character)
 
   let folderSettings = calculateFolderSetting(theRow);
-  setFolderSettings(foldername, folderSettings);
+  setFolderSettings(folderAttributename, folderSettings);
 }
 
 let foldersortEl, foldergetEl, foldersortElSortable, foldergetElSortable;
@@ -484,6 +484,7 @@ async function domReady() {
 
   document.getElementById("resetMRMsTB").addEventListener("click", resetMRMsTB);
   document.getElementById("resetMRMsNever").addEventListener("click", resetMRMsNever);
+  document.getElementById("getDebugInfo").addEventListener("click", logDebugInfo);
 }
 
 /**
@@ -508,4 +509,31 @@ async function resetMRMsTB() {
  */
 async function forceUpdate() {
   messenger.runtime.sendMessage("forceUpdate");
+}
+
+async function logDebugInfo() {
+  const manifestInfo = await messenger.runtime.getManifest();
+  const filteredInfo = {};
+  for (let key of ["name", "version", ["applications","gecko","id"]]) {
+    let tmpValue;
+    if(Array.isArray(key)) {
+      tmpValue = manifestInfo;
+      for (let subkey of key) {
+        tmpValue = tmpValue[subkey];
+      }
+    } else {
+      tmpValue = manifestInfo[key];
+    }
+    filteredInfo[key] = tmpValue;
+  }
+  const infos = [
+    await messenger.runtime.getBrowserInfo(),
+    await messenger.runtime.getPlatformInfo(),
+    filteredInfo,
+  ];
+  for (let info of infos) {
+    for (let key in info) {
+      common.debug(`INFO "${key}": "${info[key]}"`);
+    }
+  }
 }

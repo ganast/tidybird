@@ -136,16 +136,26 @@ export const getFolderAttributename = function(folder) {
 export const getFolderMRMDeleteKey = function(folder) {
   return "D" + getFolderAttributename(folder); // should come alphabetically before Folder setting
 }
-// also implemented in options.js
+export const getFolderSettingsKeyFromAttributename = function(folderAttributename) {
+  return "F" + folderAttributename; // should come alphabetically before MRM setting
+};
 export const getFolderSettingsKey = function(folder) {
-  return "F" + getFolderAttributename(folder); // should come alphabetically before MRM setting
+  return getFolderSettingsKeyFromAttributename(getFolderAttributename(folder)); // should come alphabetically before MRM setting
 };
-// also implemented in options.js
+export const getFolderMRMSettingsKeyFromAttributename = function(folderAttributename) {
+  return "M" + folderAttributename;
+}
 export const getFolderMRMSettingsKey = function(folder) {
-  return "M" + getFolderAttributename(folder);
-};
-export const getFolderFromSettingsKey = function(setting) {
+  return getFolderMRMSettingsKeyFromAttributename(getFolderAttributename(folder));
+}
+export const getFolderAttributenameFromSettingsKey = function(setting) {
   return setting.substring(1);
+}
+export const getFolderInternalpathFromFolderAttributename = function(folderAttributename) {
+  return decodeURI(folderAttributename);
+}
+export const getFolderInternalpathFromSettingsKey = function(setting) {
+  return getFolderInternalpathFromFolderAttributename(getFolderAttributenameFromSettingsKey(setting));
 }
 export const getSettingFromInput= function(input) {
   let varParts = input.name.split("_",1);
@@ -172,7 +182,7 @@ export const parseDate = function(encodedDate) {
   try {
     return new Intl.DateTimeFormat(undefined,{dateStyle:'short',timeStyle:'short'}).format(new Date(parseNumber(encodedDate)*1000));
   } catch (e) {
-    console.error("Tidybird error in parseDate",e);
+    error("error in parseDate",e);
   }
   return null;
 }
@@ -274,7 +284,7 @@ export const getGroupedFolderList = async function() {
  * Return a folder id usable by the folder webextensions API
  * This can also be done using the folders.query function if folderId would become something more cryptic
  **/
-export const constructFolderId = async function(accountId, path) {
+export const constructFolderId = function(accountId, path) {
   return accountId+":/"+path; // path starts with "/"
 };
 /**
@@ -282,11 +292,10 @@ export const constructFolderId = async function(accountId, path) {
  * from the name used in the settings
  * This can also be done using the folders.query function if folderId would become something more cryptic
  **/
-const getFolderIdFromSetting = async function(folderSetting) {
-  const folder = decodeURI(getFolderFromSettingsKey(folderSetting));
-  const accountSplitIndex = folder.indexOf("/");
-  const accountId = folder.substring(0,accountSplitIndex);
-  const path = folder.substring(accountSplitIndex);
+const getFolderIdFromInternalpath = function(folderInternalpath) {
+  const accountSplitIndex = folderInternalpath.indexOf("/");
+  const accountId = folderInternalpath.substring(0,accountSplitIndex);
+  const path = folderInternalpath.substring(accountSplitIndex);
   return constructFolderId(accountId,path);
 }
 /**
@@ -295,7 +304,7 @@ const getFolderIdFromSetting = async function(folderSetting) {
  * TODO replace instances of this with above as new API does not require folder object
  **/
 const getFolderObjectFromSetting = async function(folderSetting) {
-  let folder = decodeURI(getFolderFromSettingsKey(folderSetting));
+  let folder = getFolderInternalpathFromSettingsKey(folderSetting);
   let accountSplitIndex = folder.indexOf("/");
   return {
     accountId: folder.substring(0,accountSplitIndex), // for MailFolder "constructor"
@@ -558,10 +567,40 @@ export const toHex = function(bytes) {
 const hashLength = 16;
 let salt;
 export const anonymize = async function(type,toLog) {
-  if((getSettings()).debuglevel != "anonymize") {
+  if((getSettings()).debuglevel != "anon") {
     return toLog;
   }
-  //FIXME: create once for this session, so same named things get the same hash
+  let typePrefix = "";
+  if(type == "setting" || type == "input") {
+    if(isFoldersettingoption(toLog)) {
+      typePrefix = type;
+      type = "folderSettingsKey";
+    } else {
+      // no need to anonymize
+      return toLog;
+    }
+  }
+  switch (type) {
+    case "folderSettingsKey":
+      typePrefix = toLog[0]; // keep setting type (M,D,F)
+      toLog = getFolderAttributenameFromSettingsKey(toLog);
+      // falls through to work up to folder id
+    case "folderAttributename":
+      toLog = getFolderInternalpathFromFolderAttributename(toLog);
+      if(toLog == "default") {
+        return toLog;
+      }
+      // falls through to work up to folder id
+    case "folderInternalpath":
+      toLog = getFolderIdFromInternalpath(toLog);
+      type = `${type}>folderId`;
+      break;
+  }
+  if(typePrefix != "") {
+    type = `${typePrefix}>${type}`;
+  }
+
+  // Create salt once per session, so same objects get the same hash by using the same salt
   if(salt === undefined) {
     let sessionSaltObject = await messenger.storage.session.get("salt");
     if(sessionSaltObject.salt === undefined) {
@@ -575,16 +614,21 @@ export const anonymize = async function(type,toLog) {
       salt = sessionSaltObject.salt;
     }
   }
-  const key = await crypto.subtle.importKey('raw', salt, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
 
   const encoder = new TextEncoder();
   const data = encoder.encode(toLog); // encode string to utf8 bytes
+
+  const key = await crypto.subtle.importKey('raw', salt, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const signature = await crypto.subtle.sign('HMAC', key, data);
 
   const hashArray = Array.from(new Uint8Array(signature));
   return `${type}:${toHex(hashArray).substring(0, hashLength)}`; // truncate hash for better readability
 }
 
+const prefix = "[tidybird] ";
+export const error = function(message, ...toLog) {
+  console.error(prefix + "ERROR " + message, ...toLog);
+}
 /**
  * Depending on the settings, log debug messages with stack trace
  * Implementation based on SMR's debug function
@@ -592,7 +636,7 @@ export const anonymize = async function(type,toLog) {
  */
 export const debug = function(message, ...toLog) {
   if((getSettings()).debuglevel != "off") {
-    console.debug('[tidybird] '+message, ...toLog);
+    console.debug(prefix + message, ...toLog);
   }
   /*
   // log with trace
@@ -601,6 +645,13 @@ export const debug = function(message, ...toLog) {
   */
 }
 
+/**
+ * @param {string} settingsKey 
+ * @returns Whether the key from the settings holds any info about a folder
+ */
+export const isFoldersettingoption = function(settingsKey) {
+  return isMRMtimeSetting(settingsKey) || isFoldersettings(settingsKey) || isFolderDeleteFlag(settingsKey);
+}
 /**
  * Returns true if a key from settings holds a folder's MRM time
  * @param {string} settingsKey
@@ -614,6 +665,13 @@ export const isMRMtimeSetting = function(settingsKey) {
  */
 export const isFoldersettings = function(settingsKey) {
   return settingsKey.startsWith("F");
+}
+/**
+ * Returns true if a key from settings holds a folder's deletion flag 
+ * @param {string} settingsKey
+ */
+export const isFolderDeleteFlag = function(settingsKey) {
+  return settingsKey.startsWith("D");
 }
 
 /**

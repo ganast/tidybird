@@ -223,14 +223,14 @@ let buttonTemplate = null;
 const addFolderButtons = async function (expandedFolder,buttonParent) {
   if (isFolderInList(expandedFolder.internalPath)) {
     common.debug(
-      `not adding ${await common.anonymize("folderIPath",expandedFolder.internalPath)}: already at ${getFolderIndexInList(
+      `not adding ${await common.anonymize("folderInternalpath",expandedFolder.internalPath)}: already at ${getFolderIndexInList(
         expandedFolder.internalPath
       )}`
     );
     return;
   }
 
-  common.debug(`adding button for folder ${await common.anonymize("folderIPath",expandedFolder.internalPath)}`);
+  common.debug(`adding button for folder ${await common.anonymize("folderInternalpath",expandedFolder.internalPath)}`);
 
   let button;
   let label1;
@@ -396,7 +396,7 @@ const updateButtonListIfNeeded = async function (folder, neededIfNotPresent) {
  **/
 async function onMessageEvent(originalMessages, newMessages, eventName) {
   let firstMessage = newMessages.messages[0];
-  common.debug(`message ${eventName} event to ${await common.anonymize("folderid",firstMessage.folder.id)}`);
+  common.debug(`message ${eventName} event to ${await common.anonymize("folderId",firstMessage.folder.id)}`);
   // Event (copying/moving) is always done from 1 folder to 1 other folder, so it's enough to read the folder of the first message in the list
   updateButtonListIfNeeded(firstMessage.folder, true);
 }
@@ -412,7 +412,7 @@ messenger.messages.onCopied.addListener(
 );
 
 async function onFolderEvent(originalFolder, newFolder, eventName) {
-  common.debug(`folder ${eventName} event: on ${await common.anonymize("folderid",originalFolder.id)}`);
+  common.debug(`folder ${eventName} event: on ${await common.anonymize("folderId",originalFolder.id)}`);
   updateButtonListIfNeeded(originalFolder, false);
 }
 // Rename also fires delete. For now we don't use the event information, so we can just act on delete
@@ -516,7 +516,7 @@ async function addFolderToList(folderAttributeSetting, folderSettings, allSettin
     }
   } else if(common.folder_doAutoShow(folderSettings)) {
     // always get MRM for these, as either they will be expanded or MRM is needed
-    const folderMRMAttribute = "M"+common.getFolderFromSettingsKey(folderAttributeSetting);
+    const folderMRMAttribute = common.getFolderMRMSettingsKeyFromAttributename(common.getFolderAttributenameFromSettingsKey(folderAttributeSetting));
     const MRMTimeSetting = allSettings[folderMRMAttribute];
     if (MRMTimeSetting !== undefined || showneverused) {
       await addFolderToAutoList(
@@ -566,7 +566,7 @@ async function showButtons() {
   let allSettings = await messenger.storage.local.get(); // get ALL SET settings
   let defaultSettings = allSettings.Fdefault;
   if (common.folder_doAlwaysShow(defaultSettings) || settings.showneverused) {
-    console.log("Tidybird using least efficient method, you may experience slowliness and you may want to change settings");
+    console.info("Tidybird using least efficient method, you may experience slowliness and you may want to change settings");
     //TODO6 change with neverused if default alwaysshow follow neverused, if per folder also show those that are never used
     //TODO6 test for alwaysshow
     // least efficient, but may be desired to always show new folders
@@ -599,7 +599,7 @@ async function showButtons() {
         //TODO6 only if there is still space
         //TODO6 set total nb of folders, not just total nb of automatically shown folders
         //TODO6 show number of auto folders where we select total nb of folders
-        let folderAttributeSetting = "F"+common.getFolderFromSettingsKey(setting);
+        let folderAttributeSetting = common.getFolderSettingsKeyFromAttributename(common.getFolderAttributenameFromSettingsKey(setting));
         if (allSettings[folderAttributeSetting] === undefined) {
           let folder = common.getTidybirdFolder(folderAttributeSetting, allSettings[setting], allSettings.Fdefault);
           // this folder is autoshow and is used, so we don't have to check setting nor showneverused
