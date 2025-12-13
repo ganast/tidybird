@@ -192,6 +192,64 @@ export const encodeDate = function(date) {
 }
 
 /**
+ * Recalculated some setting (values) to usable values
+ * @param {string} setting 
+ * @param {*} value 
+ * @returns recalculated setting
+ */
+export const reCalculateSetting = function(setting, value) {
+  let recalculatedValue = value;
+  switch(setting) {
+    case "nbfolders":
+      recalculatedValue = Number(value); // convert to number
+      break;
+    case "maxage":
+      if (value != -1) {
+        recalculatedValue = Math.floor((Date.now() - value * 24 * 60 * 60 * 1000) / 1000); // convert to milliseconds since epoch
+      }
+      break;
+  }
+  return recalculatedValue;
+}
+// settings cache, kept up to date using updateSetting
+let settingsCache;
+export const initSettings = async function(recalculate=false) {
+  const tmpCache = await messenger.storage.local.get(option_defaults);
+  if(recalculate) {
+    // recalculate these settings
+    tmpCache.nbfolders = reCalculateSetting("nbfolders",tmpCache.nbfolders);
+    tmpCache.maxage = reCalculateSetting("maxage",tmpCache.maxage);
+  }
+  settingsCache = tmpCache;
+  return settingsCache;
+}
+/**
+ * @param {boolean} recalculate Whether to recalculate some of the values
+ * @returns all the "normal" settings
+ */
+export const getSettings = function() {
+  return settingsCache;
+}
+/**
+ * Update a single setting in the setting cache
+ */
+export const updateSetting = function(setting, value) {
+  settingsCache[setting] = value;
+}
+/**
+ * Set a default setting listener that keeps the cache up to date
+ */
+export const setDefaultSettingListener = function() {
+  const settingsChangedListener = (settingsUpdateInfo) => {
+    let changedSettings = Object.keys(settingsUpdateInfo).reduce((attrs, key) => ({...attrs, [key]: settingsUpdateInfo[key].newValue}), {});
+    for (let [key, value] of Object.entries(changedSettings)) {
+      updateSetting(key, value);
+    }
+  };
+  messenger.storage.local.onChanged.addListener(settingsChangedListener);
+}
+
+/**
  * Execute callback function on all folders found
  **/
 export const foreachAllFolders = async function(callback) {
@@ -500,6 +558,9 @@ export const toHex = function(bytes) {
 const hashLength = 16;
 let salt;
 export const anonymize = async function(type,toLog) {
+  if((getSettings()).debuglevel != "anonymize") {
+    return toLog;
+  }
   //FIXME: create once for this session, so same named things get the same hash
   if(salt === undefined) {
     let sessionSaltObject = await messenger.storage.session.get("salt");
@@ -530,7 +591,9 @@ export const anonymize = async function(type,toLog) {
  * @param {string} message The message to log
  */
 export const debug = function(message, ...toLog) {
-  console.debug('[tidybird] '+message, ...toLog);
+  if((getSettings()).debuglevel != "off") {
+    console.debug('[tidybird] '+message, ...toLog);
+  }
   /*
   // log with trace
   let e = new Error();

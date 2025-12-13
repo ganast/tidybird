@@ -54,7 +54,7 @@ const addAccount = function (accountName) {
  * @returns 
  */
 function calculate_simpleSetting(folder, Fdefault) {
-  const folderstoshow_default = settings.folderstoshow_default;
+  const folderstoshow_default = common.getSettings().folderstoshow_default;
   // follow default and simple settings: folders with shortcuts
   if(common.isSpecialFolder(folder) && folderstoshow_default) {
     // internally, special folder detection is done by saving the MRM of these folders elsewhere (as Thunderbird does)
@@ -262,7 +262,10 @@ async function setCurrentChoiceFolderdate(key, value, doSetFolderOptions) {
 async function setCurrentChoice(result,doSetFolderOptions) {
   for (let [key, value] of Object.entries(result)) {
     console.log(`${key}: ${value}`);
-    settings[key] = value; // set value in cache
+    if(doSetFolderOptions) {
+      // only set in the cache when not in initial opening phase
+      common.updateSetting(key, value); // set value in cache
+    }
     if(common.isFoldersettings(key)) {
       setCurrentChoiceFoldersetting(key, value, doSetFolderOptions);
       continue;
@@ -282,7 +285,7 @@ async function setCurrentChoice(result,doSetFolderOptions) {
     }
     if(key.startsWith("sortorder_") && doSetFolderOptions) {
       const groupedFolderList = await common.getGroupedFolderList();
-      const sortorder = await common.getFullSortorder(settings,false);
+      const sortorder = await common.getFullSortorder(common.getSettings(),false);
       await common.sortFoldersBySortorder(groupedFolderList.folderList.auto, sortorder);
       // no folders have been removed, so just move them in the corect order
       const childrenMap = new Map();
@@ -459,15 +462,9 @@ async function folderInput(theEvent) {
   setFolderSettings(foldername, folderSettings);
 }
 
-let settings;
-async function setCache(newSettings) {
-  settings = newSettings;
-  return settings;
-}
-
 let foldersortEl, foldergetEl, foldersortElSortable, foldergetElSortable;
 document.addEventListener("DOMContentLoaded", domReady);
-function domReady() {
+async function domReady() {
   foldersortEl = document.getElementById('foldersort');
   foldergetEl = document.getElementById('folderget');
 
@@ -477,17 +474,13 @@ function domReady() {
     input.addEventListener("input", save);
   }
 
-  const settingsPromise = messenger.storage.local.get(common.option_defaults);
-  // save whole cache at once, to immediatly have all settings available
-  const settingsCachePromise = settingsPromise.then((settings) => setCache(settings));
-  settingsCachePromise.then((settings) => setCurrentChoice(settings,false));
-  settingsCachePromise.then((settings) => loadFolders(settings))
-  .then(() => {
-    // update the settings shown in this window as:
-    // * they may have been changed in another window
-    // * it may be needed to act upon, to show updated order for example
-    messenger.storage.local.onChanged.addListener(settingsChangedListener);
-  });
+  // update the settings shown in this window as:
+  // * they may have been changed in another window
+  // * it may be needed to act upon, to show updated order for example
+  messenger.storage.local.onChanged.addListener(settingsChangedListener);
+  const settings = await common.initSettings();
+  setCurrentChoice(settings, false);
+  loadFolders(settings);
 
   document.getElementById("resetMRMsTB").addEventListener("click", resetMRMsTB);
   document.getElementById("resetMRMsNever").addEventListener("click", resetMRMsNever);

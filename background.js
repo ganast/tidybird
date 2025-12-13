@@ -247,6 +247,8 @@ async function install() {
   messenger.storage.local.set({["TBloaded"]: true});
 }
 
+common.setDefaultSettingListener();
+await common.initSettings();
 messenger.runtime.onInstalled.addListener(install);
 run(); // this is always run when extension is started
 

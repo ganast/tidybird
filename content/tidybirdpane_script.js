@@ -1,8 +1,22 @@
 import * as common from '../tidybird_common.js';
 
-// settings cache, kept up to date using updateSetting
-let settingsCache;
-getSettings();
+/**
+ * Apply changed settings
+ */
+async function settingsChangedListener(settingsUpdateInfo) {
+  let changedSettings = Object.keys(settingsUpdateInfo).reduce((attrs, key) => ({...attrs, [key]: settingsUpdateInfo[key].newValue}), {});
+  let needUpdateList = false;
+  for (let setting in changedSettings) {
+    needUpdateList = needUpdateList || updateSetting(setting, changedSettings[setting]);
+  }
+  if (needUpdateList) {
+    common.debug("Updating list by setting change");
+    updateButtonList();
+  } //else: no update needed
+}
+messenger.storage.local.onChanged.addListener(settingsChangedListener);
+// Initialize settings
+await common.initSettings(true);
 
 /*
  * Set button size
@@ -10,7 +24,7 @@ getSettings();
 async function applyButtonSize(changedSizes) {
   if (changedSizes === undefined) {
     // initial load size
-    let settings = await getSettings();
+    let settings = common.getSettings();
     changedSizes = {
       "buttonheight": settings.buttonheight,
       "buttonmargin": settings.buttonmargin,
@@ -50,7 +64,7 @@ applyButtonSize();
 async function applyFontSize(size) {
   if (size === undefined) {
     // initial load size
-    let settings = await getSettings();
+    let settings = common.getSettings();
     size = settings.fontsize;
   }
   let sizeText = "";
@@ -95,20 +109,14 @@ function updateSetting(setting, value) {
     // if no value is given, take the default value (setting value has been removed)
     value = common.option_defaults[setting];
   }
-  if (setting == "nbfolders") {
-    value = Number(value); // convert to number
-  }
-  if (setting == "maxage") {
-    if (value != -1) {
-      value = Math.floor((Date.now() - value * 24 * 60 * 60 * 1000) / 1000); // convert to milliseconds since epoch
-    }
-  }
-  settingsCache[setting] = value;
+  value = common.reCalculateSetting(setting, value);
+  common.updateSetting(setting, value);
   switch(true) {
     case common.isMRMtimeSetting(setting):
       // folder timestamp updated, we handle this with onMoved event
       //  this won't break when we change something to the settings
       return false;
+    case setting == "debuglevel":
     case setting == "startup":
       return false;
     case setting == "fontsize":
@@ -130,16 +138,6 @@ function updateSetting(setting, value) {
       //and if cut off is sorted order, then remove also some buttons
   }
   return true;
-}
-async function getSettings() {
-  // if cache is empty, update the cache
-  if (settingsCache === undefined) {
-    settingsCache = await messenger.storage.local.get(common.option_defaults);
-    // recalculate these settings
-    updateSetting("nbfolders",settingsCache.nbfolders);
-    updateSetting("maxage",settingsCache.maxage);
-  }
-  return settingsCache;
 }
 
 /*
@@ -312,7 +310,7 @@ const addSettingsButton = async function(optionsButtonParent) {
     showOptionsPage();
   });
   optionsButtonParent.appendChild(optionsButton);
-  let settings = await getSettings();
+  let settings = common.getSettings();
   if (settings.showoptionsbutton) {
     showOptionsButton();
   }
@@ -368,7 +366,7 @@ const updateButtonListIfNeeded = async function (folder, neededIfNotPresent) {
     updateButtonList();
   } else {
     // buttonlist already complete, but may need to be reordered
-    const settings = await getSettings();
+    const settings = common.getSettings();
     // only need to reorder if list is ordered by most recently used date
     const sortOrder = await common.getFullSortorder(settings);
     if(sortOrder.includes("mostrecent")) {
@@ -436,7 +434,7 @@ async function addOrderedFolderList(folderList, tmpParent) {
   }
 }
 async function addFolderListPinned(folderList, tmpParent) {
-  let settings = await getSettings();
+  let settings = common.getSettings();
   let order = settings.manualorder;
   let orderedList = [];
   for (let folderInternalName of order) {
@@ -447,7 +445,7 @@ async function addFolderListPinned(folderList, tmpParent) {
   await addOrderedFolderList(orderedList, tmpParent);
 }
 async function addFolderListAuto(folderList, tmpParent) {
-  let settings = await getSettings();
+  let settings = common.getSettings();
   if (alreadySorted !== true) {
     const sortorder = await common.getFullSortorder(settings,alreadySorted);
     await common.sortFoldersBySortorder(folderList,sortorder);
@@ -539,7 +537,7 @@ const buttonList = document.getElementById('tidybirdMessage');
 let alreadySorted;
 //let start = true;
 async function showButtons() {
-  let settings = await getSettings();
+  let settings = common.getSettings();
   earliestBirth = common.encodeNumber(settings.maxage);
   let nbFolders = settings.nbfolders;
 
@@ -678,21 +676,6 @@ async function showButtons() {
 showButtons();
 addSettingsButton(othersParent);
 
-/*
- * Support live changing settings
- */
-async function settingsChangedListener(settingsUpdateInfo) {
-  let changedSettings = Object.keys(settingsUpdateInfo).reduce((attrs, key) => ({...attrs, [key]: settingsUpdateInfo[key].newValue}), {});
-  let needUpdateList = false;
-  for (let setting in changedSettings) {
-    needUpdateList = needUpdateList || updateSetting(setting, changedSettings[setting]);
-  }
-  if (needUpdateList) {
-    common.debug("Updating list by setting change");
-    updateButtonList();
-  } //else: no update needed
-}
-messenger.storage.local.onChanged.addListener(settingsChangedListener);
 /**
  * When updating settings, does not trigger a button list update, once can be triggered by sending a message
  * This happens, for example, when only folder times have been changed. Which usually only happens when moving a message
