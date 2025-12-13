@@ -31,6 +31,7 @@
             1. upload .xpi to add-ons site
             1. Once accepted, finalize release on github & set as latest
 1. 5.x+ Other optimisations
+    1. check redraw while archiving & deleting: should not happen
     1. (branch:undo) ctrl-Z only works after clicking away from tidybird
     1. (branch:mv3) continue effort to move to mv3
         1. current version makes messages disappear
