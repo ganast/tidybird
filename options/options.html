@@ -133,9 +133,9 @@
             <h2>Debug</h2>
             <div>
                 <div>
-                    Reset all folders' "recently moved to" timestamps to:
-                    <button id="resetMRMsTB" name="resetMRMsTB">Thunderbird settings</button>
-                    <button id="resetMRMsNever" name="resetMRMsNever">never (will remove Tidybird's timestamps)</button>
+                    Reset Tidybird most recently used folder list to:
+                    <button id="resetMRMsTB" name="resetMRMsTB" title="Sets the folders' timestamps to the current Thunderbird timestamps">Thunderbird list</button>
+                    <button id="resetMRMsNever" name="resetMRMsNever" title="Removes the recorded Tidybird timestamps">Empty</button>
                 </div>
                 <div>
                     <div class="horizontal">
@@ -147,7 +147,7 @@
                         <input id="debuglevel_real" name="debuglevel" type="radio" value="real"/>
                         <label for="debuglevel_real">Real account and folder names</label>
                     </div>
-                    <button id="getDebugInfo" name="getDebugInfo">Generate debug info</button>
+                    <button id="getDebugInfo" name="getDebugInfo" title="Adds debug information to the logs">Generate debug info</button>
                 </div>
             </div>
         </div>
