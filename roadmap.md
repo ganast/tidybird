@@ -31,7 +31,6 @@
             1. upload .xpi to add-ons site
             1. Once accepted, finalize release on github & set as latest
 1. 5.x+ Other optimisations
-    1. check redraw while archiving & deleting: should not happen
     1. (branch:undo) ctrl-Z only works after clicking away from tidybird
     1. (branch:mv3) continue effort to move to mv3
         1. current version makes messages disappear
@@ -42,8 +41,8 @@
     1. handle special folders (with toggle setting)
         1. on setting toggle: set setting of special folders found to "never" or default
         1. on folder type change (possible?): change setting
+        1. check redraw while archiving & deleting: should not happen
     1. add mark as read to simple settings (default for all buttons)
-    1. once we have our own MRM: check for reset, show info in interface (#40)
     1. onAccountNameChange
     1. option to not show parent
     1. option to show Tidybird with opened mail (not in mailTab) and test getDisplayedMessages
