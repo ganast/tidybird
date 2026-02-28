@@ -1,13 +1,13 @@
 {
   "name": "tidybird",
-  "version": "5.4",
+  "version": "5.5",
   "description": "Thunderbird add-on to organize email into folders quickly and easily",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tatankat/tidybird.git"
+    "url": "git+https://github.com/ganast/tidybird.git"
   },
   "keywords": [
     "thunderbird",
@@ -21,20 +21,20 @@
   "author": "ganast@ganast.com",
   "license": "GPL-3.0-or-later",
   "bugs": {
-    "url": "https://github.com/tatankat/tidybird/issues"
+    "url": "https://github.com/ganast/tidybird/issues"
   },
-  "homepage": "https://github.com/tatankat/tidybird#readme",
+  "homepage": "https://github.com/ganast/tidybird#readme",
   "devDependencies": {
     "@eslint/css": "^0.14.1",
-    "@eslint/js": "^9.39.1",
-    "@eslint/json": "^0.14.0",
+    "@eslint/js": "^10.0.1",
+    "@eslint/json": "^1.0.1",
     "@eslint/markdown": "^7.5.1",
-    "eslint": "^9.39.2",
+    "eslint": "^10.0.2",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.4",
-    "globals": "^16.5.0",
-    "prettier": "^3.7.4",
-    "web-ext": "^9.2.0"
+    "eslint-plugin-prettier": "^5.5.5",
+    "globals": "^17.3.0",
+    "prettier": "^3.8.1",
+    "web-ext": "^9.3.0"
   },
   "webExt": {
     "ignoreFiles": [
@@ -49,6 +49,6 @@
     ]
   },
   "dependencies": {
-    "sortablejs": "^1.15.0"
+    "sortablejs": "^1.15.7"
   }
 }
