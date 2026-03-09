@@ -29,7 +29,7 @@
     "@eslint/js": "^10.0.1",
     "@eslint/json": "^1.0.1",
     "@eslint/markdown": "^7.5.1",
-    "eslint": "^10.0.2",
+    "eslint": "^10.0.3",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
     "globals": "^17.3.0",
