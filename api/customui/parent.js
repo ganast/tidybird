@@ -5,8 +5,6 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
         "resource://gre/modules/ExtensionParent.sys.mjs");
     const { setTimeout } = ChromeUtils.importESModule(
         "resource://gre/modules/Timer.sys.mjs");
-    const { E10SUtils } = ChromeUtils.importESModule(
-        "resource://gre/modules/E10SUtils.sys.mjs");
 
     const XULNS =
         "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
@@ -224,9 +222,6 @@ var ex_customui = class extends ExtensionCommon.ExtensionAPI {
           context.extension.policy.browsingContextGroupId);
       if (context.extension.remote) {
         result.setAttribute("remote", "true");
-        result.setAttribute("remoteType", E10SUtils.getRemoteTypeForURI(url,
-            true, false, E10SUtils.EXTENSION_REMOTE_TYPE, null,
-            E10SUtils.predictOriginAttributes({ result })));
         result.setAttribute("maychangeremoteness", "true");
       }
       parentNode.insertBefore(result, referenceNode || null);
